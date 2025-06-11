@@ -10,6 +10,7 @@ import file_utils
 from matplotlib.lines import Line2D
 from datetime import date
 from matplotlib.font_manager import FontProperties
+from matplotlib.gridspec import GridSpec, GridSpecFromSubplotSpec
 
 
 def plot_game_overview(ax_table, df_game):
@@ -59,9 +60,7 @@ def plot_game_overview(ax_table, df_game):
     for (row, col), cell in overall_table.get_celld().items():
         if row == 0:
             cell.set_text_props(fontproperties=FontProperties(weight='bold'))
-    ax_table.set_title("Pitching Line")
-
-    df_game
+    # ax_table.set_title("Pitching Line")
 
 
 def plot_legend(ax_breaks_legend, df_game, unique_pitch_types, pitch_colors_dict, desc_to_code_dict):
@@ -76,7 +75,22 @@ def plot_legend(ax_breaks_legend, df_game, unique_pitch_types, pitch_colors_dict
         handle = Line2D([0], [0], color=color, lw=5, label=pitch_desc)
         legend_handles.append(handle)
 
-    ax_breaks_legend.legend(handles=legend_handles, loc='center', ncol=3, frameon=False)
+    ax_breaks_legend.legend(
+        handles=legend_handles,
+        loc='center',
+        bbox_to_anchor=(0.5, 0.5, 0.1, 0.1),  # shrink box size
+        bbox_transform=ax_breaks_legend.transAxes,
+        ncol=3,
+        frameon=False,
+        handlelength=2.5,
+        fontsize=9,
+        borderpad=0.1,
+        labelspacing=0.2,
+        handletextpad=0.5,
+        columnspacing=0.8
+    )
+    ax_breaks_legend.set_xlim(0, 1)  # force tight x space
+    ax_breaks_legend.set_ylim(0, 1)  # force tight y space
     ax_breaks_legend.axis('off')
 
 
@@ -165,8 +179,6 @@ def plot_strike_zone(ax, title, bat_side, df_game, unique_pitch_types, desc_to_c
 
     for pitch_desc in unique_pitch_types:
         pitch_code = desc_to_code_dict.get(pitch_desc)
-        if not pitch_code:
-            continue
 
         pitch_data = filtered_df_game[filtered_df_game['pitch_type'] == pitch_code]
         if len(pitch_data) < 2:
@@ -177,45 +189,41 @@ def plot_strike_zone(ax, title, bat_side, df_game, unique_pitch_types, desc_to_c
         values = np.vstack([x_locs, z_locs])
 
         # --- KDE and mass contour logic ---
-        try:
-            kernel = gaussian_kde(values)
-            Z = np.reshape(kernel(positions).T, xx.shape)
+        kernel = gaussian_kde(values)
+        Z = np.reshape(kernel(positions).T, xx.shape)
 
-            # Compute 75% KDE level
-            Z_flat = Z.ravel()
-            Z_sorted = np.sort(Z_flat)[::-1]
-            cumsum = np.cumsum(Z_sorted)
-            cumsum /= cumsum[-1]
-            level_75 = Z_sorted[np.searchsorted(cumsum, 0.5)]
+        # Compute 75% KDE level
+        Z_flat = Z.ravel()
+        Z_sorted = np.sort(Z_flat)[::-1]
+        cumsum = np.cumsum(Z_sorted)
+        cumsum /= cumsum[-1]
+        level_75 = Z_sorted[np.searchsorted(cumsum, 0.5)]
 
-            # Extract contour at 75% level
-            contours = ax.contour(xx, yy, Z, levels=[level_75], linewidths=1.5, colors='none')
+        # Extract contour at 75% level
+        contours = ax.contour(xx, yy, Z, levels=[level_75], linewidths=1.5, colors='none')
 
-            # Get the largest path
-            max_area = 0
-            main_path = None
-            for collection in contours.collections:
-                for path in collection.get_paths():
-                    verts = path.vertices
-                    area = 0.5 * np.abs(np.dot(verts[:, 0], np.roll(verts[:, 1], 1)) -
-                                        np.dot(verts[:, 1], np.roll(verts[:, 0], 1)))
-                    if area > max_area:
-                        max_area = area
-                        main_path = path
+        # Get the largest path
+        max_area = 0
+        main_path = None
+        for collection in contours.collections:
+            for path in collection.get_paths():
+                verts = path.vertices
+                area = 0.5 * np.abs(np.dot(verts[:, 0], np.roll(verts[:, 1], 1)) -
+                                    np.dot(verts[:, 1], np.roll(verts[:, 0], 1)))
+                if area > max_area:
+                    max_area = area
+                    main_path = path
 
-            if main_path is not None:
-                color = pitch_colors_dict.get(pitch_desc, 'gray')
-                patch = PathPatch(main_path, facecolor=color, edgecolor=color, alpha=0.4, lw=2)
-                ax.add_patch(patch)
+        if main_path is not None:
+            color = pitch_colors_dict.get(pitch_desc, 'gray')
+            patch = PathPatch(main_path, facecolor=color, edgecolor=color, alpha=0.4, lw=2)
+            ax.add_patch(patch)
 
-                # Outline
-                ax.plot(main_path.vertices[:, 0], main_path.vertices[:, 1], color=color, lw=2)
+            # Outline
+            ax.plot(main_path.vertices[:, 0], main_path.vertices[:, 1], color=color, lw=2)
 
-                # Dummy legend
-                ax.plot([], [], color=color, label=pitch_desc, linewidth=5, alpha=0.6)
-
-        except Exception as e:
-            print(f"Skipping {pitch_desc} due to KDE or contour error: {e}")
+            # Dummy legend
+            ax.plot([], [], color=color, label=pitch_desc, linewidth=5, alpha=0.6)
 
     ax.axis('off')
 
@@ -253,19 +261,22 @@ def plot_pitch_usage_bar(ax, df_game, pitch_map, pitch_colors_dict):
         desc = desc_row['Description'].values[0] if not desc_row.empty else pt
         color = pitch_colors_dict.get(desc, 'gray')
 
-        ax.barh(i, lhb_pct[pt], color=color, alpha=0.6, edgecolor='black')  # Left side positive
-        ax.barh(i, -rhb_pct[pt], color=color, alpha=0.6, edgecolor='black')  # Right side negative
+        # Plot bars
+        ax.barh(i, lhb_pct[pt], color=color, alpha=0.6, edgecolor='black')  # LHB: right side
+        ax.barh(i, -rhb_pct[pt], color=color, alpha=0.6, edgecolor='black')  # RHB: left side
 
+        # Centered count text inside bars
         count_l = int(lhb_counts[pt])
         count_r = int(rhb_counts[pt])
         if count_l > 0:
-            ax.text(1, i, f"{count_l}", va='center', ha='left', fontsize=8)
+            ax.text(lhb_pct[pt] / 2, i, f"{count_l}", va='center', ha='center', fontsize=8)
         if count_r > 0:
-            ax.text(-1, i, f"{count_r}", va='center', ha='right', fontsize=8)
+            ax.text(-rhb_pct[pt] / 2, i, f"{count_r}", va='center', ha='center', fontsize=8)
 
     ax.axvline(0, color='black', linewidth=1)
     ax.set_xlim(-100, 100)
-    ax.set_xlabel("% of Total Pitches")
+    # ax.set_xlabel("% of Total Pitches")
+    ax.set_xticklabels([100, 50, 0, 50, 100])
     ax.set_title("Pitch Usage by Batter Side")
     ax.invert_yaxis()
     ax.spines[['top', 'right']].set_visible(False)
@@ -312,7 +323,7 @@ def plot_pitch_by_pitch_info(ax_stats, summary_df):
     for (row, col), cell in pitches_table.get_celld().items():
         if row == 0:
             cell.set_text_props(fontproperties=FontProperties(weight='bold'))
-    ax_stats.set_title("Pitch Type Summary")
+    # ax_stats.set_title("Pitch Type Summary")
 
 
 def plot_pitcher_dashboard(player, date, player_info, pbp_df, pitch_map, year=date.today().year):
@@ -328,20 +339,33 @@ def plot_pitcher_dashboard(player, date, player_info, pbp_df, pitch_map, year=da
     player_img = Image.open(BytesIO(response.content))
 
     fig = plt.figure(figsize=(14, 10))
-    gs = fig.add_gridspec(
-        6, 5,
-        height_ratios=[0.7, 0.7, 0.5, 2, 2, 1]
-    )
-    ax_title = fig.add_subplot(gs[0, :3])
-    ax_img = fig.add_subplot(gs[0, 3:4])
-    ax_table = fig.add_subplot(gs[1, :])
-    ax_breaks_legend = fig.add_subplot(gs[2, :])
-    ax_rhb = fig.add_subplot(gs[3, :2])
-    ax_mirror_bar = fig.add_subplot(gs[3, 2:3])
-    ax_lhb = fig.add_subplot(gs[3, 3:])
-    ax_breaks = fig.add_subplot(gs[4, 1:3])
-    ax_velocities = fig.add_subplot(gs[4, 3:])
-    ax_stats = fig.add_subplot(gs[5, :])
+
+    plt.subplots_adjust(hspace=0.0, top=0.95, bottom=0)
+
+    # Main outer layout (1 column, 3 vertical chunks)
+    outer_gs = GridSpec(5, 1, height_ratios=[1, 0.5, 1.4, 1.6, 1], hspace=0.2)
+
+    # --- Top Block: Title, Image ---
+    top_gs = GridSpecFromSubplotSpec(1, 5, subplot_spec=outer_gs[0], hspace=0)
+    ax_title = fig.add_subplot(top_gs[0, :3])
+    ax_img = fig.add_subplot(top_gs[0, 3:4])
+
+    top2_gs = GridSpecFromSubplotSpec(2, 5, subplot_spec=outer_gs[1], hspace=0)
+    ax_table = fig.add_subplot(top2_gs[0, :])
+    ax_breaks_legend = fig.add_subplot(top2_gs[1, :])
+
+    mid_gs = GridSpecFromSubplotSpec(1, 5, subplot_spec=outer_gs[2], hspace=0)
+    ax_rhb = fig.add_subplot(mid_gs[0, :2])
+    ax_mirror_bar = fig.add_subplot(mid_gs[0, 2:3])
+    ax_lhb = fig.add_subplot(mid_gs[0, 3:])
+
+    # --- Bottom Block: Breaks, Velo, Stats ---
+    bot_gs = GridSpecFromSubplotSpec(1, 5, subplot_spec=outer_gs[3], hspace=0)
+    ax_breaks = fig.add_subplot(bot_gs[0, 1:3])
+    ax_velocities = fig.add_subplot(bot_gs[0, 3:])
+
+    bot_gs2 = GridSpecFromSubplotSpec(1, 5, subplot_spec=outer_gs[4], hspace=0)
+    ax_stats = fig.add_subplot(bot_gs2[0, :])
 
     for ax in [ax_img, ax_title, ax_table, ax_breaks, ax_lhb, ax_rhb, ax_stats]:
         ax.axis("off")
@@ -362,6 +386,7 @@ def plot_pitcher_dashboard(player, date, player_info, pbp_df, pitch_map, year=da
 
     plot_legend(ax_breaks_legend, df_game, unique_pitch_types, pitch_colors_dict, desc_to_code_dict)
 
+
     plot_strike_zone(ax_rhb, "Pitch Locations vs RHB", 'R', df_game, unique_pitch_types, desc_to_code_dict,
                      pitch_colors_dict)
 
@@ -372,5 +397,8 @@ def plot_pitcher_dashboard(player, date, player_info, pbp_df, pitch_map, year=da
 
     plot_pitch_by_pitch_info(ax_stats, summary_df)
 
-    plt.tight_layout()
+    mid_gs_axes = [ax_rhb, ax_mirror_bar, ax_lhb]
+
+    fig.tight_layout()
+    plt.tight_layout(h_pad=0)
     plt.show()
