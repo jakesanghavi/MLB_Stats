@@ -1,3 +1,4 @@
+import numpy.linalg
 import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.patches import PathPatch
@@ -11,6 +12,15 @@ from matplotlib.lines import Line2D
 from datetime import date
 from matplotlib.font_manager import FontProperties
 from matplotlib.gridspec import GridSpec, GridSpecFromSubplotSpec
+from matplotlib.offsetbox import OffsetImage, AnnotationBbox
+import io
+import os
+import re
+import xml.etree.ElementTree as ET
+os.environ['DYLD_FALLBACK_LIBRARY_PATH'] = '/opt/homebrew/lib'
+import cairosvg
+
+
 
 
 def plot_game_overview(ax_table, df_game):
@@ -178,52 +188,55 @@ def plot_strike_zone(ax, title, bat_side, df_game, unique_pitch_types, desc_to_c
     positions = np.vstack([xx.ravel(), yy.ravel()])
 
     for pitch_desc in unique_pitch_types:
-        pitch_code = desc_to_code_dict.get(pitch_desc)
+        try:
+            pitch_code = desc_to_code_dict.get(pitch_desc)
 
-        pitch_data = filtered_df_game[filtered_df_game['pitch_type'] == pitch_code]
-        if len(pitch_data) < 2:
-            continue
+            pitch_data = filtered_df_game[filtered_df_game['pitch_type'] == pitch_code]
+            if len(pitch_data) < 2:
+                continue
 
-        x_locs = pitch_data['pitch_coordinate_X'].values
-        z_locs = pitch_data['pitch_coordinate_Z'].values
-        values = np.vstack([x_locs, z_locs])
+            x_locs = pitch_data['pitch_coordinate_X'].values
+            z_locs = pitch_data['pitch_coordinate_Z'].values
+            values = np.vstack([x_locs, z_locs])
 
-        # --- KDE and mass contour logic ---
-        kernel = gaussian_kde(values)
-        Z = np.reshape(kernel(positions).T, xx.shape)
+            # --- KDE and mass contour logic ---
+            kernel = gaussian_kde(values)
+            Z = np.reshape(kernel(positions).T, xx.shape)
 
-        # Compute 75% KDE level
-        Z_flat = Z.ravel()
-        Z_sorted = np.sort(Z_flat)[::-1]
-        cumsum = np.cumsum(Z_sorted)
-        cumsum /= cumsum[-1]
-        level_75 = Z_sorted[np.searchsorted(cumsum, 0.5)]
+            # Compute 75% KDE level
+            Z_flat = Z.ravel()
+            Z_sorted = np.sort(Z_flat)[::-1]
+            cumsum = np.cumsum(Z_sorted)
+            cumsum /= cumsum[-1]
+            level_75 = Z_sorted[np.searchsorted(cumsum, 0.5)]
 
-        # Extract contour at 75% level
-        contours = ax.contour(xx, yy, Z, levels=[level_75], linewidths=1.5, colors='none')
+            # Extract contour at 75% level
+            contours = ax.contour(xx, yy, Z, levels=[level_75], linewidths=1.5, colors='none')
 
-        # Get the largest path
-        max_area = 0
-        main_path = None
-        for collection in contours.collections:
-            for path in collection.get_paths():
-                verts = path.vertices
-                area = 0.5 * np.abs(np.dot(verts[:, 0], np.roll(verts[:, 1], 1)) -
-                                    np.dot(verts[:, 1], np.roll(verts[:, 0], 1)))
-                if area > max_area:
-                    max_area = area
-                    main_path = path
+            # Get the largest path
+            max_area = 0
+            main_path = None
+            for collection in contours.collections:
+                for path in collection.get_paths():
+                    verts = path.vertices
+                    area = 0.5 * np.abs(np.dot(verts[:, 0], np.roll(verts[:, 1], 1)) -
+                                        np.dot(verts[:, 1], np.roll(verts[:, 0], 1)))
+                    if area > max_area:
+                        max_area = area
+                        main_path = path
 
-        if main_path is not None:
-            color = pitch_colors_dict.get(pitch_desc, 'gray')
-            patch = PathPatch(main_path, facecolor=color, edgecolor=color, alpha=0.4, lw=2)
-            ax.add_patch(patch)
+            if main_path is not None:
+                color = pitch_colors_dict.get(pitch_desc, 'gray')
+                patch = PathPatch(main_path, facecolor=color, edgecolor=color, alpha=0.4, lw=2)
+                ax.add_patch(patch)
 
-            # Outline
-            ax.plot(main_path.vertices[:, 0], main_path.vertices[:, 1], color=color, lw=2)
+                # Outline
+                ax.plot(main_path.vertices[:, 0], main_path.vertices[:, 1], color=color, lw=2)
 
-            # Dummy legend
-            ax.plot([], [], color=color, label=pitch_desc, linewidth=5, alpha=0.6)
+                # Dummy legend
+                ax.plot([], [], color=color, label=pitch_desc, linewidth=5, alpha=0.6)
+        except numpy.linalg.LinAlgError:
+            pass
 
     ax.axis('off')
 
@@ -315,6 +328,80 @@ def plot_velocity_distributions(ax, title, df_game, unique_pitch_types, pitch_co
     ax.yaxis.set_visible(False)
 
 
+def plot_spray(ax, svg_path, df_game):
+    # Read and modify SVG (hide distances)
+    with open(svg_path, 'r', encoding='utf-8') as f:
+        svg_content = f.read()
+
+    svg_content = re.sub(
+        r'(#distances\s*\{\s*visibility\s*:\s*)visible(\s*;?\s*\})',
+        r'\1hidden\2',
+        svg_content,
+        flags=re.IGNORECASE
+    )
+
+    png_bytes = cairosvg.svg2png(bytestring=svg_content.encode('utf-8'))
+    image = Image.open(io.BytesIO(png_bytes))
+
+    # Filter dataframe & last per ab_id
+    filtered = df_game[df_game['detailed_pitch_outcome'].isin(['D', 'E', 'X'])]
+    last_per_ab = filtered.groupby('ab_id').last().reset_index()
+
+    # Define SVG bounds (example, replace with your actual bounds)
+    xmin, xmax = -250, 250
+    ymin, ymax = -10, 450
+
+    # Plot SVG image with imshow and extent
+    ax.imshow(image, extent=[xmin, xmax, ymin, ymax], aspect='auto')
+
+    # Plot points
+    event_types = last_per_ab['event_type'].unique()
+    colors = plt.cm.get_cmap('tab10', len(event_types))
+    color_map = dict(zip(event_types, colors.colors))
+
+    for event_type, group in last_per_ab.groupby('event_type'):
+        # Apply transformation to each point
+        transformed_coords = group.apply(
+            lambda row: file_utils.mlbam_xy_transformation(row['hit_location_X'], row['hit_location_Y']),
+            axis=1
+        )
+
+        # Unpack transformed coordinates into separate lists/arrays
+        transformed_x = transformed_coords.apply(lambda coord: coord[0])
+        transformed_y = transformed_coords.apply(lambda coord: coord[1])
+
+        ax.scatter(
+            transformed_x,
+            transformed_y,
+            label=event_type,
+            color=color_map[event_type],
+            edgecolor='black',
+            alpha=0.8,
+            s=50
+        )
+
+    # Set axis limits combining SVG and points bounds
+    x_min_points = last_per_ab['hit_location_X'].min()
+    x_max_points = last_per_ab['hit_location_X'].max()
+    y_min_points = last_per_ab['hit_location_Y'].min()
+    y_max_points = last_per_ab['hit_location_Y'].max()
+
+    xmin_plot = min(xmin, x_min_points)
+    xmax_plot = max(xmax, x_max_points)
+    ymin_plot = min(ymin, y_min_points)
+    ymax_plot = max(ymax, y_max_points)
+
+    padding_x = (xmax_plot - xmin_plot) * 0.05
+    padding_y = (ymax_plot - ymin_plot) * 0.05
+
+    ax.set_xlim(xmin_plot - padding_x, xmax_plot + padding_x)
+    ax.set_ylim(ymin_plot - padding_y, ymax_plot + padding_y)
+    ax.set_aspect('equal')
+    ax.axis("off")
+
+    # ax.legend(title='Event Type')
+
+
 def plot_pitch_by_pitch_info(ax_stats, summary_df):
     ax_stats.axis('tight')
     ax_stats.axis('off')
@@ -333,6 +420,7 @@ def plot_pitcher_dashboard(player, date, player_info, pbp_df, pitch_map, year=da
 
     home = df_game['top_of_inning'].iloc[0] == 1
     opponent = df_game['home_team_abbr'].iloc[0] if home is True else df_game['away_team_abbr'].iloc[0]
+    stadium_path = '../Stadiums/' + df_game['home_team_abbr'].iloc[0] + '_stadium.svg'
 
     # Load player image
     response = requests.get(pitcher['img'].iloc[0])
@@ -361,8 +449,9 @@ def plot_pitcher_dashboard(player, date, player_info, pbp_df, pitch_map, year=da
 
     # --- Bottom Block: Breaks, Velo, Stats ---
     bot_gs = GridSpecFromSubplotSpec(1, 5, subplot_spec=outer_gs[3], hspace=0)
-    ax_breaks = fig.add_subplot(bot_gs[0, 1:3])
-    ax_velocities = fig.add_subplot(bot_gs[0, 3:])
+    ax_breaks = fig.add_subplot(bot_gs[0, :2])
+    ax_velocities = fig.add_subplot(bot_gs[0, 2:4])
+    ax_spray = fig.add_subplot(bot_gs[0, 4:])
 
     bot_gs2 = GridSpecFromSubplotSpec(1, 5, subplot_spec=outer_gs[4], hspace=0)
     ax_stats = fig.add_subplot(bot_gs2[0, :])
@@ -384,6 +473,8 @@ def plot_pitcher_dashboard(player, date, player_info, pbp_df, pitch_map, year=da
 
     plot_velocity_distributions(ax_velocities, "Velocities", df_game, unique_pitch_types, pitch_colors_dict, desc_to_code_dict)
 
+    plot_spray(ax_spray, stadium_path, df_game)
+
     plot_legend(ax_breaks_legend, df_game, unique_pitch_types, pitch_colors_dict, desc_to_code_dict)
 
 
@@ -396,8 +487,6 @@ def plot_pitcher_dashboard(player, date, player_info, pbp_df, pitch_map, year=da
     plot_pitch_usage_bar(ax_mirror_bar, df_game, pitch_map, pitch_colors_dict)
 
     plot_pitch_by_pitch_info(ax_stats, summary_df)
-
-    mid_gs_axes = [ax_rhb, ax_mirror_bar, ax_lhb]
 
     fig.tight_layout()
     plt.tight_layout(h_pad=0)
