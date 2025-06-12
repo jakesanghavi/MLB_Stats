@@ -12,15 +12,11 @@ from matplotlib.lines import Line2D
 from datetime import date
 from matplotlib.font_manager import FontProperties
 from matplotlib.gridspec import GridSpec, GridSpecFromSubplotSpec
-from matplotlib.offsetbox import OffsetImage, AnnotationBbox
 import io
 import os
 import re
-import xml.etree.ElementTree as ET
 os.environ['DYLD_FALLBACK_LIBRARY_PATH'] = '/opt/homebrew/lib'
 import cairosvg
-
-
 
 
 def plot_game_overview(ax_table, df_game):
@@ -106,14 +102,11 @@ def plot_legend(ax_breaks_legend, df_game, unique_pitch_types, pitch_colors_dict
 
 def plot_pitch_breaks(ax_breaks, df_game, pitch_map):
     df_game['whiff'] = (df_game['detailed_pitch_outcome'] == 'S').astype(int)
-    df_game['x_break'] = df_game['break_length'] * np.sin(np.deg2rad(df_game['break_angle']))
-    df_game['y_break'] = df_game['break_length'] * np.cos(np.deg2rad(df_game['break_angle']))
 
     summary_df = df_game.groupby(['pitch_type'], as_index=False).agg(
         Count=('pitch_type', 'size'),
         Velocity=('start_speed', 'mean'),
-        Whiffs=('whiff', 'sum'),
-        Break=('break_length', 'mean')
+        Whiffs=('whiff', 'sum')
     )
 
     unique_codes = summary_df['pitch_type'].unique()
@@ -124,10 +117,9 @@ def plot_pitch_breaks(ax_breaks, df_game, pitch_map):
     summary_df['Count'] = summary_df['Count'].astype(int)
     summary_df['Velocity'] = summary_df['Velocity'].round(1)
     summary_df['Whiff%'] = summary_df['Whiff%'].round(1)
-    summary_df['Break'] = summary_df['Break'].round(1)
     summary_df['Pitch Type'] = summary_df['Description']
 
-    summary_df = summary_df[['Pitch Type', 'Count', 'Velocity', 'Whiff%', 'Break']].sort_values('Count',
+    summary_df = summary_df[['Pitch Type', 'Count', 'Velocity', 'Whiff%']].sort_values('Count',
                                                                                                 ascending=False)
 
     int_cols2 = ["Count"]
@@ -146,8 +138,8 @@ def plot_pitch_breaks(ax_breaks, df_game, pitch_map):
         current_color = pitch_colors_dict.get(pitch_desc)
 
         ax_breaks.scatter(
-            pitch_data['x_break'],
-            pitch_data['y_break'],
+            pitch_data['break_horizontal'],
+            pitch_data['break_vertical_induced'],
             label=pitch_desc,
             color=current_color,
             alpha=0.6,
@@ -289,6 +281,7 @@ def plot_pitch_usage_bar(ax, df_game, pitch_map, pitch_colors_dict):
     ax.axvline(0, color='black', linewidth=1)
     ax.set_xlim(-100, 100)
     # ax.set_xlabel("% of Total Pitches")
+    ax.set_xticks([-100, -50, 0, 50, 100])
     ax.set_xticklabels([100, 50, 0, 50, 100])
     ax.set_title("Pitch Usage by Batter Side")
     ax.invert_yaxis()
@@ -416,10 +409,11 @@ def plot_pitch_by_pitch_info(ax_stats, summary_df):
 def plot_pitcher_dashboard(player, date, player_info, pbp_df, pitch_map, year=date.today().year):
     pitcher = player_info[player_info['fullName'] == player]
 
-    df_game = pbp_df[(pbp_df['pitcher_id'] == pitcher['id'].iloc[0]) & (pbp_df['date'] == date)]
+    df_game = pbp_df[(pbp_df['pitcher_id'] == pitcher['id'].iloc[0]) & (pbp_df['date'] == date)].copy()
 
     home = df_game['top_of_inning'].iloc[0] == 1
-    opponent = df_game['home_team_abbr'].iloc[0] if home is True else df_game['away_team_abbr'].iloc[0]
+    opponent = df_game['home_team_abbr'].iloc[0] if not home else df_game['away_team_abbr'].iloc[0]
+    against = '@' if not home else 'vs.'
     stadium_path = '../Stadiums/' + df_game['home_team_abbr'].iloc[0] + '_stadium.svg'
 
     # Load player image
@@ -442,13 +436,13 @@ def plot_pitcher_dashboard(player, date, player_info, pbp_df, pitch_map, year=da
     ax_table = fig.add_subplot(top2_gs[0, :])
     ax_breaks_legend = fig.add_subplot(top2_gs[1, :])
 
-    mid_gs = GridSpecFromSubplotSpec(1, 5, subplot_spec=outer_gs[2], hspace=0)
+    mid_gs = GridSpecFromSubplotSpec(1, 7, subplot_spec=outer_gs[2], hspace=0)
     ax_rhb = fig.add_subplot(mid_gs[0, :2])
-    ax_mirror_bar = fig.add_subplot(mid_gs[0, 2:3])
-    ax_lhb = fig.add_subplot(mid_gs[0, 3:])
+    ax_mirror_bar = fig.add_subplot(mid_gs[0, 2:5])
+    ax_lhb = fig.add_subplot(mid_gs[0, 5:])
 
     # --- Bottom Block: Breaks, Velo, Stats ---
-    bot_gs = GridSpecFromSubplotSpec(1, 5, subplot_spec=outer_gs[3], hspace=0)
+    bot_gs = GridSpecFromSubplotSpec(1, 6, subplot_spec=outer_gs[3], hspace=0)
     ax_breaks = fig.add_subplot(bot_gs[0, :2])
     ax_velocities = fig.add_subplot(bot_gs[0, 2:4])
     ax_spray = fig.add_subplot(bot_gs[0, 4:])
@@ -465,7 +459,7 @@ def plot_pitcher_dashboard(player, date, player_info, pbp_df, pitch_map, year=da
 
     # Title
     ax_title.text(0, 0.8, f"Daily Pitching Summary\n{year} MLB Season", fontsize=18, fontweight='bold')
-    ax_title.text(0, 0.4, f"{date} vs {opponent}", fontsize=14)
+    ax_title.text(0, 0.4, f"{date} {against} {opponent}", fontsize=14)
 
     plot_game_overview(ax_table, df_game)
 
@@ -488,6 +482,6 @@ def plot_pitcher_dashboard(player, date, player_info, pbp_df, pitch_map, year=da
 
     plot_pitch_by_pitch_info(ax_stats, summary_df)
 
-    fig.tight_layout()
-    plt.tight_layout(h_pad=0)
+    # fig.tight_layout()
+    # plt.tight_layout(h_pad=0)
     plt.show()
