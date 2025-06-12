@@ -4,6 +4,15 @@ from matplotlib.patches import Rectangle
 from scipy.ndimage import label
 
 
+SPRAY_CMAP = {
+    '1B': '#fe6000',
+    '2B': '#775eef',
+    '3B': '#ffb005',
+    'HR': '#dc2680',
+    'X': '#c2c2c2'
+}
+
+
 def plot_empty_strike_zone(gridlines=True, home_plate=True):
     HOME_WIDTH = 17
     HOME_HEIGHT = 17
@@ -123,3 +132,60 @@ def mlbam_xy_transformation(x, y, distance, scale=2.495671):
     new_y = scale * (213 - y)
 
     return new_x, new_y
+
+
+def get_event_label(event_type):
+    event_type = event_type.lower()
+    if 'home_run' in event_type:
+        return 'HR'
+    elif 'triple' in event_type and 'play' not in event_type:
+        return '3B'
+    elif 'double' in event_type and 'play' not in event_type:
+        return '2B'
+    elif 'single' in event_type:
+        return '1B'
+    elif 'field_out' in event_type or 'double_play' in event_type or 'triple_play' in event_type:
+        return 'X'
+    else:
+        pass
+
+
+def scale_svg(xmin, xmax, ymin, ymax):
+    # Compute centers
+    x_center = (xmin + xmax) / 2
+    y_center = (ymin + ymax) / 2
+
+    # Half sizes
+    half_width = (xmax - xmin) / 2
+    half_height = (ymax - ymin) / 2
+
+    # Scale factor (e.g., 1.5)
+    scale_svg = 1.8
+
+    # New half sizes after scaling
+    new_half_width = half_width * scale_svg
+    new_half_height = half_height * scale_svg
+
+    # New scaled extents, keeping center fixed
+    xmin_scaled = x_center - new_half_width
+    xmax_scaled = x_center + new_half_width
+    ymin_scaled = y_center - new_half_height
+    ymax_scaled = y_center + new_half_height
+
+    return xmin_scaled, xmax_scaled, ymin_scaled, ymax_scaled
+
+
+def scale_axes():
+    padding_x = 0.25
+    padding_y = 0.25
+
+    scale_factor = 2.25
+
+    half_width = (1 + padding_x)
+    half_height = (4 - 0.75) / 2 + padding_y
+
+    # scaled half-width and half-height
+    new_half_width = half_width * scale_factor
+    new_half_height = half_height * scale_factor
+
+    return new_half_width, new_half_height
