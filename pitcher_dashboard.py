@@ -21,21 +21,25 @@ import cairosvg
 
 def plot_game_overview(ax_table, df_game):
     # Plate Appearances = number of unique ab_id
-    pa = df_game['ab_id'].nunique()
+    bf = df_game['ab_id'].nunique()
     sps = df_game[(df_game['detailed_pitch_outcome'] == 'X') | (df_game['event_type'].str.contains('strikeout')) |
                   (df_game['event_type'].str.contains('sac_'))]['ab_id'].nunique()
-    cs = df_game[df_game['event_type'].str.contains('caught_stealing')]['ab_id'].nunique()
-    dps = df_game[df_game['event_type'].str.contains('double_play')]['ab_id'].nunique()
-    tps = df_game[df_game['event_type'].str.contains('triple_play')]['ab_id'].nunique()
-    outs = sps + cs + dps + tps * 2
+    fulls = (df_game['inning'].max() - df_game['inning'].min())*3
+    partials = df_game['outs'].iloc[-1] - df_game['outs'].iloc[0]
+    add = 1 if df_game['detailed_pitch_outcome'].iloc[-1] in ['C', 'S', 'W', 'X'] else 0
+
+    outs = fulls + partials + add
+
     ip = float(str(int(outs / 3)) + '.' + str(outs % 3))
     er = df_game.groupby('ab_id')['rbi'].max().sum()
     hit_events = ['single', 'double', 'triple', 'home_run']
-    h = df_game[df_game['event_name'].str.lower().isin(hit_events)]['ab_id'].nunique()
+    pattern = '|'.join(hit_events)
+    mask = df_game['event_type'].str.contains(pattern, case=False, na=False)
+    h = df_game[mask]['ab_id'].nunique()
     k = df_game[df_game['event_name'].str.lower().str.contains("strikeout")]['ab_id'].nunique()
     bb = df_game[df_game['event_name'].str.lower().str.contains("walk")]['ab_id'].nunique()
     # hbp = df_game[df_game['detailed_pitch_outcome'] == 'HBP']['ab_id'].nunique()
-    hr = df_game[df_game['event_name'].str.lower() == 'home_run']['ab_id'].nunique()
+    hr = df_game[df_game['event_type'].str.contains('home_run')]['ab_id'].nunique()
     strike_pct = df_game['strike'].sum() / len(df_game) * 100
     # whiff_pct = df_game[df_game['detailed_pitch_outcome'] == 'S'].shape[0] / len(df_game) * 100
     pitch_count = len(df_game)
@@ -44,7 +48,7 @@ def plot_game_overview(ax_table, df_game):
     summary_data = {
         "IP": round(ip, 1),
         "Pitches": pitch_count,
-        "BF": int(pa),
+        "BF": int(bf),
         "ER": er,
         "H": h,
         "K": k,
@@ -200,7 +204,13 @@ def plot_strike_zone(ax, title, bat_side, df_game, unique_pitch_types, desc_to_c
             Z_flat = Z.ravel()
             Z_sorted = np.sort(Z_flat)[::-1]
             cumsum = np.cumsum(Z_sorted)
-            cumsum /= cumsum[-1]
+            total = cumsum[-1]
+
+            # Skip if total is 0 or NaN to avoid divide-by-zero
+            if total == 0 or np.isnan(total):
+                continue
+
+            cumsum /= total
             level_75 = Z_sorted[np.searchsorted(cumsum, 0.5)]
 
             # Extract contour at 75% level
