@@ -106,3 +106,9 @@ def get_largest_region_contour(xx, yy, Z, level):
     plt.close()  # Close the temporary contour plot
 
     return main_path
+
+
+def mlbam_xy_transformation(x, y, scale=2.495671):
+    new_x = scale * (x - 125)
+    new_y = scale * (199 - y)
+    return new_x, new_y
