@@ -293,10 +293,11 @@ def plot_pitch_usage_bar(ax, df_game, pitch_map, pitch_colors_dict):
     ax.set_xlim(-100, 100)
     # ax.set_xlabel("% of Total Pitches")
     ax.set_xticks([-100, -50, 0, 50, 100])
-    ax.set_xticklabels([100, 50, 0, 50, 100])
+    ax.set_xticklabels(['100%', '50%', '0%', '50%', '100%'])
+    ax.set_yticks([])
     ax.set_title("Pitch Usage by Batter Side")
     ax.invert_yaxis()
-    ax.spines[['top', 'right']].set_visible(False)
+    ax.spines[['left', 'top', 'right']].set_visible(False)
 
 
 def plot_velocity_distributions(ax, title, df_game, unique_pitch_types, pitch_colors_dict, desc_to_code_dict):
