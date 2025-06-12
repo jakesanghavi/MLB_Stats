@@ -108,7 +108,18 @@ def get_largest_region_contour(xx, yy, Z, level):
     return main_path
 
 
-def mlbam_xy_transformation(x, y, scale=2.495671):
-    new_x = scale * (x - 125)
-    new_y = scale * (199 - y)
+# def mlbam_xy_transformation(x, y, distance, scale=2.495671):
+#     new_x = scale * (x - 130)
+#     new_y = scale * (213 - y)
+#     return new_x, new_y
+
+def mlbam_xy_transformation(x, y, distance, scale=2.495671):
+    # Calculate spray angle in radians
+    spray_angle = -np.arctan((x - 130) / (213 - y)) + np.pi / 2
+
+    # Convert polar to Cartesian using distance
+    new_x = distance * np.cos(spray_angle)
+    # new_y = distance * np.sin(spray_angle)
+    new_y = scale * (213 - y)
+
     return new_x, new_y
