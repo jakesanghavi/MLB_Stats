@@ -22,11 +22,12 @@ import cairosvg
 def plot_game_overview(ax_table, df_game):
     # Plate Appearances = number of unique ab_id
     pa = df_game['ab_id'].nunique()
-    sps = df_game[(df_game['detailed_pitch_outcome'] == 'X') | (df_game['event_type'].str.contains('sac_'))]['ab_id']. \
-        nunique()
+    sps = df_game[(df_game['detailed_pitch_outcome'] == 'X') | (df_game['event_type'].str.contains('strikeout')) |
+                  (df_game['event_type'].str.contains('sac_'))]['ab_id'].nunique()
+    cs = df_game[df_game['event_type'].str.contains('caught_stealing')]['ab_id'].nunique()
     dps = df_game[df_game['event_type'].str.contains('double_play')]['ab_id'].nunique()
     tps = df_game[df_game['event_type'].str.contains('triple_play')]['ab_id'].nunique()
-    outs = sps + dps + tps * 2
+    outs = sps + cs + dps + tps * 2
     ip = float(str(int(outs / 3)) + '.' + str(outs % 3))
     er = df_game.groupby('ab_id')['rbi'].max().sum()
     hit_events = ['single', 'double', 'triple', 'home_run']
@@ -354,8 +355,14 @@ def plot_spray(ax, svg_path, df_game):
 
     for event_type, group in last_per_ab.groupby('event_type'):
         # Apply transformation to each point
+        # transformed_coords = group.apply(
+        #     lambda row: file_utils.mlbam_xy_transformation(row['hit_location_X'], row['hit_location_Y']),
+        #     axis=1
+        # )
+
         transformed_coords = group.apply(
-            lambda row: file_utils.mlbam_xy_transformation(row['hit_location_X'], row['hit_location_Y']),
+            lambda row: file_utils.mlbam_xy_transformation(row['hit_location_X'], row['hit_location_Y'],
+                        row['hit_distance']),
             axis=1
         )
 
@@ -392,7 +399,7 @@ def plot_spray(ax, svg_path, df_game):
     ax.set_aspect('equal')
     ax.axis("off")
 
-    # ax.legend(title='Event Type')
+    ax.legend(title='Event Type', loc="upper right", framealpha=0.3)
 
 
 def plot_pitch_by_pitch_info(ax_stats, summary_df):
@@ -410,6 +417,7 @@ def plot_pitcher_dashboard(player, date, player_info, pbp_df, pitch_map, year=da
     pitcher = player_info[player_info['fullName'] == player]
 
     df_game = pbp_df[(pbp_df['pitcher_id'] == pitcher['id'].iloc[0]) & (pbp_df['date'] == date)].copy()
+    # df_game[['ab_id', 'detailed_pitch_outcome', 'event_type', 'description']].to_csv('df_game.csv', index=False)
 
     home = df_game['top_of_inning'].iloc[0] == 1
     opponent = df_game['home_team_abbr'].iloc[0] if not home else df_game['away_team_abbr'].iloc[0]
