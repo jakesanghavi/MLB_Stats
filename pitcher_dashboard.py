@@ -15,6 +15,7 @@ from matplotlib.gridspec import GridSpec, GridSpecFromSubplotSpec
 import io
 import os
 import re
+
 os.environ['DYLD_FALLBACK_LIBRARY_PATH'] = '/opt/homebrew/lib'
 import cairosvg
 
@@ -24,7 +25,7 @@ def plot_game_overview(ax_table, df_game):
     bf = df_game['ab_id'].nunique()
     sps = df_game[(df_game['detailed_pitch_outcome'] == 'X') | (df_game['event_type'].str.contains('strikeout')) |
                   (df_game['event_type'].str.contains('sac_'))]['ab_id'].nunique()
-    fulls = (df_game['inning'].max() - df_game['inning'].min())*3
+    fulls = (df_game['inning'].max() - df_game['inning'].min()) * 3
     partials = df_game['outs'].iloc[-1] - df_game['outs'].iloc[0]
     add = 1 if df_game['detailed_pitch_outcome'].iloc[-1] in ['C', 'S', 'W', 'X'] else 0
 
@@ -114,8 +115,6 @@ def plot_pitch_breaks(ax_breaks, df_game, pitch_map):
         Whiffs=('whiff', 'sum')
     )
 
-    unique_codes = summary_df['pitch_type'].unique()
-
     summary_df = summary_df.merge(pitch_map, left_on='pitch_type', right_on='Code', how='inner')
     summary_df['Whiff%'] = summary_df['Whiffs'] / summary_df['Count'] * 100
 
@@ -125,7 +124,7 @@ def plot_pitch_breaks(ax_breaks, df_game, pitch_map):
     summary_df['Pitch Type'] = summary_df['Description']
 
     summary_df = summary_df[['Pitch Type', 'Count', 'Velocity', 'Whiff%']].sort_values('Count',
-                                                                                                ascending=False)
+                                                                                       ascending=False)
 
     int_cols2 = ["Count"]
     for col in int_cols2:
@@ -148,35 +147,108 @@ def plot_pitch_breaks(ax_breaks, df_game, pitch_map):
             label=pitch_desc,
             color=current_color,
             alpha=0.6,
-            s=50
+            s=50,
+            zorder=3
         )
 
-    ax_breaks.axvline(0, color='gray', linestyle='--')
-    ax_breaks.axhline(0, color='gray', linestyle='--')
+    ax_breaks.set_aspect('equal')
+    ax_breaks.set_xlim([-30, 30])
+    ax_breaks.set_ylim([-30, 30])
+    ax_breaks.set_xticks(range(-30, 35, 5))
+    ax_breaks.set_yticks(range(-30, 35, 5))
+
+    ticks = [x for x in range(-30, 35, 5) if x != 0]
+
+    for x in ticks:
+        line = ax_breaks.axvline(x, color='lightgray', linewidth=0.8, zorder=1)
+        line.set_dashes([2, 4])  # 2 points dash, 4 points space
+
+    for y in ticks:
+        line = ax_breaks.axhline(y, color='lightgray', linewidth=0.8, zorder=1)
+        line.set_dashes([2, 4])  # same dash pattern
+
+    # Solid lines at origin (above grid, below scatter)
+    ax_breaks.axhline(0, color='black', linewidth=1.5, zorder=2)
+    ax_breaks.axvline(0, color='black', linewidth=1.5, zorder=2)
 
     ax_breaks.set_xlabel("Horizontal Break (in)")
     ax_breaks.set_ylabel("Induced Vertical Break (in)")
-    ax_breaks.set_title("Pitch Breaks")
+
+    for spine in ax_breaks.spines.values():
+        spine.set_visible(False)
+
+    ax_breaks.tick_params(axis='both', which='both', length=0, labelsize=6)
 
     return summary_df, unique_pitch_types, pitch_colors_dict, desc_to_code_dict
 
 
-def plot_strike_zone(ax, title, bat_side, df_game, unique_pitch_types, desc_to_code_dict, pitch_colors_dict):
+def plot_strike_zone(ax, title, bat_side, df_game, unique_pitch_types, desc_to_code_dict, pitch_colors_dict, svg_path):
     # --- Draw the strike zone box ---
     strike_zone = file_utils.draw_strike_zone_rect()
+    strike_zone.set_zorder(-10)
     ax.add_patch(strike_zone)
-
-    padding_x = 0.25
-    padding_y = 0.25
-
-    # Based on actual box size
-    ax.set_xlim(-1 - padding_x, 1 + padding_x)
-    ax.set_ylim(0.75 - padding_y, 4 + padding_y)
-    ax.set_aspect('equal')
     ax.set_title(title)
 
     # --- Filter data by batter side ---
     filtered_df_game = df_game[df_game['bat_side'] == bat_side].copy()
+
+    with open(svg_path, 'r', encoding='utf-8') as f:
+        svg_content = f.read()
+
+    # Convert SVG to PNG bytes
+    png_bytes = cairosvg.svg2png(bytestring=svg_content.encode('utf-8'))
+    image = Image.open(io.BytesIO(png_bytes)).convert("RGBA")
+
+
+    if bat_side == 'L':
+        xmin, xmax = -1.7, 0.8
+        ymin, ymax = 1.1, 4.6
+    else:
+        xmin, xmax = 2, 4.5
+        ymin, ymax = 1.1, 4.6
+
+    # Compute centers
+    x_center = (xmin + xmax) / 2
+    y_center = (ymin + ymax) / 2
+
+    # Half sizes
+    half_width = (xmax - xmin) / 2
+    half_height = (ymax - ymin) / 2
+
+    # Scale factor (e.g., 1.5)
+    scale_svg = 1.8
+
+    # New half sizes after scaling
+    new_half_width = half_width * scale_svg
+    new_half_height = half_height * scale_svg
+
+    # New scaled extents, keeping center fixed
+    xmin_scaled = x_center - new_half_width
+    xmax_scaled = x_center + new_half_width
+    ymin_scaled = y_center - new_half_height
+    ymax_scaled = y_center + new_half_height
+
+    # Display image with scaled extent
+    ax.imshow(image, extent=[xmin_scaled, xmax_scaled, ymin_scaled, ymax_scaled], aspect='auto', zorder=-10)
+
+    padding_x = 0.25
+    padding_y = 0.25
+
+    scale_factor = 2.25
+
+    x_center = 0
+    y_center = (0.75 + 4) / 2
+
+    half_width = (1 + padding_x)
+    half_height = (4 - 0.75) / 2 + padding_y
+
+    # scaled half-width and half-height
+    new_half_width = half_width * scale_factor
+    new_half_height = half_height * scale_factor
+
+    ax.set_xlim(x_center - new_half_width, x_center + new_half_width)
+    ax.set_ylim(y_center - new_half_height, y_center + new_half_height)
+    ax.set_aspect('equal')
 
     # --- Grid for KDE evaluation ---
     x_min, x_max = ax.get_xlim()
@@ -211,10 +283,12 @@ def plot_strike_zone(ax, title, bat_side, df_game, unique_pitch_types, desc_to_c
                 continue
 
             cumsum /= total
-            level_75 = Z_sorted[np.searchsorted(cumsum, 0.5)]
+            level_75 = Z_sorted[np.searchsorted(cumsum, 0.3)]
 
             # Extract contour at 75% level
             contours = ax.contour(xx, yy, Z, levels=[level_75], linewidths=1.5, colors='none')
+            for coll in contours.collections:
+                coll.set_zorder(10)
 
             # Get the largest path
             max_area = 0
@@ -230,11 +304,11 @@ def plot_strike_zone(ax, title, bat_side, df_game, unique_pitch_types, desc_to_c
 
             if main_path is not None:
                 color = pitch_colors_dict.get(pitch_desc, 'gray')
-                patch = PathPatch(main_path, facecolor=color, edgecolor=color, alpha=0.4, lw=2)
+                patch = PathPatch(main_path, facecolor=color, edgecolor=color, alpha=0.4, lw=2, zorder=10)
                 ax.add_patch(patch)
 
                 # Outline
-                ax.plot(main_path.vertices[:, 0], main_path.vertices[:, 1], color=color, lw=2)
+                ax.plot(main_path.vertices[:, 0], main_path.vertices[:, 1], color=color, lw=2,  zorder=11)
 
                 # Dummy legend
                 ax.plot([], [], color=color, label=pitch_desc, linewidth=5, alpha=0.6)
@@ -278,16 +352,16 @@ def plot_pitch_usage_bar(ax, df_game, pitch_map, pitch_colors_dict):
         color = pitch_colors_dict.get(desc, 'gray')
 
         # Plot bars
-        ax.barh(i, lhb_pct[pt], color=color, alpha=0.6, edgecolor='black')  # LHB: right side
-        ax.barh(i, -rhb_pct[pt], color=color, alpha=0.6, edgecolor='black')  # RHB: left side
+        ax.barh(i, -lhb_pct[pt], color=color, alpha=0.6, edgecolor='black')  # LHB: right side
+        ax.barh(i, rhb_pct[pt], color=color, alpha=0.6, edgecolor='black')  # RHB: left side
 
         # Centered count text inside bars
         count_l = int(lhb_counts[pt])
         count_r = int(rhb_counts[pt])
         if count_l > 0:
-            ax.text(lhb_pct[pt] / 2, i, f"{count_l}", va='center', ha='center', fontsize=8)
+            ax.text(-lhb_pct[pt] / 2, i, f"{count_l}", va='center', ha='center', fontsize=8)
         if count_r > 0:
-            ax.text(-rhb_pct[pt] / 2, i, f"{count_r}", va='center', ha='center', fontsize=8)
+            ax.text(rhb_pct[pt] / 2, i, f"{count_r}", va='center', ha='center', fontsize=8)
 
     ax.axvline(0, color='black', linewidth=1)
     ax.set_xlim(-100, 100)
@@ -300,8 +374,7 @@ def plot_pitch_usage_bar(ax, df_game, pitch_map, pitch_colors_dict):
     ax.spines[['left', 'top', 'right']].set_visible(False)
 
 
-def plot_velocity_distributions(ax, title, df_game, unique_pitch_types, pitch_colors_dict, desc_to_code_dict):
-    ax.set_title(title)
+def plot_velocity_distributions(ax, df_game, unique_pitch_types, pitch_colors_dict, desc_to_code_dict):
     ax.set_xlabel("Release Speed (MPH)")
     ax.set_ylabel("Density")
 
@@ -339,7 +412,7 @@ def plot_spray(ax, svg_path, df_game):
         svg_content = f.read()
 
     svg_content = re.sub(
-        r'(#distances\s*\{\s*visibility\s*:\s*)visible(\s*;?\s*\})',
+        r'(#distances\s*\{\s*visibility\s*:\s*)visible(\s*;?\s*})',
         r'\1hidden\2',
         svg_content,
         flags=re.IGNORECASE
@@ -349,7 +422,8 @@ def plot_spray(ax, svg_path, df_game):
     image = Image.open(io.BytesIO(png_bytes))
 
     # Filter dataframe & last per ab_id
-    filtered = df_game[df_game['detailed_pitch_outcome'].isin(['D', 'E', 'X'])]
+    filtered = df_game[df_game['detailed_pitch_outcome'].isin(['D', 'E', 'X'])].copy()
+    filtered['event_label'] = filtered['event_type'].apply(file_utils.get_event_label)
     last_per_ab = filtered.groupby('ab_id').last().reset_index()
 
     # Define SVG bounds (example, replace with your actual bounds)
@@ -360,32 +434,27 @@ def plot_spray(ax, svg_path, df_game):
     ax.imshow(image, extent=[xmin, xmax, ymin, ymax], aspect='auto')
 
     # Plot points
-    event_types = last_per_ab['event_type'].unique()
-    colors = plt.cm.get_cmap('tab10', len(event_types))
-    color_map = dict(zip(event_types, colors.colors))
+    label_order = ['X', '1B', '2B', '3B', 'HR']
+    color_map = file_utils.SPRAY_CMAP
 
-    for event_type, group in last_per_ab.groupby('event_type'):
-        # Apply transformation to each point
-        # transformed_coords = group.apply(
-        #     lambda row: file_utils.mlbam_xy_transformation(row['hit_location_X'], row['hit_location_Y']),
-        #     axis=1
-        # )
-
+    for event_label, group in last_per_ab.groupby('event_label'):
         transformed_coords = group.apply(
-            lambda row: file_utils.mlbam_xy_transformation(row['hit_location_X'], row['hit_location_Y'],
-                        row['hit_distance']),
+            lambda row: file_utils.mlbam_xy_transformation(
+                row['hit_location_X'],
+                row['hit_location_Y'],
+                row['hit_distance']
+            ),
             axis=1
         )
 
-        # Unpack transformed coordinates into separate lists/arrays
         transformed_x = transformed_coords.apply(lambda coord: coord[0])
         transformed_y = transformed_coords.apply(lambda coord: coord[1])
 
         ax.scatter(
             transformed_x,
             transformed_y,
-            label=event_type,
-            color=color_map[event_type],
+            label=event_label,
+            color=color_map.get(event_label, 'black'),
             edgecolor='black',
             alpha=0.8,
             s=50
@@ -410,7 +479,21 @@ def plot_spray(ax, svg_path, df_game):
     ax.set_aspect('equal')
     ax.axis("off")
 
-    ax.legend(title='Event Type', loc="upper right", framealpha=0.3)
+    present_labels = last_per_ab['event_label'].unique()
+
+    legend_elements = [
+        Line2D([0], [0], marker='o', color='w', label=label,
+               markerfacecolor=color_map.get(label, 'black'), markersize=10)
+        for label in label_order if label in present_labels
+    ]
+
+    ax.legend(
+        handles=legend_elements,
+        loc='upper center',
+        bbox_to_anchor=(0.5, -0.05),  # Moved closer to plot
+        ncol=len(legend_elements),
+        frameon=False
+    )
 
 
 def plot_pitch_by_pitch_info(ax_stats, summary_df):
@@ -456,9 +539,9 @@ def plot_pitcher_dashboard(player, date, player_info, pbp_df, pitch_map, year=da
     ax_breaks_legend = fig.add_subplot(top2_gs[1, :])
 
     mid_gs = GridSpecFromSubplotSpec(1, 7, subplot_spec=outer_gs[2], hspace=0)
-    ax_rhb = fig.add_subplot(mid_gs[0, :2])
+    ax_lhb = fig.add_subplot(mid_gs[0, :2])
     ax_mirror_bar = fig.add_subplot(mid_gs[0, 2:5])
-    ax_lhb = fig.add_subplot(mid_gs[0, 5:])
+    ax_rhb = fig.add_subplot(mid_gs[0, 5:])
 
     # --- Bottom Block: Breaks, Velo, Stats ---
     bot_gs = GridSpecFromSubplotSpec(1, 6, subplot_spec=outer_gs[3], hspace=0)
@@ -469,7 +552,7 @@ def plot_pitcher_dashboard(player, date, player_info, pbp_df, pitch_map, year=da
     bot_gs2 = GridSpecFromSubplotSpec(1, 5, subplot_spec=outer_gs[4], hspace=0)
     ax_stats = fig.add_subplot(bot_gs2[0, :])
 
-    for ax in [ax_img, ax_title, ax_table, ax_breaks, ax_lhb, ax_rhb, ax_stats]:
+    for ax in [ax_img, ax_title, ax_table, ax_lhb, ax_rhb, ax_stats]:
         ax.axis("off")
 
     # Player Image
@@ -482,20 +565,21 @@ def plot_pitcher_dashboard(player, date, player_info, pbp_df, pitch_map, year=da
 
     plot_game_overview(ax_table, df_game)
 
-    summary_df, unique_pitch_types, pitch_colors_dict, desc_to_code_dict = plot_pitch_breaks(ax_breaks, df_game, pitch_map)
+    summary_df, unique_pitch_types, pitch_colors_dict, desc_to_code_dict = plot_pitch_breaks(ax_breaks, df_game,
+                                                                                             pitch_map)
 
-    plot_velocity_distributions(ax_velocities, "Velocities", df_game, unique_pitch_types, pitch_colors_dict, desc_to_code_dict)
+    plot_velocity_distributions(ax_velocities, df_game, unique_pitch_types, pitch_colors_dict,
+                                desc_to_code_dict)
 
     plot_spray(ax_spray, stadium_path, df_game)
 
     plot_legend(ax_breaks_legend, df_game, unique_pitch_types, pitch_colors_dict, desc_to_code_dict)
 
+    plot_strike_zone(ax_lhb, "Pitch Locations vs LHB", 'L', df_game, unique_pitch_types, desc_to_code_dict,
+                     pitch_colors_dict, '../Misc_Images/rhb.svg')
 
     plot_strike_zone(ax_rhb, "Pitch Locations vs RHB", 'R', df_game, unique_pitch_types, desc_to_code_dict,
-                     pitch_colors_dict)
-
-    plot_strike_zone(ax_lhb, "Pitch Locations vs LHB", 'L', df_game, unique_pitch_types, desc_to_code_dict,
-                     pitch_colors_dict)
+                     pitch_colors_dict, '../Misc_Images/lhb.svg')
 
     plot_pitch_usage_bar(ax_mirror_bar, df_game, pitch_map, pitch_colors_dict)
 
