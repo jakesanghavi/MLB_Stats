@@ -1,22 +1,58 @@
 import matplotlib.pyplot as plt
+import pandas as pd
 from PIL import Image
 import requests
 from io import BytesIO
 from datetime import date
 from matplotlib.gridspec import GridSpec, GridSpecFromSubplotSpec
 import plotting_helper_master
+from matplotlib import rcParams, font_manager
+from pyfonts import load_google_font
+import file_utils
 
 
 def plot_pitcher_dashboard(player, todays_date, player_info, pbp_df, pitch_map, year=date.today().year):
+    fn = "SUSE"
+    font_regular = load_google_font(fn, weight="regular")
+    font_bold = load_google_font(fn, weight="bold")
+
+    # Register both fonts
+    font_path_regular = font_regular.get_file()
+    font_path_bold = font_bold.get_file()
+    font_manager.fontManager.addfont(font_path_regular)
+    font_manager.fontManager.addfont(font_path_bold)
+
+    # Extract the regular font family name
+    font_name = font_manager.FontProperties(fname=font_path_regular).get_name()
+
     pitcher = player_info[player_info['fullName'] == player]
 
     df_game = pbp_df[(pbp_df['pitcher_id'] == pitcher['id'].iloc[0]) & (pbp_df['date'] == todays_date)].copy()
-    # df_game[['ab_id', 'detailed_pitch_outcome', 'event_type', 'description']].to_csv('df_game.csv', index=False)
 
     home = df_game['top_of_inning'].iloc[0] == 1
     opponent = df_game['home_team_abbr'].iloc[0] if not home else df_game['away_team_abbr'].iloc[0]
     against = '@' if not home else 'vs.'
     stadium_path = '../Stadiums/' + df_game['home_team_abbr'].iloc[0] + '_stadium.svg'
+
+    rosters = pd.read_csv('../Misc_Data/mlb_40man_roster.csv')
+    team_id = rosters[rosters['full_name'] == player]['team_id'].iloc[0]
+    team_map = pd.read_csv('../Misc_Data/team_id_map.csv')
+    team_name = team_map[team_map['id'] == team_id]['teamCode'].iloc[0]
+    cdf = pd.read_csv('../Misc_Data/team_colors.csv')
+    team_colors = list(cdf[cdf['Team'] == team_name].iloc[0].T)
+    c1, c2 = team_colors[1], team_colors[2]
+    ax_color, fig_color = file_utils.lighten_color(c1), file_utils.lighten_color(c2)
+
+    rcParams.update({
+        'font.family': font_name,
+        'font.size': 10,
+        'axes.titlesize': 16,
+        'axes.labelsize': 14,
+        'axes.facecolor': ax_color,
+        'figure.facecolor': fig_color,
+        'axes.edgecolor': '#cccccc',
+        'axes.titleweight': 'bold'  # Only titles use the bold variant
+    })
 
     # Load player image
     response = requests.get(pitcher['img'].iloc[0])
@@ -32,16 +68,16 @@ def plot_pitcher_dashboard(player, todays_date, player_info, pbp_df, pitch_map, 
     # --- Top Block: Title, Image ---
     top_gs = GridSpecFromSubplotSpec(1, 5, subplot_spec=outer_gs[0], hspace=0)
     ax_title = fig.add_subplot(top_gs[0, :3])
-    ax_img = fig.add_subplot(top_gs[0, 3:4])
+    ax_img = fig.add_subplot(top_gs[0, 3:])
 
     top2_gs = GridSpecFromSubplotSpec(2, 5, subplot_spec=outer_gs[1], hspace=0)
     ax_table = fig.add_subplot(top2_gs[0, :])
     ax_breaks_legend = fig.add_subplot(top2_gs[1, :])
 
-    mid_gs = GridSpecFromSubplotSpec(1, 7, subplot_spec=outer_gs[2], hspace=0)
-    ax_lhb = fig.add_subplot(mid_gs[0, :2])
-    ax_mirror_bar = fig.add_subplot(mid_gs[0, 2:5])
-    ax_rhb = fig.add_subplot(mid_gs[0, 5:])
+    mid_gs = GridSpecFromSubplotSpec(1, 9, subplot_spec=outer_gs[2], hspace=0)
+    ax_lhb = fig.add_subplot(mid_gs[0, :3])
+    ax_mirror_bar = fig.add_subplot(mid_gs[0, 3:6])
+    ax_rhb = fig.add_subplot(mid_gs[0, 6:])
 
     # --- Bottom Block: Breaks, Velo, Stats ---
     bot_gs = GridSpecFromSubplotSpec(1, 6, subplot_spec=outer_gs[3], hspace=0)
@@ -57,11 +93,20 @@ def plot_pitcher_dashboard(player, todays_date, player_info, pbp_df, pitch_map, 
 
     # Player Image
     ax_img.imshow(player_img)
-    ax_img.set_title(player, fontsize=14)
+    ax_img.set_title(player)
 
     # Title
-    ax_title.text(0, 0.8, f"Daily Pitching Summary\n{year} MLB Season", fontsize=18, fontweight='bold')
-    ax_title.text(0, 0.4, f"{todays_date} {against} {opponent}", fontsize=14)
+    ax_title.text(
+        0, 0.8, f"Daily Pitching Summary\n{year} MLB Season",
+        fontsize=18, fontweight='bold', va='top'
+    )
+    ax_title.text(
+        0, 0.4, f"{todays_date} {against} {opponent}",
+        fontsize=14, va='top'
+    )
+
+    ax_title.set_facecolor(c1)
+    ax_img.set_facecolor(c1)
 
     plotting_helper_master.plot_game_overview(ax_table, df_game)
 
