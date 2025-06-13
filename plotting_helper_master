@@ -7,11 +7,52 @@ from scipy.stats import gaussian_kde
 import file_utils
 from matplotlib.lines import Line2D
 from matplotlib.font_manager import FontProperties
+from matplotlib.offsetbox import OffsetImage, AnnotationBbox
 import io
 import os
 import re
 os.environ['DYLD_FALLBACK_LIBRARY_PATH'] = '/opt/homebrew/lib'
 import cairosvg
+
+
+def plot_header(ax_header, ax_header_holder, c1, pitcher, todays_date, against, opponent, player_img):
+    # player_img = file_utils.make_color_transparent(player_img, '#c9c7cc', tol=35)
+    player_img = file_utils.remove_background(player_img)
+    ax_header.axis("off")  # no ticks or spines
+    ax_header.set_facecolor(c1)  # set background color
+
+    # Now place text and image inside ax_header:
+    # Text on left side
+    ax_header.text(
+        0.65, 0.75,
+        f"{pitcher}\nDaily Pitching Summary",
+        fontsize=18, fontweight='bold', va='top', ha='left',
+        transform=ax_header.transAxes
+    )
+    ax_header.text(
+        0.65, 0.3,
+        f"{todays_date} {against} {opponent}",
+        fontsize=14, va='top', ha='left',
+        transform=ax_header.transAxes
+    )
+
+    imagebox = OffsetImage(player_img, zoom=0.17)  # Adjust zoom for size
+
+    bbox = ax_header_holder.get_position()
+
+    x0, y0 = bbox.x0, bbox.y0
+    ab = AnnotationBbox(
+        imagebox,
+        (x0, y0),
+        xycoords='figure fraction',  # <- note this
+        box_alignment=(0, 0),  # <- anchor image bottom-left
+        frameon=False,
+        zorder=1
+    )
+    ax_header.add_artist(ab)
+    ax_header.axis('off')
+    for spine in ax_header.spines.values():
+        spine.set_visible(False)
 
 
 def plot_game_overview(ax_table, df_game):
@@ -62,9 +103,17 @@ def plot_game_overview(ax_table, df_game):
     overall_table = ax_table.table(cellText=table_text.values, colLabels=table_text.columns, loc='center',
                                    cellLoc='center')
     for (row, col), cell in overall_table.get_celld().items():
+        # Align all cells
+        cell.get_text().set_horizontalalignment('center')
+        cell.get_text().set_verticalalignment('center')
+
+        cell.PAD = 0.8
+
+        # Bold header
         if row == 0:
             cell.set_text_props(fontproperties=FontProperties(weight='bold'))
     # ax_table.set_title("Pitching Line")
+    ax_table.axis('off')
 
 
 def plot_legend(ax_breaks_legend, df_game, unique_pitch_types, pitch_colors_dict, desc_to_code_dict):
@@ -164,7 +213,7 @@ def plot_pitch_breaks(ax_breaks, df_game, pitch_map):
     ax_breaks.axvline(0, color='black', linewidth=1.5, zorder=2)
 
     ax_breaks.set_xlabel("Horizontal Break (in)")
-    ax_breaks.set_ylabel("Induced Vertical Break (in)")
+    ax_breaks.set_ylabel("Vertical Break (in)")
 
     for spine in ax_breaks.spines.values():
         spine.set_visible(False)
@@ -464,5 +513,12 @@ def plot_pitch_by_pitch_info(ax_stats, summary_df):
     pitches_table = ax_stats.table(cellText=summary_df.values, colLabels=summary_df.columns, loc='center',
                                    cellLoc='center')
     for (row, col), cell in pitches_table.get_celld().items():
+        # Align all cells
+        cell.get_text().set_horizontalalignment('center')
+        cell.get_text().set_verticalalignment('center')
+
+        cell.PAD = 0.8
+
+        # Bold header
         if row == 0:
             cell.set_text_props(fontproperties=FontProperties(weight='bold'))
