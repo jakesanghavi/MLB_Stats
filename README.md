@@ -11,8 +11,6 @@ Grabs data from the official MLB API and creates insightful plots for player ana
 # Package Requiements
 
 ```
-__future__
-ast  
 bs4  
 cairosvg  
 datetime  
@@ -28,6 +26,5 @@ pyfonts
 re  
 requests  
 scipy  
-time  
-xml  
+time    
 ```
