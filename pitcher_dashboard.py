@@ -67,8 +67,15 @@ def plot_pitcher_dashboard(player, todays_date, player_info, pbp_df, pitch_map, 
 
     # --- Top Block: Title, Image ---
     top_gs = GridSpecFromSubplotSpec(1, 5, subplot_spec=outer_gs[0], hspace=0)
-    ax_title = fig.add_subplot(top_gs[0, :3])
-    ax_img = fig.add_subplot(top_gs[0, 3:])
+    ax_header_holder = fig.add_subplot(top_gs[0, :])
+
+    for spine in ax_header_holder.spines.values():
+        spine.set_visible(False)
+
+    ax_header_holder.set_xticklabels([])
+    ax_header_holder.set_yticklabels([])
+
+    ax_header_holder.tick_params(bottom=False, left=False)
 
     top2_gs = GridSpecFromSubplotSpec(2, 5, subplot_spec=outer_gs[1], hspace=0)
     ax_table = fig.add_subplot(top2_gs[0, :])
@@ -88,25 +95,9 @@ def plot_pitcher_dashboard(player, todays_date, player_info, pbp_df, pitch_map, 
     bot_gs2 = GridSpecFromSubplotSpec(1, 5, subplot_spec=outer_gs[4], hspace=0)
     ax_stats = fig.add_subplot(bot_gs2[0, :])
 
-    for ax in [ax_img, ax_title, ax_table, ax_lhb, ax_rhb, ax_stats]:
-        ax.axis("off")
+    ax_header = fig.add_subplot(outer_gs[0])
 
-    # Player Image
-    ax_img.imshow(player_img)
-    ax_img.set_title(player)
-
-    # Title
-    ax_title.text(
-        0, 0.8, f"Daily Pitching Summary\n{year} MLB Season",
-        fontsize=18, fontweight='bold', va='top'
-    )
-    ax_title.text(
-        0, 0.4, f"{todays_date} {against} {opponent}",
-        fontsize=14, va='top'
-    )
-
-    ax_title.set_facecolor(c1)
-    ax_img.set_facecolor(c1)
+    plotting_helper_master.plot_header(ax_header, ax_header_holder, c1, player, todays_date, against, opponent, player_img)
 
     plotting_helper_master.plot_game_overview(ax_table, df_game)
 
