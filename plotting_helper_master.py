@@ -72,8 +72,16 @@ def plot_header(fig, ax_header, ax_header_holder, c1, pitcher, todays_date, logo
     # Determine logo scaling
     _, logo1_height = logo1.size
     _, logo2_height = logo2.size
-    logo1_zoom = target_height_px_logo / logo1_height
-    logo2_zoom = target_height_px_logo / logo2_height
+    max_logo_height = target_height_px_logo
+    max_logo_width = box_height_px * 0.15  # adjust as needed
+
+    # logo1 scaling
+    logo1_w, logo1_h = logo1.size
+    logo1_zoom = min(max_logo_height / logo1_h, max_logo_width / logo1_w)
+
+    # logo2 scaling
+    logo2_w, logo2_h = logo2.size
+    logo2_zoom = min(max_logo_height / logo2_h, max_logo_width / logo2_w)
 
     # X positions for layout (tweak spacing as needed)
     start_x = bbox.x1 - 0.075  # start from far right
@@ -84,30 +92,34 @@ def plot_header(fig, ax_header, ax_header_holder, c1, pitcher, todays_date, logo
         'logo2': start_x - spacing,
         '@': start_x - 2 * spacing,
         'logo1': start_x - 3 * spacing,
-        'score1': start_x - 4 * spacing
+        'score1': start_x - 4 * spacing,
+        'author': start_x + 0.01
     }
 
-    y_pos = y0 + 0.042  # vertical alignment
+    y_pos_text = y0 + 0.042  # vertical alignment
+    y_pos_img = y0 + 0.07
 
     # Add logo1
     imgbox1 = OffsetImage(logo1, zoom=logo1_zoom)
-    ab1 = AnnotationBbox(imgbox1, (positions['logo1'], y_pos), xycoords='figure fraction',
-                         box_alignment=(0.5, 0), frameon=False, zorder=3)
+    ab1 = AnnotationBbox(imgbox1, (positions['logo1'], y_pos_img), xycoords='figure fraction',
+                         box_alignment=(0.5, 0.5), frameon=False, zorder=3)
     ax_header.add_artist(ab1)
 
     # Add logo2
     imgbox2 = OffsetImage(logo2, zoom=logo2_zoom)
-    ab2 = AnnotationBbox(imgbox2, (positions['logo2'], y_pos), xycoords='figure fraction',
-                         box_alignment=(0.5, 0), frameon=False, zorder=3)
+    ab2 = AnnotationBbox(imgbox2, (positions['logo2'], y_pos_img), xycoords='figure fraction',
+                         box_alignment=(0.5, 0.5), frameon=False, zorder=3)
     ax_header.add_artist(ab2)
 
     # Add scores and "@"
-    fig.text(positions['score1'], y_pos + 0.02, str(away_score), fontsize=16, ha='center',
+    fig.text(positions['score1'], y_pos_text + 0.02, str(away_score), fontsize=16, ha='center',
              va='bottom', color=text_color, transform=fig.transFigure, fontweight='bold')
-    fig.text(positions['score2'], y_pos + 0.02, str(home_score), fontsize=16, ha='center',
+    fig.text(positions['score2'], y_pos_text + 0.02, str(home_score), fontsize=16, ha='center',
              va='bottom', color=text_color, transform=fig.transFigure, fontweight='bold')
-    fig.text(positions['@'], y_pos + 0.02, "@", fontsize=16, ha='center',
+    fig.text(positions['@'], y_pos_text + 0.02, "@", fontsize=16, ha='center',
              va='bottom', color=text_color, transform=fig.transFigure, fontweight='bold')
+    fig.text(positions['author'], y_pos_text - 0.04, "Author: Jake Sanghavi", fontsize=9, ha='center',
+             va='bottom', color=text_color, transform=fig.transFigure)
 
     ax_header.add_artist(ab_hs)
     ax_header.axis('off')
@@ -115,7 +127,7 @@ def plot_header(fig, ax_header, ax_header_holder, c1, pitcher, todays_date, logo
         spine.set_visible(False)
 
 
-def plot_game_overview(ax_table, df_game):
+def plot_game_overview(ax_table, df_game, c1):
     # Plate Appearances = number of unique ab_id
     bf = df_game['ab_id'].nunique()
     fulls = (df_game['inning'].max() - df_game['inning'].min()) * 3
@@ -168,11 +180,15 @@ def plot_game_overview(ax_table, df_game):
         cell.get_text().set_verticalalignment('center')
 
         cell.PAD = 0.8
+        text_color = 'white' if file_utils.is_dark(c1) else 'black'
 
         # Bold header
         if row == 0:
             cell.set_text_props(fontproperties=FontProperties(weight='bold'))
-    # ax_table.set_title("Pitching Line")
+            cell.set_facecolor(c1)
+            cell.get_text().set_color(text_color)
+        else:
+            cell.set_facecolor(file_utils.lighten_color(c1, 0.7) if row % 2 == 1 else file_utils.lighten_color(c1, 0.9))
     ax_table.axis('off')
 
 
@@ -208,7 +224,9 @@ def plot_legend(ax_breaks_legend, df_game, unique_pitch_types, pitch_colors_dict
 
 
 def plot_pitch_breaks(ax_breaks, df_game, pitch_map):
-    df_game['whiff'] = (df_game['detailed_pitch_outcome'] == 'S').astype(int)
+    df_game['whiff'] = ((df_game['detailed_pitch_outcome'] == 'S') |
+                        (df_game['detailed_pitch_outcome'] == 'W') |
+                        (df_game['detailed_pitch_outcome'] == 'T')).astype(int)
 
     summary_df = df_game.groupby(['pitch_type'], as_index=False).agg(
         Count=('pitch_type', 'size'),
@@ -567,7 +585,7 @@ def plot_spray(ax, svg_path, df_game):
     )
 
 
-def plot_pitch_by_pitch_info(ax_stats, summary_df):
+def plot_pitch_by_pitch_info(ax_stats, summary_df, c1):
     ax_stats.axis('tight')
     ax_stats.axis('off')
     pitches_table = ax_stats.table(cellText=summary_df.values, colLabels=summary_df.columns, loc='center',
@@ -580,5 +598,12 @@ def plot_pitch_by_pitch_info(ax_stats, summary_df):
         cell.PAD = 0.8
 
         # Bold header
+        text_color = 'white' if file_utils.is_dark(c1) else 'black'
+
+        # Bold header
         if row == 0:
             cell.set_text_props(fontproperties=FontProperties(weight='bold'))
+            cell.set_facecolor(c1)
+            cell.get_text().set_color(text_color)
+        else:
+            cell.set_facecolor(file_utils.lighten_color(c1, 0.7) if row % 2 == 1 else file_utils.lighten_color(c1, 0.9))
