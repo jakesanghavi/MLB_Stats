@@ -28,14 +28,13 @@ def plot_pitcher_dashboard(player, todays_date, player_info, pbp_df, pitch_map, 
     pitcher = player_info[player_info['fullName'] == player]
 
     df_game = pbp_df[(pbp_df['pitcher_id'] == pitcher['id'].iloc[0]) & (pbp_df['date'] == todays_date)].copy()
+    # df_game[['inning', 'ab_id', 'pitch_type', 'description', 'detailed_pitch_outcome']]
+    # .to_csv('df_game.csv', index=False)
     score_game_df = pbp_df[pbp_df['game_id'] == df_game['game_id'].iloc[0]]
     last_row = score_game_df.iloc[-1]
     away_score = last_row['away_score']
     home_score = last_row['home_score']
 
-    home = df_game['top_of_inning'].iloc[0] == 1
-    opponent = df_game['home_team_abbr'].iloc[0] if not home else df_game['away_team_abbr'].iloc[0]
-    against = '@' if not home else 'vs.'
     stadium_path = '../Stadiums/' + df_game['home_team_abbr'].iloc[0] + '_stadium.svg'
 
     rosters = pd.read_csv('../Misc_Data/mlb_40man_roster.csv')
@@ -45,7 +44,7 @@ def plot_pitcher_dashboard(player, todays_date, player_info, pbp_df, pitch_map, 
     cdf = pd.read_csv('../Misc_Data/team_colors.csv')
     team_colors = list(cdf[cdf['Team'] == team_name].iloc[0].T)
     c1, c2 = team_colors[1], team_colors[2]
-    ax_color, fig_color = file_utils.lighten_color(c1), file_utils.lighten_color(c2)
+    ax_color, fig_color = file_utils.lighten_color(c1, 0.7), file_utils.lighten_color(c2, 0.7)
 
     rcParams.update({
         'font.family': font_name,
@@ -109,7 +108,7 @@ def plot_pitcher_dashboard(player, todays_date, player_info, pbp_df, pitch_map, 
     plotting_helper_master.plot_header(fig, ax_header, ax_header_holder, c1, player, todays_date, logo1, logo2,
                                        away_score, home_score, player_img)
 
-    plotting_helper_master.plot_game_overview(ax_table, df_game)
+    plotting_helper_master.plot_game_overview(ax_table, df_game, c1)
 
     summary_df, unique_pitch_types, pitch_colors_dict, desc_to_code_dict = plotting_helper_master.plot_pitch_breaks(
         ax_breaks, df_game,
@@ -133,6 +132,6 @@ def plot_pitcher_dashboard(player, todays_date, player_info, pbp_df, pitch_map, 
 
     plotting_helper_master.plot_pitch_usage_bar(ax_mirror_bar, df_game, pitch_map, pitch_colors_dict)
 
-    plotting_helper_master.plot_pitch_by_pitch_info(ax_stats, summary_df)
+    plotting_helper_master.plot_pitch_by_pitch_info(ax_stats, summary_df, c1)
 
     plt.show()
