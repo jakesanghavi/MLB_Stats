@@ -15,41 +15,101 @@ os.environ['DYLD_FALLBACK_LIBRARY_PATH'] = '/opt/homebrew/lib'
 import cairosvg
 
 
-def plot_header(ax_header, ax_header_holder, c1, pitcher, todays_date, against, opponent, player_img):
+def plot_header(fig, ax_header, ax_header_holder, c1, pitcher, todays_date, logo1, logo2, away_score, home_score, player_img):
     # player_img = file_utils.make_color_transparent(player_img, '#c9c7cc', tol=35)
     player_img = file_utils.remove_background(player_img)
     ax_header.axis("off")  # no ticks or spines
     ax_header.set_facecolor(c1)  # set background color
 
+    text_color = 'white' if file_utils.is_dark(c1) else 'black'
+
     # Now place text and image inside ax_header:
     # Text on left side
     ax_header.text(
-        0.65, 0.75,
+        0.35, 0.75,
         f"{pitcher}\nDaily Pitching Summary",
         fontsize=18, fontweight='bold', va='top', ha='left',
-        transform=ax_header.transAxes
+        transform=ax_header.transAxes,
+        color = text_color
     )
     ax_header.text(
-        0.65, 0.3,
-        f"{todays_date} {against} {opponent}",
+        0.35, 0.3,
+        f"{todays_date}",
         fontsize=14, va='top', ha='left',
-        transform=ax_header.transAxes
+        transform=ax_header.transAxes,
+        color=text_color
     )
 
-    imagebox = OffsetImage(player_img, zoom=0.17)  # Adjust zoom for size
+    bbox = ax_header_holder.get_position()
+    x0, y0 = bbox.x0, bbox.y0
+    _, image_height = player_img.size
 
+    fig_width, fig_height = fig.get_size_inches() * fig.dpi
     bbox = ax_header_holder.get_position()
 
-    x0, y0 = bbox.x0, bbox.y0
-    ab = AnnotationBbox(
+    # Compute the height in pixels of the target box
+    box_height_px = bbox.height * fig_height
+    target_height_px = box_height_px * 0.35  # 95% of height
+
+    target_height_px_logo = box_height_px * 0.15
+
+    zoom = target_height_px / image_height
+
+    imagebox = OffsetImage(player_img, zoom=zoom)  # Adjust zoom for size
+
+    ab_hs = AnnotationBbox(
         imagebox,
-        (x0, y0),
+        (x0 + 0.1, y0),
         xycoords='figure fraction',  # <- note this
         box_alignment=(0, 0),  # <- anchor image bottom-left
         frameon=False,
         zorder=1
     )
-    ax_header.add_artist(ab)
+
+    logo1 = logo1.convert("RGBA")
+    logo2 = logo2.convert("RGBA")
+
+    # Determine logo scaling
+    _, logo1_height = logo1.size
+    _, logo2_height = logo2.size
+    logo1_zoom = target_height_px_logo / logo1_height
+    logo2_zoom = target_height_px_logo / logo2_height
+
+    # X positions for layout (tweak spacing as needed)
+    start_x = bbox.x1 - 0.075  # start from far right
+    spacing = 0.04
+
+    positions = {
+        'score2': start_x,
+        'logo2': start_x - spacing,
+        '@': start_x - 2 * spacing,
+        'logo1': start_x - 3 * spacing,
+        'score1': start_x - 4 * spacing
+    }
+
+    y_pos = y0 + 0.042  # vertical alignment
+
+    # Add logo1
+    imgbox1 = OffsetImage(logo1, zoom=logo1_zoom)
+    ab1 = AnnotationBbox(imgbox1, (positions['logo1'], y_pos), xycoords='figure fraction',
+                         box_alignment=(0.5, 0), frameon=False, zorder=3)
+    ax_header.add_artist(ab1)
+
+    # Add logo2
+    imgbox2 = OffsetImage(logo2, zoom=logo2_zoom)
+    ab2 = AnnotationBbox(imgbox2, (positions['logo2'], y_pos), xycoords='figure fraction',
+                         box_alignment=(0.5, 0), frameon=False, zorder=3)
+    ax_header.add_artist(ab2)
+
+    # Add scores and "@"
+    fig.text(positions['score1'], y_pos + 0.02, str(away_score), fontsize=16, ha='center',
+             va='bottom', color=text_color, transform=fig.transFigure, fontweight='bold')
+    fig.text(positions['score2'], y_pos + 0.02, str(home_score), fontsize=16, ha='center',
+             va='bottom', color=text_color, transform=fig.transFigure, fontweight='bold')
+    fig.text(positions['@'], y_pos + 0.02, "@", fontsize=16, ha='center',
+             va='bottom', color=text_color, transform=fig.transFigure, fontweight='bold')
+
+    ax_header.add_artist(ab_hs)
     ax_header.axis('off')
     for spine in ax_header.spines.values():
         spine.set_visible(False)
