@@ -4,6 +4,8 @@ from matplotlib.patches import Rectangle
 from scipy.ndimage import label
 import matplotlib.colors as mcolors
 import colorsys
+import cv2
+from PIL import Image
 
 SPRAY_CMAP = {
     '1B': '#fe6000',
@@ -198,3 +200,58 @@ def lighten_color(hex_color, amount=0.6):
     l = min(1, l + amount * (1 - l))  # increase lightness toward 1
     light_rgb = colorsys.hls_to_rgb(h, l, s)
     return mcolors.to_hex(light_rgb)
+
+
+def make_color_transparent(img, color='#c2c2c2', tol=20):
+    img_rgb = tuple(int(color.lstrip('#')[i:i + 2], 16) for i in (0, 2, 4))
+
+    img = img.convert("RGBA")
+    datas = img.getdata()
+
+    def close_enough(pixel, target, tol):
+        return all(abs(p - t) <= tol for p, t in zip(pixel[:3], target))
+
+    newData = []
+    for item in datas:
+        if close_enough(item, img_rgb, tol):
+            newData.append((255, 255, 255, 0))  # transparent
+        else:
+            newData.append(item)
+
+    img.putdata(newData)
+    return img
+
+
+def remove_background(player_img):
+    # Convert PIL to OpenCV BGR format
+    img = cv2.cvtColor(np.array(player_img.convert("RGB")), cv2.COLOR_RGB2BGR)
+
+    # Convert BGR to HSV
+    hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+
+    # Mask to detect gray pixels:
+    # HSV range tuned to capture low saturation (gray-ish) and medium-high value (brightness)
+    lower_gray = (0, 0, 70)   # Hue: any, Sat: 0-5 (almost no color), Value: 100+
+    upper_gray = (180, 5, 255)
+
+    mask_gray = cv2.inRange(hsv, lower_gray, upper_gray)
+
+    # Build mask of non-black pixels to avoid removing dark parts around gray
+    nzmask = cv2.inRange(hsv, (0, 0, 5), (180, 255, 255))
+    nzmask = cv2.erode(nzmask, np.ones((3, 3), np.uint8))
+
+    # Combine masks: only gray pixels that are non-black
+    mask = cv2.bitwise_and(mask_gray, nzmask)
+
+    # Convert original image to BGRA to add alpha channel
+    bgra = cv2.cvtColor(img, cv2.COLOR_BGR2BGRA)
+
+    # Set alpha=0 (transparent) where mask is non-zero (gray background)
+    bgra[:, :, 3] = np.where(mask > 0, 0, 255).astype(np.uint8)
+
+    # Convert BGRA to RGBA for PIL and create image
+    rgba = cv2.cvtColor(bgra, cv2.COLOR_BGRA2RGBA)
+    result_pil = Image.fromarray(rgba)
+
+    return result_pil
+
