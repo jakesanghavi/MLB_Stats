@@ -28,6 +28,10 @@ def plot_pitcher_dashboard(player, todays_date, player_info, pbp_df, pitch_map, 
     pitcher = player_info[player_info['fullName'] == player]
 
     df_game = pbp_df[(pbp_df['pitcher_id'] == pitcher['id'].iloc[0]) & (pbp_df['date'] == todays_date)].copy()
+    score_game_df = pbp_df[pbp_df['game_id'] == df_game['game_id'].iloc[0]]
+    last_row = score_game_df.iloc[-1]
+    away_score = last_row['away_score']
+    home_score = last_row['home_score']
 
     home = df_game['top_of_inning'].iloc[0] == 1
     opponent = df_game['home_team_abbr'].iloc[0] if not home else df_game['away_team_abbr'].iloc[0]
@@ -58,6 +62,9 @@ def plot_pitcher_dashboard(player, todays_date, player_info, pbp_df, pitch_map, 
     response = requests.get(pitcher['img'].iloc[0])
     player_img = Image.open(BytesIO(response.content))
 
+    logo1 = Image.open(f"../Logos/{df_game['away_team_abbr'].iloc[0]}.png")
+    logo2 = Image.open(f"../Logos/{df_game['home_team_abbr'].iloc[0]}.png")
+
     fig = plt.figure(figsize=(14, 10))
 
     plt.subplots_adjust(hspace=0.0, top=0.95, bottom=0)
@@ -76,6 +83,8 @@ def plot_pitcher_dashboard(player, todays_date, player_info, pbp_df, pitch_map, 
     ax_header_holder.set_yticklabels([])
 
     ax_header_holder.tick_params(bottom=False, left=False)
+
+    ax_header_holder.set_facecolor(c1)
 
     top2_gs = GridSpecFromSubplotSpec(2, 5, subplot_spec=outer_gs[1], hspace=0)
     ax_table = fig.add_subplot(top2_gs[0, :])
@@ -97,7 +106,8 @@ def plot_pitcher_dashboard(player, todays_date, player_info, pbp_df, pitch_map, 
 
     ax_header = fig.add_subplot(outer_gs[0])
 
-    plotting_helper_master.plot_header(ax_header, ax_header_holder, c1, player, todays_date, against, opponent, player_img)
+    plotting_helper_master.plot_header(fig, ax_header, ax_header_holder, c1, player, todays_date, logo1, logo2,
+                                       away_score, home_score, player_img)
 
     plotting_helper_master.plot_game_overview(ax_table, df_game)
 
