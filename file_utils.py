@@ -2,7 +2,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.patches import Rectangle
 from scipy.ndimage import label
-
+import matplotlib.colors as mcolors
+import colorsys
 
 SPRAY_CMAP = {
     '1B': '#fe6000',
@@ -189,3 +190,11 @@ def scale_axes():
     new_half_height = half_height * scale_factor
 
     return new_half_width, new_half_height
+
+
+def lighten_color(hex_color, amount=0.6):
+    rgb = mcolors.to_rgb(hex_color)
+    h, l, s = colorsys.rgb_to_hls(*rgb)
+    l = min(1, l + amount * (1 - l))  # increase lightness toward 1
+    light_rgb = colorsys.hls_to_rgb(h, l, s)
+    return mcolors.to_hex(light_rgb)
