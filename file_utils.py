@@ -6,6 +6,9 @@ import matplotlib.colors as mcolors
 import colorsys
 import cv2
 from PIL import Image
+from rembg import remove
+import io
+from collections import defaultdict
 
 SPRAY_CMAP = {
     '1B': '#fe6000',
@@ -202,6 +205,14 @@ def lighten_color(hex_color, amount=0.6):
     return mcolors.to_hex(light_rgb)
 
 
+def resize_image(img, max_height=512):
+    w, h = img.size
+    if h > max_height:
+        ratio = max_height / h
+        return img.resize((int(w * ratio), max_height), Image.Resampling.LANCZOS)
+    return img
+
+
 def make_color_transparent(img, color='#c2c2c2', tol=20):
     img_rgb = tuple(int(color.lstrip('#')[i:i + 2], 16) for i in (0, 2, 4))
 
@@ -223,35 +234,20 @@ def make_color_transparent(img, color='#c2c2c2', tol=20):
 
 
 def remove_background(player_img):
-    # Convert PIL to OpenCV BGR format
-    img = cv2.cvtColor(np.array(player_img.convert("RGB")), cv2.COLOR_RGB2BGR)
+    # Convert to bytes
+    with io.BytesIO() as buf:
+        player_img.save(buf, format='PNG')
+        input_bytes = buf.getvalue()
 
-    # Convert BGR to HSV
-    hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+    # Remove background using rembg
+    output_bytes = remove(input_bytes)
 
-    # Mask to detect gray pixels:
-    # HSV range tuned to capture low saturation (gray-ish) and medium-high value (brightness)
-    lower_gray = (0, 0, 70)   # Hue: any, Sat: 0-5 (almost no color), Value: 100+
-    upper_gray = (180, 5, 255)
+    # Convert result bytes back to PIL image with alpha channel
+    return Image.open(io.BytesIO(output_bytes)).convert("RGBA")
 
-    mask_gray = cv2.inRange(hsv, lower_gray, upper_gray)
 
-    # Build mask of non-black pixels to avoid removing dark parts around gray
-    nzmask = cv2.inRange(hsv, (0, 0, 5), (180, 255, 255))
-    nzmask = cv2.erode(nzmask, np.ones((3, 3), np.uint8))
-
-    # Combine masks: only gray pixels that are non-black
-    mask = cv2.bitwise_and(mask_gray, nzmask)
-
-    # Convert original image to BGRA to add alpha channel
-    bgra = cv2.cvtColor(img, cv2.COLOR_BGR2BGRA)
-
-    # Set alpha=0 (transparent) where mask is non-zero (gray background)
-    bgra[:, :, 3] = np.where(mask > 0, 0, 255).astype(np.uint8)
-
-    # Convert BGRA to RGBA for PIL and create image
-    rgba = cv2.cvtColor(bgra, cv2.COLOR_BGRA2RGBA)
-    result_pil = Image.fromarray(rgba)
-
-    return result_pil
-
+def is_dark(hex_color):
+    hex_color = hex_color.lstrip('#')
+    r, g, b = tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
+    luminance = 0.299 * r + 0.587 * g + 0.114 * b
+    return luminance < 128
