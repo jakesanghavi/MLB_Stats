@@ -4,11 +4,9 @@ from matplotlib.patches import Rectangle
 from scipy.ndimage import label
 import matplotlib.colors as mcolors
 import colorsys
-import cv2
 from PIL import Image
 from rembg import remove
 import io
-from collections import defaultdict
 
 SPRAY_CMAP = {
     '1B': '#fe6000',
@@ -22,16 +20,16 @@ SPRAY_CMAP = {
 def plot_empty_strike_zone(gridlines=True, home_plate=True):
     HOME_WIDTH = 17
     HOME_HEIGHT = 17
-    PLATE_LEFT = -(HOME_WIDTH/2)
-    PLATE_RIGHT = (HOME_WIDTH/2)
-    PLATE_SIDE = (HOME_WIDTH/2)
+    PLATE_LEFT = -(HOME_WIDTH / 2)
+    PLATE_RIGHT = (HOME_WIDTH / 2)
+    PLATE_SIDE = (HOME_WIDTH / 2)
     KNEES = 18
     CHEST = 42
 
-    BASEBALL_AREA = np.pi*(9.125/2)**2
+    BASEBALL_AREA = np.pi * (9.125 / 2) ** 2
 
-    V_THIRD = (PLATE_RIGHT - PLATE_LEFT)/3
-    H_THIRD = (CHEST - KNEES)/3
+    V_THIRD = (PLATE_RIGHT - PLATE_LEFT) / 3
+    H_THIRD = (CHEST - KNEES) / 3
 
     # Strike zone vertical lines
     plt.vlines(PLATE_LEFT / 12, KNEES / 12, CHEST / 12)
@@ -52,11 +50,11 @@ def plot_empty_strike_zone(gridlines=True, home_plate=True):
     #                      closed=True, fill=None, edgecolor='black')
     # plt.gca().add_patch(home_plate)
 
-    ls='k-'
+    ls = 'k-'
     if home_plate is True:
-        plt.plot([-0.708, 0.708], [0,0], ls)
-        plt.plot([-0.708, -0.708], [0,-0.3], ls)
-        plt.plot([0.708, 0.708], [0,-0.3], ls)
+        plt.plot([-0.708, 0.708], [0, 0], ls)
+        plt.plot([-0.708, -0.708], [0, -0.3], ls)
+        plt.plot([0.708, 0.708], [0, -0.3], ls)
         plt.plot([-0.708, 0], [-0.3, -0.6], ls)
         plt.plot([0.708, 0], [-0.3, -0.6], ls)
 
@@ -68,8 +66,8 @@ def plot_empty_strike_zone(gridlines=True, home_plate=True):
 
 def draw_strike_zone_rect():
     HOME_WIDTH = 17  # inches
-    KNEES = 18       # inches
-    CHEST = 42       # inches
+    KNEES = 18  # inches
+    CHEST = 42  # inches
 
     PLATE_LEFT = -(HOME_WIDTH / 2)
     width = HOME_WIDTH
@@ -233,6 +231,55 @@ def make_color_transparent(img, color='#c2c2c2', tol=20):
     return img
 
 
+def make_gray_transparent(img):
+    img = img.convert("RGBA")
+    datas = img.getdata()
+
+    def is_gray(pixel):
+        r, g, b, _ = pixel
+        hex_color = f'{r:02x}{g:02x}{b:02x}'
+
+        # bb9 d2b a98 c(8c)a are pinks careful
+        if hex_color.startswith('a'):
+            second = hex_color[1]
+            third = hex_color[2]
+            return (second in '06b' and third in 'a9') or (second in '9' and third in '8')
+        elif hex_color.startswith('b'):
+            second = hex_color[1]
+            third = hex_color[2]
+            return ((second in 'acdf' and third not in 'a789') or (second in '02358' and third in 'ab') or
+                    (second in 'b' and third in '9')) and not (second in 'c' and third in '6')
+        elif hex_color.startswith('c'):
+            second = hex_color[1]
+            third = hex_color[2]
+            return (second in '013456789abcdef' and third not in '0123456789a') or (second in '8c' and third in 'a')
+        elif hex_color.startswith('d'):
+            second = hex_color[1]
+            third = hex_color[2]
+            return (second in '0123456789' and third in 'c') or (second in '234' and third in 'b')
+        elif hex_color.startswith('7'):
+            second = hex_color[1]
+            third = hex_color[2]
+            return second in 'd' and third in '7'
+        elif hex_color.startswith('8'):
+            second = hex_color[1]
+            third = hex_color[2]
+            return second in 'd458' and third in '78'
+        elif hex_color.startswith('9'):
+            second = hex_color[1]
+            third = hex_color[2]
+            return second in '13bd' and third in '89'
+        return False
+
+    newData = [
+        (255, 255, 255, 0) if is_gray(pixel) else pixel
+        for pixel in datas
+    ]
+
+    img.putdata(newData)
+    return img
+
+
 def remove_background(player_img):
     # Convert to bytes
     with io.BytesIO() as buf:
@@ -248,6 +295,6 @@ def remove_background(player_img):
 
 def is_dark(hex_color):
     hex_color = hex_color.lstrip('#')
-    r, g, b = tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
+    r, g, b = tuple(int(hex_color[i:i + 2], 16) for i in (0, 2, 4))
     luminance = 0.299 * r + 0.587 * g + 0.114 * b
     return luminance < 128
