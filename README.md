@@ -8,23 +8,16 @@ Grabs data from the official MLB API and creates insightful plots for player ana
 
 <img src="https://raw.githubusercontent.com/jakesanghavi/jakesanghavi.github.io/main/images/chris_sale.png" alt="Chris Sale Dashboard" width=700/>
 
-# Package Requiements
+# Additional Package Requiements
 
 ```
 bs4  
-cairosvg  
-datetime  
-glob  
-io  
-itertools  
-json  
+cairosvg     
 matplotlib  
 numpy  
 pandas  
 PIL  
-pyfonts  
-re  
+pyfonts    
 requests  
-scipy  
-time    
+scipy      
 ```
