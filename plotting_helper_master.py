@@ -8,16 +8,31 @@ import file_utils
 from matplotlib.lines import Line2D
 from matplotlib.font_manager import FontProperties
 from matplotlib.offsetbox import OffsetImage, AnnotationBbox
+from matplotlib import rcParams, font_manager
 import io
 import os
 import re
+from pyfonts import load_google_font
+from pathlib import Path
+from matplotlib.gridspec import GridSpec, GridSpecFromSubplotSpec
+import matplotlib.pyplot as plt
+import requests
+from io import BytesIO
+from unidecode import unidecode
+
 os.environ['DYLD_FALLBACK_LIBRARY_PATH'] = '/opt/homebrew/lib'
 import cairosvg
 
 
-def plot_header(fig, ax_header, ax_header_holder, c1, pitcher, todays_date, logo1, logo2, away_score, home_score, player_img):
-    # player_img = file_utils.make_color_transparent(player_img, '#c9c7cc', tol=35)
-    player_img = file_utils.remove_background(player_img)
+def remove_accents(a):
+    return unidecode(a)
+
+
+def plot_header(fig, ax_header, ax_header_holder, c1, pitcher, game_date, logo1, logo2, away_score, home_score,
+                player_img):
+    player_img = file_utils.make_gray_transparent(player_img)
+    player_img = file_utils.remove_lonely_pixels(player_img)
+    # player_img = file_utils.remove_background(player_img)
     ax_header.axis("off")  # no ticks or spines
     ax_header.set_facecolor(c1)  # set background color
 
@@ -30,11 +45,11 @@ def plot_header(fig, ax_header, ax_header_holder, c1, pitcher, todays_date, logo
         f"{pitcher}\nDaily Pitching Summary",
         fontsize=18, fontweight='bold', va='top', ha='left',
         transform=ax_header.transAxes,
-        color = text_color
+        color=text_color
     )
     ax_header.text(
         0.35, 0.3,
-        f"{todays_date}",
+        f"{game_date}",
         fontsize=14, va='top', ha='left',
         transform=ax_header.transAxes,
         color=text_color
@@ -138,9 +153,12 @@ def plot_game_overview(ax_table, df_game, c1):
 
     ip = float(str(int(outs / 3)) + '.' + str(outs % 3))
     er = df_game.groupby('ab_id')['rbi'].max().sum()
-    hit_events = ['single', 'double', 'triple', 'home_run']
-    pattern = '|'.join(hit_events)
-    mask = df_game['event_type'].str.contains(pattern, case=False, na=False)
+    er += df_game[(df_game['event_type'].str.contains(r'double_play|triple_play', case=False, na=False)) & \
+                  (df_game['detailed_pitch_outcome'] == 'E')].groupby('ab_id')['rbi'].count().sum()
+    pattern = r'(?i)\b(?:single|double|triple|home_run)\b'
+
+    mask = df_game['event_type'].str.contains(pattern, na=False)
+    mask &= ~df_game['event_type'].str.contains(r'double_play|triple_play', case=False, na=False)
     h = df_game[mask]['ab_id'].nunique()
     k = df_game[df_game['event_name'].str.lower().str.contains("strikeout")]['ab_id'].nunique()
     bb = df_game[df_game['event_name'].str.lower().str.contains("walk")]['ab_id'].nunique()
@@ -239,7 +257,7 @@ def plot_pitch_breaks(ax_breaks, df_game, pitch_map):
 
     summary_df['Count'] = summary_df['Count'].astype(int)
     summary_df['Velocity'] = summary_df['Velocity'].round(1)
-    summary_df['Whiff%'] = summary_df['Whiff%'].round(1)
+    summary_df['Whiff%'] = summary_df['Whiff%'].round(1).astype(str) + '%'
     summary_df['Pitch Type'] = summary_df['Description']
 
     summary_df = summary_df[['Pitch Type', 'Count', 'Velocity', 'Whiff%']].sort_values('Count',
@@ -397,7 +415,7 @@ def plot_strike_zone(ax, title, bat_side, df_game, unique_pitch_types, desc_to_c
                 ax.add_patch(patch)
 
                 # Outline
-                ax.plot(main_path.vertices[:, 0], main_path.vertices[:, 1], color=color, lw=2,  zorder=11)
+                ax.plot(main_path.vertices[:, 0], main_path.vertices[:, 1], color=color, lw=2, zorder=11)
 
                 # Dummy legend
                 ax.plot([], [], color=color, label=pitch_desc, linewidth=5, alpha=0.6)
@@ -516,8 +534,8 @@ def plot_spray(ax, svg_path, df_game):
     last_per_ab = filtered.groupby('ab_id').last().reset_index()
 
     # Define SVG bounds (example, replace with your actual bounds)
-    xmin, xmax = -250, 250
-    ymin, ymax = -10, 450
+    xmin, xmax = -266, 266
+    ymin, ymax = -10, 485
 
     # Plot SVG image with imshow and extent
     ax.imshow(image, extent=[xmin, xmax, ymin, ymax], aspect='auto')
@@ -607,3 +625,141 @@ def plot_pitch_by_pitch_info(ax_stats, summary_df, c1):
             cell.get_text().set_color(text_color)
         else:
             cell.set_facecolor(file_utils.lighten_color(c1, 0.7) if row % 2 == 1 else file_utils.lighten_color(c1, 0.9))
+
+
+def plot_pitcher_dashboard(player, game_date, player_info, pbp_df, pitch_map):
+    year = int(game_date[:4])
+    fn = "SUSE"
+    font_regular = load_google_font(fn, weight="regular")
+    font_bold = load_google_font(fn, weight="bold")
+
+    # Register both fonts
+    font_path_regular = font_regular.get_file()
+    font_path_bold = font_bold.get_file()
+    font_manager.fontManager.addfont(font_path_regular)
+    font_manager.fontManager.addfont(font_path_bold)
+
+    # Extract the regular font family name
+    font_name = font_manager.FontProperties(fname=font_path_regular).get_name()
+
+    pitcher = player_info[player_info['fullName'].apply(remove_accents) == remove_accents(player)]
+
+    df_game = pbp_df[(pbp_df['pitcher_id'] == pitcher['id'].iloc[0]) & (pbp_df['date'] == game_date)].copy()
+    # df_game[['inning', 'ab_id', 'pitch_type', 'description', 'detailed_pitch_outcome']]
+    # .to_csv('df_game.csv', index=False)
+    score_game_df = pbp_df[pbp_df['game_id'] == df_game['game_id'].iloc[0]]
+    last_row = score_game_df.iloc[-1]
+    away_score = last_row['away_score']
+    home_score = last_row['home_score']
+
+    stadium_path = Path.cwd() / 'Stadiums' / f"{df_game['home_team_abbr'].iloc[0]}_stadium.svg"
+    roster_path = Path.cwd() / 'DataPack' / 'Misc_Data' / f'mlb_40man_roster_{year}.csv'
+
+    rosters = pd.read_csv(roster_path)
+    team_id = rosters[rosters['full_name'] == remove_accents(player)]['team_id'].iloc[0]
+    team_id_path = Path.cwd() / 'DataPack' / 'Misc_Data' / 'team_id_map.csv'
+    team_map = pd.read_csv(team_id_path)
+    team_name = team_map[team_map['id'] == team_id]['teamCode'].iloc[0]
+    team_colors_path = Path.cwd() / 'DataPack' / 'Misc_Data' / 'team_colors.csv'
+    cdf = pd.read_csv(team_colors_path)
+    team_colors = list(cdf[cdf['Team'] == team_name].iloc[0].T)
+    c1, c2 = team_colors[1], team_colors[2]
+    ax_color, fig_color = file_utils.lighten_color(c1, 0.7), file_utils.lighten_color(c2, 0.7)
+
+    rcParams.update({
+        'font.family': font_name,
+        'font.size': 10,
+        'axes.titlesize': 16,
+        'axes.labelsize': 14,
+        'axes.facecolor': ax_color,
+        'figure.facecolor': fig_color,
+        'axes.edgecolor': '#cccccc',
+        'axes.titleweight': 'bold'  # Only titles use the bold variant
+    })
+
+    # Load player image
+    response = requests.get(pitcher['img'].iloc[0])
+    player_img = Image.open(BytesIO(response.content))
+
+    logos_dir = Path.cwd() / 'Logo_Pack'
+    logo1_path = logos_dir / f"{df_game['away_team_abbr'].iloc[0]}.png"
+    logo2_path = logos_dir / f"{df_game['home_team_abbr'].iloc[0]}.png"
+
+    logo1 = Image.open(logo1_path)
+    logo2 = Image.open(logo2_path)
+
+    fig = plt.figure(figsize=(14, 10))
+
+    plt.subplots_adjust(hspace=0.0, top=0.95, bottom=0)
+
+    # Main outer layout (1 column, 3 vertical chunks)
+    outer_gs = GridSpec(5, 1, height_ratios=[1, 0.5, 1.4, 1.6, 1], hspace=0.2)
+
+    # --- Top Block: Title, Image ---
+    top_gs = GridSpecFromSubplotSpec(1, 5, subplot_spec=outer_gs[0], hspace=0)
+    ax_header_holder = fig.add_subplot(top_gs[0, :])
+
+    for spine in ax_header_holder.spines.values():
+        spine.set_visible(False)
+
+    ax_header_holder.set_xticklabels([])
+    ax_header_holder.set_yticklabels([])
+
+    ax_header_holder.tick_params(bottom=False, left=False)
+
+    ax_header_holder.set_facecolor(c1)
+
+    top2_gs = GridSpecFromSubplotSpec(2, 5, subplot_spec=outer_gs[1], hspace=0)
+    ax_table = fig.add_subplot(top2_gs[0, :])
+    ax_breaks_legend = fig.add_subplot(top2_gs[1, :])
+
+    mid_gs = GridSpecFromSubplotSpec(1, 9, subplot_spec=outer_gs[2], hspace=0)
+    ax_lhb = fig.add_subplot(mid_gs[0, :3])
+    ax_mirror_bar = fig.add_subplot(mid_gs[0, 3:6])
+    ax_rhb = fig.add_subplot(mid_gs[0, 6:])
+
+    # --- Bottom Block: Breaks, Velo, Stats ---
+    bot_gs = GridSpecFromSubplotSpec(1, 6, subplot_spec=outer_gs[3], hspace=0)
+    ax_breaks = fig.add_subplot(bot_gs[0, :2])
+    ax_velocities = fig.add_subplot(bot_gs[0, 2:4])
+    ax_spray = fig.add_subplot(bot_gs[0, 4:])
+
+    bot_gs2 = GridSpecFromSubplotSpec(1, 5, subplot_spec=outer_gs[4], hspace=0)
+    ax_stats = fig.add_subplot(bot_gs2[0, :])
+
+    ax_header = fig.add_subplot(outer_gs[0])
+
+    plot_header(fig, ax_header, ax_header_holder, c1, player, game_date, logo1, logo2,
+                away_score, home_score, player_img)
+
+    plot_game_overview(ax_table, df_game, c1)
+
+    summary_df, unique_pitch_types, pitch_colors_dict, desc_to_code_dict = plot_pitch_breaks(
+        ax_breaks, df_game,
+        pitch_map)
+
+    plot_velocity_distributions(ax_velocities, df_game, unique_pitch_types,
+                                pitch_colors_dict,
+                                desc_to_code_dict)
+
+    plot_spray(ax_spray, stadium_path, df_game)
+
+    plot_legend(ax_breaks_legend, df_game, unique_pitch_types, pitch_colors_dict,
+                desc_to_code_dict)
+
+    rhb_path = Path.cwd() / "Misc_Images" / "rhb.svg"
+    lhb_path = Path.cwd() / "Misc_Images" / "lhb.svg"
+
+    plot_strike_zone(ax_lhb, "Pitch Locations vs LHB", 'L', df_game, unique_pitch_types,
+                     desc_to_code_dict,
+                     pitch_colors_dict, rhb_path)
+
+    plot_strike_zone(ax_rhb, "Pitch Locations vs RHB", 'R', df_game, unique_pitch_types,
+                     desc_to_code_dict,
+                     pitch_colors_dict, lhb_path)
+
+    plot_pitch_usage_bar(ax_mirror_bar, df_game, pitch_map, pitch_colors_dict)
+
+    plot_pitch_by_pitch_info(ax_stats, summary_df, c1)
+
+    plt.show()
