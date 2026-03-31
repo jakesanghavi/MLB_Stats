@@ -73,6 +73,20 @@ def game_scraper(game_id):
     return r.json()
 
 
+def player_scraper(p_id, x):
+    game_url = f"https://statsapi.mlb.com/api/v1/people/{p_id}"
+    header_data = get_header_data()
+    try:
+        r = requests.get(game_url, headers=header_data, timeout=20)
+        return r.json()
+    except requests.exceptions.JSONDecodeError as rerr:
+        print(rerr)
+    except requests.exceptions.ReadTimeout as rerr:
+        print(rerr)
+        time.sleep(1.5)
+        player_scraper(p_id, x + 1)
+
+
 def fast_flatten(input_list):
     return list(chain.from_iterable(input_list))
 
@@ -330,28 +344,13 @@ def concat_all(year):
     save_file(combined_df, out_dir, out_file)
 
 
-def get_pitcher_bios(year):
-    header_data = get_header_data()
+def get_pitchers(year):
     pd.options.mode.chained_assignment = None
 
     pbp_path = Path.cwd() / "DataPack" / "PBP" / f'{year}_full_pbp.csv'
 
     df = pd.read_csv(pbp_path)
     players = np.unique(df['pitcher_id'])
-
-    def player_scraper(p_id, x):
-        game_url = f"https://statsapi.mlb.com/api/v1/people/{p_id}"
-        try:
-            r = requests.get(game_url, headers=header_data, timeout=20)
-            return r.json()
-        except requests.exceptions.JSONDecodeError as rerr:
-            print(rerr)
-            print(p)
-        except requests.exceptions.ReadTimeout as rerr:
-            print(rerr)
-            print(p)
-            time.sleep(1.5)
-            player_scraper(p_id, x + 1)
 
     final = pd.DataFrame(columns=['id', 'fullName', 'primaryNumber', 'birthDate', 'birthStateProvince', 'birthCountry',
                                   'height', 'weight', 'draftYear', 'strikeZoneTop', 'strikeZoneBottom', 'position',
@@ -417,9 +416,48 @@ def get_rosters(year):
     save_file(df, out_dir, out_file)
 
 
+def get_batters(year):
+    pd.options.mode.chained_assignment = None
+
+    pbp_path = Path.cwd() / "DataPack" / "PBP" / f'{year}_full_pbp.csv'
+
+    df = pd.read_csv(pbp_path)
+    players = np.unique(df['batter_id'])
+
+    final = pd.DataFrame(columns=['id', 'fullName', 'primaryNumber', 'birthDate', 'birthStateProvince', 'birthCountry',
+                                  'height', 'weight', 'draftYear', 'strikeZoneTop', 'strikeZoneBottom', 'position',
+                                  'batSide', 'img'])
+
+    for p in players:
+        d = player_scraper(p, 1)
+        if d is None:
+            continue
+        data = d['people'][0]
+        attrs = ['id', 'fullName', 'primaryNumber', 'birthDate', 'birthStateProvince', 'birthCountry',
+                 'height', 'weight', 'draftYear', 'strikeZoneTop', 'strikeZoneBottom']
+
+        # Extract the desired attributes using a list comprehension
+        l1 = [data.get(attr, None) for attr in attrs]
+        # l1 = data[['id', 'fullName', 'primaryNumber', 'birthDate', 'birthStateProvince',
+        #            'height', 'weight', 'draftYear', 'strikeZoneTop', 'strikeZoneBottom']]
+        ppos = data['primaryPosition']['code']
+        pb = data['batSide']['code']
+        pimg = f"https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_426,q_auto:best/v1/people/{p}/headshot/67/current"
+        l1.extend([ppos, pb, pimg])
+        mini = pd.DataFrame(data=[l1], columns=final.columns)
+        final = pd.concat([final, mini], axis=0)
+        # time.sleep(1.5)
+
+    out_dir = Path.cwd() / "DataPack" / "Misc_Data"
+    out_file = f"batter_bios_{year}.csv"
+
+    save_file(final, out_dir, out_file)
+
+
 def get_all_data(year):
     get_schedule(year)
     get_pbp(year)
     concat_all(year)
-    get_pitcher_bios(year)
+    get_pitchers(year)
     get_rosters(year)
+    get_batters(year)
