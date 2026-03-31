@@ -140,6 +140,26 @@ def plot_header(fig, ax_header, ax_header_holder, c1, pitcher, game_date, logo1,
         spine.set_visible(False)
 
 
+def recolor_image(image, new_color):
+    hex_color = new_color.lstrip("#")
+    tr, tg, tb = [int(hex_color[i:i+2], 16) for i in (0, 2, 4)]
+
+    img = image.convert("RGBA")
+    data = np.array(img).astype(float)
+
+    r, g, b, a = data[...,0], data[...,1], data[...,2], data[...,3]
+
+    # Convert to grayscale intensity
+    gray = (0.299*r + 0.587*g + 0.114*b) / 255.0
+
+    # Apply color scaled by intensity
+    data[...,0] = tr * gray
+    data[...,1] = tg * gray
+    data[...,2] = tb * gray
+
+    return Image.fromarray(data.astype("uint8"))
+
+
 def plot_game_overview(ax_table, df_game, c1):
     # Plate Appearances = number of unique ab_id
     bf = df_game['ab_id'].nunique()
@@ -317,7 +337,7 @@ def plot_pitch_breaks(ax_breaks, df_game, pitch_map):
     return summary_df, unique_pitch_types, pitch_colors_dict, desc_to_code_dict
 
 
-def plot_strike_zone(ax, title, bat_side, df_game, unique_pitch_types, desc_to_code_dict, pitch_colors_dict, svg_path):
+def plot_strike_zone(ax, title, bat_side, df_game, unique_pitch_types, desc_to_code_dict, pitch_colors_dict, svg_path, opp_main_color):
     # --- Draw the strike zone box ---
     strike_zone = file_utils.draw_strike_zone_rect()
     strike_zone.set_zorder(-10)
@@ -333,6 +353,7 @@ def plot_strike_zone(ax, title, bat_side, df_game, unique_pitch_types, desc_to_c
     # Convert SVG to PNG bytes
     png_bytes = cairosvg.svg2png(bytestring=svg_content.encode('utf-8'))
     image = Image.open(io.BytesIO(png_bytes)).convert("RGBA")
+    image = recolor_image(image, opp_main_color)
 
     if bat_side == 'L':
         xmin, xmax = -1.7, 0.8
@@ -658,10 +679,14 @@ def plot_pitcher_dashboard(player, game_date, player_info, pbp_df, pitch_map):
     team_id_path = Path.cwd() / 'DataPack' / 'Misc_Data' / 'team_id_map.csv'
     team_map = pd.read_csv(team_id_path)
     team_name = team_map[team_map['id'] == team_id]['teamCode'].iloc[0]
+    opp_name = list(df_game[['away_team_abbr', 'home_team_abbr']].iloc[0])
+    opp_name = opp_name[0] if opp_name[0] != team_name else opp_name[1]
     team_colors_path = Path.cwd() / 'DataPack' / 'Misc_Data' / 'team_colors.csv'
     cdf = pd.read_csv(team_colors_path)
     team_colors = list(cdf[cdf['Team'] == team_name].iloc[0].T)
     c1, c2 = team_colors[1], team_colors[2]
+    opp_colors = list(cdf[cdf['Team'] == opp_name].iloc[0].T)
+    opp_main_color = opp_colors[1]
     ax_color, fig_color = file_utils.lighten_color(c1, 0.7), file_utils.lighten_color(c2, 0.7)
 
     rcParams.update({
@@ -750,11 +775,11 @@ def plot_pitcher_dashboard(player, game_date, player_info, pbp_df, pitch_map):
 
     plot_strike_zone(ax_lhb, "Pitch Locations vs LHB", 'L', df_game, unique_pitch_types,
                      desc_to_code_dict,
-                     pitch_colors_dict, rhb_path)
+                     pitch_colors_dict, rhb_path, opp_main_color)
 
     plot_strike_zone(ax_rhb, "Pitch Locations vs RHB", 'R', df_game, unique_pitch_types,
                      desc_to_code_dict,
-                     pitch_colors_dict, lhb_path)
+                     pitch_colors_dict, lhb_path, opp_main_color)
 
     plot_pitch_usage_bar(ax_mirror_bar, df_game, pitch_map, pitch_colors_dict)
 
