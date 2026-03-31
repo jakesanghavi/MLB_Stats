@@ -326,7 +326,7 @@ def concat_all(year):
 
     combined_df = pd.concat(dfs, ignore_index=True)
 
-    out_dir = Path.cwd() / "DataPack" / "Misc_Data"
+    out_dir = Path.cwd() / "DataPack" / "PBP"
     out_file = f"{year}_full_pbp.csv"
 
     save_file(combined_df, out_dir, out_file)
