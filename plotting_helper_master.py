@@ -262,16 +262,29 @@ def plot_legend(ax_breaks_legend, df_game, unique_pitch_types, pitch_colors_dict
 def plot_pitch_breaks(ax_breaks, df_game, pitch_map):
     df_game['whiff'] = ((df_game['detailed_pitch_outcome'] == 'S') |
                         (df_game['detailed_pitch_outcome'] == 'W') |
-                        (df_game['detailed_pitch_outcome'] == 'T')).astype(int)
+                        (df_game['detailed_pitch_outcome'] == 'T') |
+                        (df_game['detailed_pitch_outcome'] == 'M')).astype(int)
+
+    df_game['swing'] = ((df_game['detailed_pitch_outcome'] == 'S') |
+                        (df_game['detailed_pitch_outcome'] == 'W') |
+                        (df_game['detailed_pitch_outcome'] == 'T') |
+                        (df_game['detailed_pitch_outcome'] == 'D') |
+                        (df_game['detailed_pitch_outcome'] == 'E') |
+                        (df_game['detailed_pitch_outcome'] == 'F') |
+                        (df_game['detailed_pitch_outcome'] == 'M') |
+                        (df_game['detailed_pitch_outcome'] == 'L') |
+                        (df_game['detailed_pitch_outcome'] == 'O') |
+                        (df_game['detailed_pitch_outcome'] == 'X')).astype(int)
 
     summary_df = df_game.groupby(['pitch_type'], as_index=False).agg(
         Count=('pitch_type', 'size'),
         Velocity=('start_speed', 'mean'),
-        Whiffs=('whiff', 'sum')
+        Whiffs=('whiff', 'sum'),
+        Swings=("swing", 'sum')
     )
 
     summary_df = summary_df.merge(pitch_map, left_on='pitch_type', right_on='Code', how='inner')
-    summary_df['Whiff%'] = summary_df['Whiffs'] / summary_df['Count'] * 100
+    summary_df['Whiff%'] = summary_df['Whiffs'] / summary_df['Swings'] * 100
 
     summary_df['Count'] = summary_df['Count'].astype(int)
     summary_df['Velocity'] = summary_df['Velocity'].round(1)
