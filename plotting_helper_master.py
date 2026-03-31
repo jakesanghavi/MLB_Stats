@@ -30,9 +30,7 @@ def remove_accents(a):
 
 def plot_header(fig, ax_header, ax_header_holder, c1, pitcher, game_date, logo1, logo2, away_score, home_score,
                 player_img):
-    player_img = file_utils.make_gray_transparent(player_img)
-    player_img = file_utils.remove_lonely_pixels(player_img)
-    # player_img = file_utils.remove_background(player_img)
+    player_img = file_utils.fast_remove(player_img)
     ax_header.axis("off")  # no ticks or spines
     ax_header.set_facecolor(c1)  # set background color
 
