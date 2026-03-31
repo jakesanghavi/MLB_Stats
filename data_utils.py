@@ -2,7 +2,6 @@ import pandas as pd
 import requests
 import json
 import time
-import os
 from pathlib import Path
 import re
 import datetime
@@ -172,7 +171,6 @@ def get_pbp(year):
         d = schedule.loc[schedule['gamePk'] == game]['officialDate'].iloc[0]
         full_date = schedule.loc[schedule['gamePk'] == game]['gameDate'].iloc[0]
         if datetime.datetime.strptime(d, "%Y-%m-%d").date() >= today or datetime.datetime.strptime(d, "%Y-%m-%d").date() < min_date:
-            print('hi')
             continue
         #
         # if x > 200:
@@ -332,7 +330,96 @@ def concat_all(year):
     save_file(combined_df, out_dir, out_file)
 
 
+def get_pitcher_bios(year):
+    header_data = get_header_data()
+    pd.options.mode.chained_assignment = None
+
+    pbp_path = Path.cwd() / "DataPack" / "PBP" / f'{year}_full_pbp.csv'
+
+    df = pd.read_csv(pbp_path)
+    players = np.unique(df['pitcher_id'])
+
+    def player_scraper(p_id, x):
+        game_url = f"https://statsapi.mlb.com/api/v1/people/{p_id}"
+        try:
+            r = requests.get(game_url, headers=header_data, timeout=20)
+            return r.json()
+        except requests.exceptions.JSONDecodeError as rerr:
+            print(rerr)
+            print(p)
+        except requests.exceptions.ReadTimeout as rerr:
+            print(rerr)
+            print(p)
+            time.sleep(1.5)
+            player_scraper(p_id, x + 1)
+
+    final = pd.DataFrame(columns=['id', 'fullName', 'primaryNumber', 'birthDate', 'birthStateProvince', 'birthCountry',
+                                  'height', 'weight', 'draftYear', 'strikeZoneTop', 'strikeZoneBottom', 'position',
+                                  'batSide', 'pitchHand', 'img'])
+
+    for p in players:
+        d = player_scraper(p, 1)
+        if d is None:
+            continue
+        data = d['people'][0]
+        attrs = ['id', 'fullName', 'primaryNumber', 'birthDate', 'birthStateProvince', 'birthCountry',
+                 'height', 'weight', 'draftYear', 'strikeZoneTop', 'strikeZoneBottom']
+
+        # Extract the desired attributes using a list comprehension
+        l1 = [data.get(attr, None) for attr in attrs]
+        # l1 = data[['id', 'fullName', 'primaryNumber', 'birthDate', 'birthStateProvince',
+        #            'height', 'weight', 'draftYear', 'strikeZoneTop', 'strikeZoneBottom']]
+        ppos = data['primaryPosition']['code']
+        pb = data['batSide']['code']
+        ph = data['pitchHand']['code']
+        pimg = f"https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_426,q_auto:best/v1/people/{p}/headshot/67/current"
+        l1.extend([ppos, pb, ph, pimg])
+        mini = pd.DataFrame(data=[l1], columns=final.columns)
+        final = pd.concat([final, mini], axis=0)
+        # time.sleep(1.5)
+
+    out_dir = Path.cwd() / "DataPack" / "Misc_Data"
+    out_file = f"pitcher_bios_{year}.csv"
+
+    save_file(final, out_dir, out_file)
+
+
+def get_rosters(year):
+    team_ids_path = Path.cwd() / "DataPack" / "Misc_Data" / "team_id_map.csv"
+    team_id_df = pd.read_csv(team_ids_path)
+    team_ids = list(team_id_df['id'])
+
+    url_template = "https://statsapi.mlb.com/api/v1/teams/{}/roster/40Man?fields=roster,person,fullName,jerseyNumber"
+
+    all_players = []
+
+    for team_id in team_ids:
+        url = url_template.format(team_id)
+        try:
+            response = requests.get(url)
+            response.raise_for_status()
+            data = response.json()
+            for player in data.get("roster", []):
+                full_name = player["person"].get("fullName", "")
+                jersey_number = player.get("jerseyNumber", "")
+                all_players.append({
+                    "team_id": team_id,
+                    "full_name": full_name,
+                    "jersey_number": jersey_number
+                })
+        except Exception as e:
+            print(f"Error with team {team_id}: {e}")
+
+    df = pd.DataFrame(all_players)
+    out_dir = Path.cwd() / "DataPack" / "Misc_Data"
+    out_file = f"mlb_40man_roster_{year}.csv"
+
+    save_file(df, out_dir, out_file)
+
+
 def get_all_data(year):
     get_schedule(year)
     get_pbp(year)
     concat_all(year)
+    get_pitcher_bios(year)
+    get_rosters(year)
