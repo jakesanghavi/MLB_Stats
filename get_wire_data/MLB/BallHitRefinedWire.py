@@ -59,44 +59,24 @@ class BallHitRefinedWire(object):
             return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
         return 0.0
 
-def BallHitRefinedWireStart(builder):
-    builder.StartObject(5)
-
+def BallHitRefinedWireStart(builder): builder.StartObject(5)
 def Start(builder):
-    BallHitRefinedWireStart(builder)
-
-def BallHitRefinedWireAddLaunchSpinRate(builder, launchSpinRate):
-    builder.PrependFloat32Slot(0, launchSpinRate, 0.0)
-
+    return BallHitRefinedWireStart(builder)
+def BallHitRefinedWireAddLaunchSpinRate(builder, launchSpinRate): builder.PrependFloat32Slot(0, launchSpinRate, 0.0)
 def AddLaunchSpinRate(builder, launchSpinRate):
-    BallHitRefinedWireAddLaunchSpinRate(builder, launchSpinRate)
-
-def BallHitRefinedWireAddLaunchSpinAxis(builder, launchSpinAxis):
-    builder.PrependFloat32Slot(1, launchSpinAxis, 0.0)
-
+    return BallHitRefinedWireAddLaunchSpinRate(builder, launchSpinRate)
+def BallHitRefinedWireAddLaunchSpinAxis(builder, launchSpinAxis): builder.PrependFloat32Slot(1, launchSpinAxis, 0.0)
 def AddLaunchSpinAxis(builder, launchSpinAxis):
-    BallHitRefinedWireAddLaunchSpinAxis(builder, launchSpinAxis)
-
-def BallHitRefinedWireAddApexX(builder, apexX):
-    builder.PrependFloat32Slot(2, apexX, 0.0)
-
+    return BallHitRefinedWireAddLaunchSpinAxis(builder, launchSpinAxis)
+def BallHitRefinedWireAddApexX(builder, apexX): builder.PrependFloat32Slot(2, apexX, 0.0)
 def AddApexX(builder, apexX):
-    BallHitRefinedWireAddApexX(builder, apexX)
-
-def BallHitRefinedWireAddApexY(builder, apexY):
-    builder.PrependFloat32Slot(3, apexY, 0.0)
-
+    return BallHitRefinedWireAddApexX(builder, apexX)
+def BallHitRefinedWireAddApexY(builder, apexY): builder.PrependFloat32Slot(3, apexY, 0.0)
 def AddApexY(builder, apexY):
-    BallHitRefinedWireAddApexY(builder, apexY)
-
-def BallHitRefinedWireAddApexZ(builder, apexZ):
-    builder.PrependFloat32Slot(4, apexZ, 0.0)
-
+    return BallHitRefinedWireAddApexY(builder, apexY)
+def BallHitRefinedWireAddApexZ(builder, apexZ): builder.PrependFloat32Slot(4, apexZ, 0.0)
 def AddApexZ(builder, apexZ):
-    BallHitRefinedWireAddApexZ(builder, apexZ)
-
-def BallHitRefinedWireEnd(builder):
-    return builder.EndObject()
-
+    return BallHitRefinedWireAddApexZ(builder, apexZ)
+def BallHitRefinedWireEnd(builder): return builder.EndObject()
 def End(builder):
     return BallHitRefinedWireEnd(builder)

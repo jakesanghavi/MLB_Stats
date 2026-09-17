@@ -39,133 +39,98 @@ class BallPitchReleasePointWire(object):
         return None
 
     # BallPitchReleasePointWire
-    def PublishTimestamp(self):
+    def ReleasePosition(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(8))
+        if o != 0:
+            x = o + self._tab.Pos
+            from MLB.Vec3Wire import Vec3Wire
+            obj = Vec3Wire()
+            obj.Init(self._tab.Bytes, x)
+            return obj
+        return None
+
+    # BallPitchReleasePointWire
+    def PublishTimestamp(self):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(10))
         if o != 0:
             return self._tab.String(o + self._tab.Pos)
         return None
 
     # BallPitchReleasePointWire
-    def ReleaseSpeed(self):
-        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(10))
-        if o != 0:
-            return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
-        return 0.0
-
-    # BallPitchReleasePointWire
-    def EffectiveVelocity(self):
+    def X(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(12))
         if o != 0:
             return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
         return 0.0
 
     # BallPitchReleasePointWire
-    def VenueId(self):
+    def Y(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(14))
-        if o != 0:
-            return self._tab.String(o + self._tab.Pos)
-        return None
-
-    # BallPitchReleasePointWire
-    def ReleasePosition(self):
-        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(16))
-        if o != 0:
-            x = self._tab.Indirect(o + self._tab.Pos)
-            from Vec3 import Vec3
-            obj = Vec3()
-            obj.Init(self._tab.Bytes, x)
-            return obj
-        return None
-
-    # BallPitchReleasePointWire
-    def X(self):
-        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(18))
         if o != 0:
             return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
         return 0.0
 
     # BallPitchReleasePointWire
-    def Y(self):
-        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(20))
+    def EffectiveVelocity(self):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(16))
         if o != 0:
             return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
         return 0.0
 
     # BallPitchReleasePointWire
     def Z(self):
-        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(22))
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(18))
         if o != 0:
             return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
         return 0.0
 
-def BallPitchReleasePointWireStart(builder):
-    builder.StartObject(10)
+    # BallPitchReleasePointWire
+    def ReleaseSpeed(self):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(20))
+        if o != 0:
+            return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
+        return 0.0
 
+    # BallPitchReleasePointWire
+    def VenueId(self):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(22))
+        if o != 0:
+            return self._tab.String(o + self._tab.Pos)
+        return None
+
+def BallPitchReleasePointWireStart(builder): builder.StartObject(10)
 def Start(builder):
-    BallPitchReleasePointWireStart(builder)
-
-def BallPitchReleasePointWireAddExtension(builder, extension):
-    builder.PrependFloat32Slot(0, extension, 0.0)
-
+    return BallPitchReleasePointWireStart(builder)
+def BallPitchReleasePointWireAddExtension(builder, extension): builder.PrependFloat32Slot(0, extension, 0.0)
 def AddExtension(builder, extension):
-    BallPitchReleasePointWireAddExtension(builder, extension)
-
-def BallPitchReleasePointWireAddReleaseTimestamp(builder, releaseTimestamp):
-    builder.PrependUOffsetTRelativeSlot(1, flatbuffers.number_types.UOffsetTFlags.py_type(releaseTimestamp), 0)
-
+    return BallPitchReleasePointWireAddExtension(builder, extension)
+def BallPitchReleasePointWireAddReleaseTimestamp(builder, releaseTimestamp): builder.PrependUOffsetTRelativeSlot(1, flatbuffers.number_types.UOffsetTFlags.py_type(releaseTimestamp), 0)
 def AddReleaseTimestamp(builder, releaseTimestamp):
-    BallPitchReleasePointWireAddReleaseTimestamp(builder, releaseTimestamp)
-
-def BallPitchReleasePointWireAddPublishTimestamp(builder, publishTimestamp):
-    builder.PrependUOffsetTRelativeSlot(2, flatbuffers.number_types.UOffsetTFlags.py_type(publishTimestamp), 0)
-
-def AddPublishTimestamp(builder, publishTimestamp):
-    BallPitchReleasePointWireAddPublishTimestamp(builder, publishTimestamp)
-
-def BallPitchReleasePointWireAddReleaseSpeed(builder, releaseSpeed):
-    builder.PrependFloat32Slot(3, releaseSpeed, 0.0)
-
-def AddReleaseSpeed(builder, releaseSpeed):
-    BallPitchReleasePointWireAddReleaseSpeed(builder, releaseSpeed)
-
-def BallPitchReleasePointWireAddEffectiveVelocity(builder, effectiveVelocity):
-    builder.PrependFloat32Slot(4, effectiveVelocity, 0.0)
-
-def AddEffectiveVelocity(builder, effectiveVelocity):
-    BallPitchReleasePointWireAddEffectiveVelocity(builder, effectiveVelocity)
-
-def BallPitchReleasePointWireAddVenueId(builder, venueId):
-    builder.PrependUOffsetTRelativeSlot(5, flatbuffers.number_types.UOffsetTFlags.py_type(venueId), 0)
-
-def AddVenueId(builder, venueId):
-    BallPitchReleasePointWireAddVenueId(builder, venueId)
-
-def BallPitchReleasePointWireAddReleasePosition(builder, releasePosition):
-    builder.PrependUOffsetTRelativeSlot(6, flatbuffers.number_types.UOffsetTFlags.py_type(releasePosition), 0)
-
+    return BallPitchReleasePointWireAddReleaseTimestamp(builder, releaseTimestamp)
+def BallPitchReleasePointWireAddReleasePosition(builder, releasePosition): builder.PrependStructSlot(2, flatbuffers.number_types.UOffsetTFlags.py_type(releasePosition), 0)
 def AddReleasePosition(builder, releasePosition):
-    BallPitchReleasePointWireAddReleasePosition(builder, releasePosition)
-
-def BallPitchReleasePointWireAddX(builder, x):
-    builder.PrependFloat32Slot(7, x, 0.0)
-
+    return BallPitchReleasePointWireAddReleasePosition(builder, releasePosition)
+def BallPitchReleasePointWireAddPublishTimestamp(builder, publishTimestamp): builder.PrependUOffsetTRelativeSlot(3, flatbuffers.number_types.UOffsetTFlags.py_type(publishTimestamp), 0)
+def AddPublishTimestamp(builder, publishTimestamp):
+    return BallPitchReleasePointWireAddPublishTimestamp(builder, publishTimestamp)
+def BallPitchReleasePointWireAddX(builder, x): builder.PrependFloat32Slot(4, x, 0.0)
 def AddX(builder, x):
-    BallPitchReleasePointWireAddX(builder, x)
-
-def BallPitchReleasePointWireAddY(builder, y):
-    builder.PrependFloat32Slot(8, y, 0.0)
-
+    return BallPitchReleasePointWireAddX(builder, x)
+def BallPitchReleasePointWireAddY(builder, y): builder.PrependFloat32Slot(5, y, 0.0)
 def AddY(builder, y):
-    BallPitchReleasePointWireAddY(builder, y)
-
-def BallPitchReleasePointWireAddZ(builder, z):
-    builder.PrependFloat32Slot(9, z, 0.0)
-
+    return BallPitchReleasePointWireAddY(builder, y)
+def BallPitchReleasePointWireAddEffectiveVelocity(builder, effectiveVelocity): builder.PrependFloat32Slot(6, effectiveVelocity, 0.0)
+def AddEffectiveVelocity(builder, effectiveVelocity):
+    return BallPitchReleasePointWireAddEffectiveVelocity(builder, effectiveVelocity)
+def BallPitchReleasePointWireAddZ(builder, z): builder.PrependFloat32Slot(7, z, 0.0)
 def AddZ(builder, z):
-    BallPitchReleasePointWireAddZ(builder, z)
-
-def BallPitchReleasePointWireEnd(builder):
-    return builder.EndObject()
-
+    return BallPitchReleasePointWireAddZ(builder, z)
+def BallPitchReleasePointWireAddReleaseSpeed(builder, releaseSpeed): builder.PrependFloat32Slot(8, releaseSpeed, 0.0)
+def AddReleaseSpeed(builder, releaseSpeed):
+    return BallPitchReleasePointWireAddReleaseSpeed(builder, releaseSpeed)
+def BallPitchReleasePointWireAddVenueId(builder, venueId): builder.PrependUOffsetTRelativeSlot(9, flatbuffers.number_types.UOffsetTFlags.py_type(venueId), 0)
+def AddVenueId(builder, venueId):
+    return BallPitchReleasePointWireAddVenueId(builder, venueId)
+def BallPitchReleasePointWireEnd(builder): return builder.EndObject()
 def End(builder):
     return BallPitchReleasePointWireEnd(builder)

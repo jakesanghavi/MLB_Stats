@@ -6,57 +6,57 @@ import flatbuffers
 from flatbuffers.compat import import_numpy
 np = import_numpy()
 
-class BallHitLaunchWire(object):
+class TeamScoreEventDataWire(object):
     __slots__ = ['_tab']
 
     @classmethod
     def GetRootAs(cls, buf, offset=0):
         n = flatbuffers.encode.Get(flatbuffers.packer.uoffset, buf, offset)
-        x = BallHitLaunchWire()
+        x = TeamScoreEventDataWire()
         x.Init(buf, n + offset)
         return x
 
     @classmethod
-    def GetRootAsBallHitLaunchWire(cls, buf, offset=0):
+    def GetRootAsTeamScoreEventDataWire(cls, buf, offset=0):
         """This method is deprecated. Please switch to GetRootAs."""
         return cls.GetRootAs(buf, offset)
-    # BallHitLaunchWire
+    # TeamScoreEventDataWire
     def Init(self, buf, pos):
         self._tab = flatbuffers.table.Table(buf, pos)
 
-    # BallHitLaunchWire
+    # TeamScoreEventDataWire
     def Speed(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(4))
         if o != 0:
             return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
         return 0.0
 
-    # BallHitLaunchWire
+    # TeamScoreEventDataWire
     def Angle(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(6))
         if o != 0:
             return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
         return 0.0
 
-    # BallHitLaunchWire
+    # TeamScoreEventDataWire
     def Direction(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(8))
         if o != 0:
             return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
         return 0.0
 
-def BallHitLaunchWireStart(builder): builder.StartObject(3)
+def TeamScoreEventDataWireStart(builder): builder.StartObject(3)
 def Start(builder):
-    return BallHitLaunchWireStart(builder)
-def BallHitLaunchWireAddSpeed(builder, speed): builder.PrependFloat32Slot(0, speed, 0.0)
+    return TeamScoreEventDataWireStart(builder)
+def TeamScoreEventDataWireAddSpeed(builder, speed): builder.PrependFloat32Slot(0, speed, 0.0)
 def AddSpeed(builder, speed):
-    return BallHitLaunchWireAddSpeed(builder, speed)
-def BallHitLaunchWireAddAngle(builder, angle): builder.PrependFloat32Slot(1, angle, 0.0)
+    return TeamScoreEventDataWireAddSpeed(builder, speed)
+def TeamScoreEventDataWireAddAngle(builder, angle): builder.PrependFloat32Slot(1, angle, 0.0)
 def AddAngle(builder, angle):
-    return BallHitLaunchWireAddAngle(builder, angle)
-def BallHitLaunchWireAddDirection(builder, direction): builder.PrependFloat32Slot(2, direction, 0.0)
+    return TeamScoreEventDataWireAddAngle(builder, angle)
+def TeamScoreEventDataWireAddDirection(builder, direction): builder.PrependFloat32Slot(2, direction, 0.0)
 def AddDirection(builder, direction):
-    return BallHitLaunchWireAddDirection(builder, direction)
-def BallHitLaunchWireEnd(builder): return builder.EndObject()
+    return TeamScoreEventDataWireAddDirection(builder, direction)
+def TeamScoreEventDataWireEnd(builder): return builder.EndObject()
 def End(builder):
-    return BallHitLaunchWireEnd(builder)
+    return TeamScoreEventDataWireEnd(builder)

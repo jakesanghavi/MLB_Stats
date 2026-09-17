@@ -28,7 +28,7 @@ class SkeletalPlayerWire(object):
     def PositionId(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(4))
         if o != 0:
-            return self._tab.Get(flatbuffers.number_types.Int16Flags, o + self._tab.Pos)
+            return self._tab.Get(flatbuffers.number_types.Uint16Flags, o + self._tab.Pos)
         return 0
 
     # SkeletalPlayerWire
@@ -113,68 +113,36 @@ class SkeletalPlayerWire(object):
             return self._tab.Get(flatbuffers.number_types.Uint32Flags, o + self._tab.Pos)
         return 0
 
-def SkeletalPlayerWireStart(builder):
-    builder.StartObject(7)
-
+def SkeletalPlayerWireStart(builder): builder.StartObject(7)
 def Start(builder):
-    SkeletalPlayerWireStart(builder)
-
-def SkeletalPlayerWireAddPositionId(builder, positionId):
-    builder.PrependInt16Slot(0, positionId, 0)
-
+    return SkeletalPlayerWireStart(builder)
+def SkeletalPlayerWireAddPositionId(builder, positionId): builder.PrependUint16Slot(0, positionId, 0)
 def AddPositionId(builder, positionId):
-    SkeletalPlayerWireAddPositionId(builder, positionId)
-
-def SkeletalPlayerWireAddTrackId(builder, trackId):
-    builder.PrependUint32Slot(1, trackId, 0)
-
+    return SkeletalPlayerWireAddPositionId(builder, positionId)
+def SkeletalPlayerWireAddTrackId(builder, trackId): builder.PrependUint32Slot(1, trackId, 0)
 def AddTrackId(builder, trackId):
-    SkeletalPlayerWireAddTrackId(builder, trackId)
-
-def SkeletalPlayerWireAddJointPositions(builder, jointPositions):
-    builder.PrependUOffsetTRelativeSlot(2, flatbuffers.number_types.UOffsetTFlags.py_type(jointPositions), 0)
-
+    return SkeletalPlayerWireAddTrackId(builder, trackId)
+def SkeletalPlayerWireAddJointPositions(builder, jointPositions): builder.PrependUOffsetTRelativeSlot(2, flatbuffers.number_types.UOffsetTFlags.py_type(jointPositions), 0)
 def AddJointPositions(builder, jointPositions):
-    SkeletalPlayerWireAddJointPositions(builder, jointPositions)
-
-def SkeletalPlayerWireStartJointPositionsVector(builder, numElems):
-    return builder.StartVector(4, numElems, 4)
-
+    return SkeletalPlayerWireAddJointPositions(builder, jointPositions)
+def SkeletalPlayerWireStartJointPositionsVector(builder, numElems): return builder.StartVector(4, numElems, 4)
 def StartJointPositionsVector(builder, numElems):
     return SkeletalPlayerWireStartJointPositionsVector(builder, numElems)
-
-def SkeletalPlayerWireAddJointIds(builder, jointIds):
-    builder.PrependUOffsetTRelativeSlot(3, flatbuffers.number_types.UOffsetTFlags.py_type(jointIds), 0)
-
+def SkeletalPlayerWireAddJointIds(builder, jointIds): builder.PrependUOffsetTRelativeSlot(3, flatbuffers.number_types.UOffsetTFlags.py_type(jointIds), 0)
 def AddJointIds(builder, jointIds):
-    SkeletalPlayerWireAddJointIds(builder, jointIds)
-
-def SkeletalPlayerWireStartJointIdsVector(builder, numElems):
-    return builder.StartVector(4, numElems, 4)
-
+    return SkeletalPlayerWireAddJointIds(builder, jointIds)
+def SkeletalPlayerWireStartJointIdsVector(builder, numElems): return builder.StartVector(4, numElems, 4)
 def StartJointIdsVector(builder, numElems):
     return SkeletalPlayerWireStartJointIdsVector(builder, numElems)
-
-def SkeletalPlayerWireAddPlayerId(builder, playerId):
-    builder.PrependUint32Slot(4, playerId, 0)
-
+def SkeletalPlayerWireAddPlayerId(builder, playerId): builder.PrependUint32Slot(4, playerId, 0)
 def AddPlayerId(builder, playerId):
-    SkeletalPlayerWireAddPlayerId(builder, playerId)
-
-def SkeletalPlayerWireAddJerseyNumber(builder, jerseyNumber):
-    builder.PrependUint32Slot(5, jerseyNumber, 0)
-
+    return SkeletalPlayerWireAddPlayerId(builder, playerId)
+def SkeletalPlayerWireAddJerseyNumber(builder, jerseyNumber): builder.PrependUint32Slot(5, jerseyNumber, 0)
 def AddJerseyNumber(builder, jerseyNumber):
-    SkeletalPlayerWireAddJerseyNumber(builder, jerseyNumber)
-
-def SkeletalPlayerWireAddRoleId(builder, roleId):
-    builder.PrependUint32Slot(6, roleId, 0)
-
+    return SkeletalPlayerWireAddJerseyNumber(builder, jerseyNumber)
+def SkeletalPlayerWireAddRoleId(builder, roleId): builder.PrependUint32Slot(6, roleId, 0)
 def AddRoleId(builder, roleId):
-    SkeletalPlayerWireAddRoleId(builder, roleId)
-
-def SkeletalPlayerWireEnd(builder):
-    return builder.EndObject()
-
+    return SkeletalPlayerWireAddRoleId(builder, roleId)
+def SkeletalPlayerWireEnd(builder): return builder.EndObject()
 def End(builder):
     return SkeletalPlayerWireEnd(builder)

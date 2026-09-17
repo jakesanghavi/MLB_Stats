@@ -32,120 +32,120 @@ class BallPitchSpinWire(object):
         return 0.0
 
     # BallPitchSpinWire
-    def Frame0Time(self):
-        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(6))
-        if o != 0:
-            return self._tab.Get(flatbuffers.number_types.Uint64Flags, o + self._tab.Pos)
-        return 0
-
-    # BallPitchSpinWire
-    def PublishTimestamp(self):
-        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(8))
-        if o != 0:
-            return self._tab.String(o + self._tab.Pos)
-        return None
-
-    # BallPitchSpinWire
-    def VenueId(self):
-        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(10))
-        if o != 0:
-            return self._tab.String(o + self._tab.Pos)
-        return None
-
-    # BallPitchSpinWire
-    def SpinRate(self):
-        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(12))
-        if o != 0:
-            return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
-        return 0.0
-
-    # BallPitchSpinWire
-    def SpinAxis(self):
-        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(14))
-        if o != 0:
-            return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
-        return 0.0
-
-    # BallPitchSpinWire
-    def SpinReducedConfidence(self):
-        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(16))
-        if o != 0:
-            return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
-        return 0.0
-
-    # BallPitchSpinWire
-    def SpinVector(self):
-        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(18))
-        if o != 0:
-            x = self._tab.Indirect(o + self._tab.Pos)
-            from Vec3 import Vec3
-            obj = Vec3()
-            obj.Init(self._tab.Bytes, x)
-            return obj
-        return None
-
-    # BallPitchSpinWire
-    def X(self):
-        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(20))
-        if o != 0:
-            return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
-        return 0.0
-
-    # BallPitchSpinWire
-    def Y(self):
-        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(22))
-        if o != 0:
-            return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
-        return 0.0
-
-    # BallPitchSpinWire
-    def Z(self):
-        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(24))
-        if o != 0:
-            return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
-        return 0.0
-
-    # BallPitchSpinWire
     def Xx(self):
-        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(26))
-        if o != 0:
-            return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
-        return 0.0
-
-    # BallPitchSpinWire
-    def Xy(self):
-        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(28))
-        if o != 0:
-            return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
-        return 0.0
-
-    # BallPitchSpinWire
-    def Xz(self):
-        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(30))
-        if o != 0:
-            return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
-        return 0.0
-
-    # BallPitchSpinWire
-    def Yx(self):
-        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(32))
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(6))
         if o != 0:
             return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
         return 0.0
 
     # BallPitchSpinWire
     def Yy(self):
-        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(34))
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(8))
+        if o != 0:
+            return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
+        return 0.0
+
+    # BallPitchSpinWire
+    def Zz(self):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(10))
+        if o != 0:
+            return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
+        return 0.0
+
+    # BallPitchSpinWire
+    def Xy(self):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(12))
         if o != 0:
             return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
         return 0.0
 
     # BallPitchSpinWire
     def Yz(self):
-        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(36))
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(14))
         if o != 0:
             return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
         return 0.0
+
+    # BallPitchSpinWire
+    def Xz(self):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(16))
+        if o != 0:
+            return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
+        return 0.0
+
+    # BallPitchSpinWire
+    def SpinReducedConfidence(self):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(18))
+        if o != 0:
+            return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
+        return 0.0
+
+    # BallPitchSpinWire
+    def SpinRate(self):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(20))
+        if o != 0:
+            return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
+        return 0.0
+
+    # BallPitchSpinWire
+    def PublishTimestamp(self):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(22))
+        if o != 0:
+            return self._tab.String(o + self._tab.Pos)
+        return None
+
+    # BallPitchSpinWire
+    def SpinAxis(self):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(24))
+        if o != 0:
+            return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
+        return 0.0
+
+    # BallPitchSpinWire
+    def X(self):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(26))
+        if o != 0:
+            return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
+        return 0.0
+
+    # BallPitchSpinWire
+    def Y(self):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(28))
+        if o != 0:
+            return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
+        return 0.0
+
+    # BallPitchSpinWire
+    def Frame0time(self):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(30))
+        if o != 0:
+            return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
+        return 0.0
+
+    # BallPitchSpinWire
+    def Z(self):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(32))
+        if o != 0:
+            return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
+        return 0.0
+
+    # BallPitchSpinWire
+    def SpinVector(self):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(34))
+        if o != 0:
+            x = o + self._tab.Pos
+            from MLB.Vec3Wire import Vec3Wire
+            obj = Vec3Wire()
+            obj.Init(self._tab.Bytes, x)
+            return obj
+        return None
+
+    # BallPitchSpinWire
+    def VenueId(self):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(36))
+        if o != 0:
+            return self._tab.String(o + self._tab.Pos)
+        return None
 
     # BallPitchSpinWire
     def Zx(self):
@@ -155,147 +155,82 @@ class BallPitchSpinWire(object):
         return 0.0
 
     # BallPitchSpinWire
-    def Zy(self):
+    def Yx(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(40))
         if o != 0:
             return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
         return 0.0
 
     # BallPitchSpinWire
-    def Zz(self):
+    def Zy(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(42))
         if o != 0:
             return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
         return 0.0
 
-def BallPitchSpinWireStart(builder):
-    builder.StartObject(20)
-
+def BallPitchSpinWireStart(builder): builder.StartObject(20)
 def Start(builder):
-    BallPitchSpinWireStart(builder)
-
-def BallPitchSpinWireAddActualFrameRate(builder, actualFrameRate):
-    builder.PrependFloat32Slot(0, actualFrameRate, 0.0)
-
+    return BallPitchSpinWireStart(builder)
+def BallPitchSpinWireAddActualFrameRate(builder, actualFrameRate): builder.PrependFloat32Slot(0, actualFrameRate, 0.0)
 def AddActualFrameRate(builder, actualFrameRate):
-    BallPitchSpinWireAddActualFrameRate(builder, actualFrameRate)
-
-def BallPitchSpinWireAddFrame0Time(builder, frame0Time):
-    builder.PrependUint64Slot(1, frame0Time, 0)
-
-def AddFrame0Time(builder, frame0Time):
-    BallPitchSpinWireAddFrame0Time(builder, frame0Time)
-
-def BallPitchSpinWireAddPublishTimestamp(builder, publishTimestamp):
-    builder.PrependUOffsetTRelativeSlot(2, flatbuffers.number_types.UOffsetTFlags.py_type(publishTimestamp), 0)
-
-def AddPublishTimestamp(builder, publishTimestamp):
-    BallPitchSpinWireAddPublishTimestamp(builder, publishTimestamp)
-
-def BallPitchSpinWireAddVenueId(builder, venueId):
-    builder.PrependUOffsetTRelativeSlot(3, flatbuffers.number_types.UOffsetTFlags.py_type(venueId), 0)
-
-def AddVenueId(builder, venueId):
-    BallPitchSpinWireAddVenueId(builder, venueId)
-
-def BallPitchSpinWireAddSpinRate(builder, spinRate):
-    builder.PrependFloat32Slot(4, spinRate, 0.0)
-
-def AddSpinRate(builder, spinRate):
-    BallPitchSpinWireAddSpinRate(builder, spinRate)
-
-def BallPitchSpinWireAddSpinAxis(builder, spinAxis):
-    builder.PrependFloat32Slot(5, spinAxis, 0.0)
-
-def AddSpinAxis(builder, spinAxis):
-    BallPitchSpinWireAddSpinAxis(builder, spinAxis)
-
-def BallPitchSpinWireAddSpinReducedConfidence(builder, spinReducedConfidence):
-    builder.PrependFloat32Slot(6, spinReducedConfidence, 0.0)
-
-def AddSpinReducedConfidence(builder, spinReducedConfidence):
-    BallPitchSpinWireAddSpinReducedConfidence(builder, spinReducedConfidence)
-
-def BallPitchSpinWireAddSpinVector(builder, spinVector):
-    builder.PrependUOffsetTRelativeSlot(7, flatbuffers.number_types.UOffsetTFlags.py_type(spinVector), 0)
-
-def AddSpinVector(builder, spinVector):
-    BallPitchSpinWireAddSpinVector(builder, spinVector)
-
-def BallPitchSpinWireAddX(builder, x):
-    builder.PrependFloat32Slot(8, x, 0.0)
-
-def AddX(builder, x):
-    BallPitchSpinWireAddX(builder, x)
-
-def BallPitchSpinWireAddY(builder, y):
-    builder.PrependFloat32Slot(9, y, 0.0)
-
-def AddY(builder, y):
-    BallPitchSpinWireAddY(builder, y)
-
-def BallPitchSpinWireAddZ(builder, z):
-    builder.PrependFloat32Slot(10, z, 0.0)
-
-def AddZ(builder, z):
-    BallPitchSpinWireAddZ(builder, z)
-
-def BallPitchSpinWireAddXx(builder, xx):
-    builder.PrependFloat32Slot(11, xx, 0.0)
-
+    return BallPitchSpinWireAddActualFrameRate(builder, actualFrameRate)
+def BallPitchSpinWireAddXx(builder, xx): builder.PrependFloat32Slot(1, xx, 0.0)
 def AddXx(builder, xx):
-    BallPitchSpinWireAddXx(builder, xx)
-
-def BallPitchSpinWireAddXy(builder, xy):
-    builder.PrependFloat32Slot(12, xy, 0.0)
-
-def AddXy(builder, xy):
-    BallPitchSpinWireAddXy(builder, xy)
-
-def BallPitchSpinWireAddXz(builder, xz):
-    builder.PrependFloat32Slot(13, xz, 0.0)
-
-def AddXz(builder, xz):
-    BallPitchSpinWireAddXz(builder, xz)
-
-def BallPitchSpinWireAddYx(builder, yx):
-    builder.PrependFloat32Slot(14, yx, 0.0)
-
-def AddYx(builder, yx):
-    BallPitchSpinWireAddYx(builder, yx)
-
-def BallPitchSpinWireAddYy(builder, yy):
-    builder.PrependFloat32Slot(15, yy, 0.0)
-
+    return BallPitchSpinWireAddXx(builder, xx)
+def BallPitchSpinWireAddYy(builder, yy): builder.PrependFloat32Slot(2, yy, 0.0)
 def AddYy(builder, yy):
-    BallPitchSpinWireAddYy(builder, yy)
-
-def BallPitchSpinWireAddYz(builder, yz):
-    builder.PrependFloat32Slot(16, yz, 0.0)
-
-def AddYz(builder, yz):
-    BallPitchSpinWireAddYz(builder, yz)
-
-def BallPitchSpinWireAddZx(builder, zx):
-    builder.PrependFloat32Slot(17, zx, 0.0)
-
-def AddZx(builder, zx):
-    BallPitchSpinWireAddZx(builder, zx)
-
-def BallPitchSpinWireAddZy(builder, zy):
-    builder.PrependFloat32Slot(18, zy, 0.0)
-
-def AddZy(builder, zy):
-    BallPitchSpinWireAddZy(builder, zy)
-
-def BallPitchSpinWireAddZz(builder, zz):
-    builder.PrependFloat32Slot(19, zz, 0.0)
-
+    return BallPitchSpinWireAddYy(builder, yy)
+def BallPitchSpinWireAddZz(builder, zz): builder.PrependFloat32Slot(3, zz, 0.0)
 def AddZz(builder, zz):
-    BallPitchSpinWireAddZz(builder, zz)
-
-def BallPitchSpinWireEnd(builder):
-    return builder.EndObject()
-
+    return BallPitchSpinWireAddZz(builder, zz)
+def BallPitchSpinWireAddXy(builder, xy): builder.PrependFloat32Slot(4, xy, 0.0)
+def AddXy(builder, xy):
+    return BallPitchSpinWireAddXy(builder, xy)
+def BallPitchSpinWireAddYz(builder, yz): builder.PrependFloat32Slot(5, yz, 0.0)
+def AddYz(builder, yz):
+    return BallPitchSpinWireAddYz(builder, yz)
+def BallPitchSpinWireAddXz(builder, xz): builder.PrependFloat32Slot(6, xz, 0.0)
+def AddXz(builder, xz):
+    return BallPitchSpinWireAddXz(builder, xz)
+def BallPitchSpinWireAddSpinReducedConfidence(builder, spinReducedConfidence): builder.PrependFloat32Slot(7, spinReducedConfidence, 0.0)
+def AddSpinReducedConfidence(builder, spinReducedConfidence):
+    return BallPitchSpinWireAddSpinReducedConfidence(builder, spinReducedConfidence)
+def BallPitchSpinWireAddSpinRate(builder, spinRate): builder.PrependFloat32Slot(8, spinRate, 0.0)
+def AddSpinRate(builder, spinRate):
+    return BallPitchSpinWireAddSpinRate(builder, spinRate)
+def BallPitchSpinWireAddPublishTimestamp(builder, publishTimestamp): builder.PrependUOffsetTRelativeSlot(9, flatbuffers.number_types.UOffsetTFlags.py_type(publishTimestamp), 0)
+def AddPublishTimestamp(builder, publishTimestamp):
+    return BallPitchSpinWireAddPublishTimestamp(builder, publishTimestamp)
+def BallPitchSpinWireAddSpinAxis(builder, spinAxis): builder.PrependFloat32Slot(10, spinAxis, 0.0)
+def AddSpinAxis(builder, spinAxis):
+    return BallPitchSpinWireAddSpinAxis(builder, spinAxis)
+def BallPitchSpinWireAddX(builder, x): builder.PrependFloat32Slot(11, x, 0.0)
+def AddX(builder, x):
+    return BallPitchSpinWireAddX(builder, x)
+def BallPitchSpinWireAddY(builder, y): builder.PrependFloat32Slot(12, y, 0.0)
+def AddY(builder, y):
+    return BallPitchSpinWireAddY(builder, y)
+def BallPitchSpinWireAddFrame0time(builder, frame0time): builder.PrependFloat32Slot(13, frame0time, 0.0)
+def AddFrame0time(builder, frame0time):
+    return BallPitchSpinWireAddFrame0time(builder, frame0time)
+def BallPitchSpinWireAddZ(builder, z): builder.PrependFloat32Slot(14, z, 0.0)
+def AddZ(builder, z):
+    return BallPitchSpinWireAddZ(builder, z)
+def BallPitchSpinWireAddSpinVector(builder, spinVector): builder.PrependStructSlot(15, flatbuffers.number_types.UOffsetTFlags.py_type(spinVector), 0)
+def AddSpinVector(builder, spinVector):
+    return BallPitchSpinWireAddSpinVector(builder, spinVector)
+def BallPitchSpinWireAddVenueId(builder, venueId): builder.PrependUOffsetTRelativeSlot(16, flatbuffers.number_types.UOffsetTFlags.py_type(venueId), 0)
+def AddVenueId(builder, venueId):
+    return BallPitchSpinWireAddVenueId(builder, venueId)
+def BallPitchSpinWireAddZx(builder, zx): builder.PrependFloat32Slot(17, zx, 0.0)
+def AddZx(builder, zx):
+    return BallPitchSpinWireAddZx(builder, zx)
+def BallPitchSpinWireAddYx(builder, yx): builder.PrependFloat32Slot(18, yx, 0.0)
+def AddYx(builder, yx):
+    return BallPitchSpinWireAddYx(builder, yx)
+def BallPitchSpinWireAddZy(builder, zy): builder.PrependFloat32Slot(19, zy, 0.0)
+def AddZy(builder, zy):
+    return BallPitchSpinWireAddZy(builder, zy)
+def BallPitchSpinWireEnd(builder): return builder.EndObject()
 def End(builder):
     return BallPitchSpinWireEnd(builder)

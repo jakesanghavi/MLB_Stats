@@ -53,102 +53,70 @@ class BallPitchRefinedWire(object):
         return 0.0
 
     # BallPitchRefinedWire
-    def Extension(self):
+    def X(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(12))
         if o != 0:
             return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
         return 0.0
 
     # BallPitchRefinedWire
-    def PerceivedSpeed(self):
+    def Y(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(14))
         if o != 0:
             return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
         return 0.0
 
     # BallPitchRefinedWire
-    def X(self):
+    def Z(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(16))
         if o != 0:
             return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
         return 0.0
 
     # BallPitchRefinedWire
-    def Y(self):
+    def Extension(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(18))
         if o != 0:
             return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
         return 0.0
 
     # BallPitchRefinedWire
-    def Z(self):
+    def PerceivedSpeed(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(20))
         if o != 0:
             return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
         return 0.0
 
-def BallPitchRefinedWireStart(builder):
-    builder.StartObject(9)
-
+def BallPitchRefinedWireStart(builder): builder.StartObject(9)
 def Start(builder):
-    BallPitchRefinedWireStart(builder)
-
-def BallPitchRefinedWireAddSzTop(builder, szTop):
-    builder.PrependFloat32Slot(0, szTop, 0.0)
-
+    return BallPitchRefinedWireStart(builder)
+def BallPitchRefinedWireAddSzTop(builder, szTop): builder.PrependFloat32Slot(0, szTop, 0.0)
 def AddSzTop(builder, szTop):
-    BallPitchRefinedWireAddSzTop(builder, szTop)
-
-def BallPitchRefinedWireAddSzBot(builder, szBot):
-    builder.PrependFloat32Slot(1, szBot, 0.0)
-
+    return BallPitchRefinedWireAddSzTop(builder, szTop)
+def BallPitchRefinedWireAddSzBot(builder, szBot): builder.PrependFloat32Slot(1, szBot, 0.0)
 def AddSzBot(builder, szBot):
-    BallPitchRefinedWireAddSzBot(builder, szBot)
-
-def BallPitchRefinedWireAddSpinRate(builder, spinRate):
-    builder.PrependFloat32Slot(2, spinRate, 0.0)
-
+    return BallPitchRefinedWireAddSzBot(builder, szBot)
+def BallPitchRefinedWireAddSpinRate(builder, spinRate): builder.PrependFloat32Slot(2, spinRate, 0.0)
 def AddSpinRate(builder, spinRate):
-    BallPitchRefinedWireAddSpinRate(builder, spinRate)
-
-def BallPitchRefinedWireAddSpinAxis(builder, spinAxis):
-    builder.PrependFloat32Slot(3, spinAxis, 0.0)
-
+    return BallPitchRefinedWireAddSpinRate(builder, spinRate)
+def BallPitchRefinedWireAddSpinAxis(builder, spinAxis): builder.PrependFloat32Slot(3, spinAxis, 0.0)
 def AddSpinAxis(builder, spinAxis):
-    BallPitchRefinedWireAddSpinAxis(builder, spinAxis)
-
-def BallPitchRefinedWireAddExtension(builder, extension):
-    builder.PrependFloat32Slot(4, extension, 0.0)
-
-def AddExtension(builder, extension):
-    BallPitchRefinedWireAddExtension(builder, extension)
-
-def BallPitchRefinedWireAddPerceivedSpeed(builder, perceivedSpeed):
-    builder.PrependFloat32Slot(5, perceivedSpeed, 0.0)
-
-def AddPerceivedSpeed(builder, perceivedSpeed):
-    BallPitchRefinedWireAddPerceivedSpeed(builder, perceivedSpeed)
-
-def BallPitchRefinedWireAddX(builder, x):
-    builder.PrependFloat32Slot(6, x, 0.0)
-
+    return BallPitchRefinedWireAddSpinAxis(builder, spinAxis)
+def BallPitchRefinedWireAddX(builder, x): builder.PrependFloat32Slot(4, x, 0.0)
 def AddX(builder, x):
-    BallPitchRefinedWireAddX(builder, x)
-
-def BallPitchRefinedWireAddY(builder, y):
-    builder.PrependFloat32Slot(7, y, 0.0)
-
+    return BallPitchRefinedWireAddX(builder, x)
+def BallPitchRefinedWireAddY(builder, y): builder.PrependFloat32Slot(5, y, 0.0)
 def AddY(builder, y):
-    BallPitchRefinedWireAddY(builder, y)
-
-def BallPitchRefinedWireAddZ(builder, z):
-    builder.PrependFloat32Slot(8, z, 0.0)
-
+    return BallPitchRefinedWireAddY(builder, y)
+def BallPitchRefinedWireAddZ(builder, z): builder.PrependFloat32Slot(6, z, 0.0)
 def AddZ(builder, z):
-    BallPitchRefinedWireAddZ(builder, z)
-
-def BallPitchRefinedWireEnd(builder):
-    return builder.EndObject()
-
+    return BallPitchRefinedWireAddZ(builder, z)
+def BallPitchRefinedWireAddExtension(builder, extension): builder.PrependFloat32Slot(7, extension, 0.0)
+def AddExtension(builder, extension):
+    return BallPitchRefinedWireAddExtension(builder, extension)
+def BallPitchRefinedWireAddPerceivedSpeed(builder, perceivedSpeed): builder.PrependFloat32Slot(8, perceivedSpeed, 0.0)
+def AddPerceivedSpeed(builder, perceivedSpeed):
+    return BallPitchRefinedWireAddPerceivedSpeed(builder, perceivedSpeed)
+def BallPitchRefinedWireEnd(builder): return builder.EndObject()
 def End(builder):
     return BallPitchRefinedWireEnd(builder)

@@ -29,8 +29,8 @@ class TrackingBatPositionWire(object):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(4))
         if o != 0:
             x = o + self._tab.Pos
-            from Vec3 import Vec3
-            obj = Vec3()
+            from MLB.Vec3Wire import Vec3Wire
+            obj = Vec3Wire()
             obj.Init(self._tab.Bytes, x)
             return obj
         return None
@@ -40,32 +40,21 @@ class TrackingBatPositionWire(object):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(6))
         if o != 0:
             x = o + self._tab.Pos
-            from Vec3 import Vec3
-            obj = Vec3()
+            from MLB.Vec3Wire import Vec3Wire
+            obj = Vec3Wire()
             obj.Init(self._tab.Bytes, x)
             return obj
         return None
 
-def TrackingBatPositionWireStart(builder):
-    builder.StartObject(2)
-
+def TrackingBatPositionWireStart(builder): builder.StartObject(2)
 def Start(builder):
-    TrackingBatPositionWireStart(builder)
-
-def TrackingBatPositionWireAddHeadPosition(builder, headPosition):
-    builder.PrependStructSlot(0, flatbuffers.number_types.UOffsetTFlags.py_type(headPosition), 0)
-
+    return TrackingBatPositionWireStart(builder)
+def TrackingBatPositionWireAddHeadPosition(builder, headPosition): builder.PrependStructSlot(0, flatbuffers.number_types.UOffsetTFlags.py_type(headPosition), 0)
 def AddHeadPosition(builder, headPosition):
-    TrackingBatPositionWireAddHeadPosition(builder, headPosition)
-
-def TrackingBatPositionWireAddHandlePosition(builder, handlePosition):
-    builder.PrependStructSlot(1, flatbuffers.number_types.UOffsetTFlags.py_type(handlePosition), 0)
-
+    return TrackingBatPositionWireAddHeadPosition(builder, headPosition)
+def TrackingBatPositionWireAddHandlePosition(builder, handlePosition): builder.PrependStructSlot(1, flatbuffers.number_types.UOffsetTFlags.py_type(handlePosition), 0)
 def AddHandlePosition(builder, handlePosition):
-    TrackingBatPositionWireAddHandlePosition(builder, handlePosition)
-
-def TrackingBatPositionWireEnd(builder):
-    return builder.EndObject()
-
+    return TrackingBatPositionWireAddHandlePosition(builder, handlePosition)
+def TrackingBatPositionWireEnd(builder): return builder.EndObject()
 def End(builder):
     return TrackingBatPositionWireEnd(builder)

@@ -192,158 +192,81 @@ class BallPickOffDataWire(object):
             return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
         return 0.0
 
-def BallPickOffDataWireStart(builder):
-    builder.StartObject(24)
-
+def BallPickOffDataWireStart(builder): builder.StartObject(24)
 def Start(builder):
-    BallPickOffDataWireStart(builder)
-
-def BallPickOffDataWireAddPredictedLandingY(builder, predictedLandingY):
-    builder.PrependFloat32Slot(0, predictedLandingY, 0.0)
-
+    return BallPickOffDataWireStart(builder)
+def BallPickOffDataWireAddPredictedLandingY(builder, predictedLandingY): builder.PrependFloat32Slot(0, predictedLandingY, 0.0)
 def AddPredictedLandingY(builder, predictedLandingY):
-    BallPickOffDataWireAddPredictedLandingY(builder, predictedLandingY)
-
-def BallPickOffDataWireAddPredictedLandingZ(builder, predictedLandingZ):
-    builder.PrependFloat32Slot(1, predictedLandingZ, 0.0)
-
+    return BallPickOffDataWireAddPredictedLandingY(builder, predictedLandingY)
+def BallPickOffDataWireAddPredictedLandingZ(builder, predictedLandingZ): builder.PrependFloat32Slot(1, predictedLandingZ, 0.0)
 def AddPredictedLandingZ(builder, predictedLandingZ):
-    BallPickOffDataWireAddPredictedLandingZ(builder, predictedLandingZ)
-
-def BallPickOffDataWireAddPredictedLandingTime(builder, predictedLandingTime):
-    builder.PrependFloat32Slot(2, predictedLandingTime, 0.0)
-
+    return BallPickOffDataWireAddPredictedLandingZ(builder, predictedLandingZ)
+def BallPickOffDataWireAddPredictedLandingTime(builder, predictedLandingTime): builder.PrependFloat32Slot(2, predictedLandingTime, 0.0)
 def AddPredictedLandingTime(builder, predictedLandingTime):
-    BallPickOffDataWireAddPredictedLandingTime(builder, predictedLandingTime)
-
-def BallPickOffDataWireAddPredictedLandingX(builder, predictedLandingX):
-    builder.PrependFloat32Slot(3, predictedLandingX, 0.0)
-
+    return BallPickOffDataWireAddPredictedLandingTime(builder, predictedLandingTime)
+def BallPickOffDataWireAddPredictedLandingX(builder, predictedLandingX): builder.PrependFloat32Slot(3, predictedLandingX, 0.0)
 def AddPredictedLandingX(builder, predictedLandingX):
-    BallPickOffDataWireAddPredictedLandingX(builder, predictedLandingX)
-
-def BallPickOffDataWireAddSpeed(builder, speed):
-    builder.PrependFloat32Slot(4, speed, 0.0)
-
+    return BallPickOffDataWireAddPredictedLandingX(builder, predictedLandingX)
+def BallPickOffDataWireAddSpeed(builder, speed): builder.PrependFloat32Slot(4, speed, 0.0)
 def AddSpeed(builder, speed):
-    BallPickOffDataWireAddSpeed(builder, speed)
-
-def BallPickOffDataWireAddPolynomialX2(builder, polynomialX2):
-    builder.PrependFloat32Slot(5, polynomialX2, 0.0)
-
+    return BallPickOffDataWireAddSpeed(builder, speed)
+def BallPickOffDataWireAddPolynomialX2(builder, polynomialX2): builder.PrependFloat32Slot(5, polynomialX2, 0.0)
 def AddPolynomialX2(builder, polynomialX2):
-    BallPickOffDataWireAddPolynomialX2(builder, polynomialX2)
-
-def BallPickOffDataWireAddPolynomialY1(builder, polynomialY1):
-    builder.PrependFloat32Slot(6, polynomialY1, 0.0)
-
+    return BallPickOffDataWireAddPolynomialX2(builder, polynomialX2)
+def BallPickOffDataWireAddPolynomialY1(builder, polynomialY1): builder.PrependFloat32Slot(6, polynomialY1, 0.0)
 def AddPolynomialY1(builder, polynomialY1):
-    BallPickOffDataWireAddPolynomialY1(builder, polynomialY1)
-
-def BallPickOffDataWireAddPolynomialX3(builder, polynomialX3):
-    builder.PrependFloat32Slot(7, polynomialX3, 0.0)
-
+    return BallPickOffDataWireAddPolynomialY1(builder, polynomialY1)
+def BallPickOffDataWireAddPolynomialX3(builder, polynomialX3): builder.PrependFloat32Slot(7, polynomialX3, 0.0)
 def AddPolynomialX3(builder, polynomialX3):
-    BallPickOffDataWireAddPolynomialX3(builder, polynomialX3)
-
-def BallPickOffDataWireAddPolynomialY2(builder, polynomialY2):
-    builder.PrependFloat32Slot(8, polynomialY2, 0.0)
-
+    return BallPickOffDataWireAddPolynomialX3(builder, polynomialX3)
+def BallPickOffDataWireAddPolynomialY2(builder, polynomialY2): builder.PrependFloat32Slot(8, polynomialY2, 0.0)
 def AddPolynomialY2(builder, polynomialY2):
-    BallPickOffDataWireAddPolynomialY2(builder, polynomialY2)
-
-def BallPickOffDataWireAddPolynomialZ1(builder, polynomialZ1):
-    builder.PrependFloat32Slot(9, polynomialZ1, 0.0)
-
+    return BallPickOffDataWireAddPolynomialY2(builder, polynomialY2)
+def BallPickOffDataWireAddPolynomialZ1(builder, polynomialZ1): builder.PrependFloat32Slot(9, polynomialZ1, 0.0)
 def AddPolynomialZ1(builder, polynomialZ1):
-    BallPickOffDataWireAddPolynomialZ1(builder, polynomialZ1)
-
-def BallPickOffDataWireAddPolynomialY3(builder, polynomialY3):
-    builder.PrependFloat32Slot(10, polynomialY3, 0.0)
-
+    return BallPickOffDataWireAddPolynomialZ1(builder, polynomialZ1)
+def BallPickOffDataWireAddPolynomialY3(builder, polynomialY3): builder.PrependFloat32Slot(10, polynomialY3, 0.0)
 def AddPolynomialY3(builder, polynomialY3):
-    BallPickOffDataWireAddPolynomialY3(builder, polynomialY3)
-
-def BallPickOffDataWireAddPolynomialZ2(builder, polynomialZ2):
-    builder.PrependFloat32Slot(11, polynomialZ2, 0.0)
-
+    return BallPickOffDataWireAddPolynomialY3(builder, polynomialY3)
+def BallPickOffDataWireAddPolynomialZ2(builder, polynomialZ2): builder.PrependFloat32Slot(11, polynomialZ2, 0.0)
 def AddPolynomialZ2(builder, polynomialZ2):
-    BallPickOffDataWireAddPolynomialZ2(builder, polynomialZ2)
-
-def BallPickOffDataWireAddPolynomialZ3(builder, polynomialZ3):
-    builder.PrependFloat32Slot(12, polynomialZ3, 0.0)
-
+    return BallPickOffDataWireAddPolynomialZ2(builder, polynomialZ2)
+def BallPickOffDataWireAddPolynomialZ3(builder, polynomialZ3): builder.PrependFloat32Slot(12, polynomialZ3, 0.0)
 def AddPolynomialZ3(builder, polynomialZ3):
-    BallPickOffDataWireAddPolynomialZ3(builder, polynomialZ3)
-
-def BallPickOffDataWireAddEndZ(builder, endZ):
-    builder.PrependFloat32Slot(13, endZ, 0.0)
-
+    return BallPickOffDataWireAddPolynomialZ3(builder, polynomialZ3)
+def BallPickOffDataWireAddEndZ(builder, endZ): builder.PrependFloat32Slot(13, endZ, 0.0)
 def AddEndZ(builder, endZ):
-    BallPickOffDataWireAddEndZ(builder, endZ)
-
-def BallPickOffDataWireAddEndX(builder, endX):
-    builder.PrependFloat32Slot(14, endX, 0.0)
-
+    return BallPickOffDataWireAddEndZ(builder, endZ)
+def BallPickOffDataWireAddEndX(builder, endX): builder.PrependFloat32Slot(14, endX, 0.0)
 def AddEndX(builder, endX):
-    BallPickOffDataWireAddEndX(builder, endX)
-
-def BallPickOffDataWireAddEndY(builder, endY):
-    builder.PrependFloat32Slot(15, endY, 0.0)
-
+    return BallPickOffDataWireAddEndX(builder, endX)
+def BallPickOffDataWireAddEndY(builder, endY): builder.PrependFloat32Slot(15, endY, 0.0)
 def AddEndY(builder, endY):
-    BallPickOffDataWireAddEndY(builder, endY)
-
-def BallPickOffDataWireAddVenueId(builder, venueId):
-    builder.PrependUOffsetTRelativeSlot(16, flatbuffers.number_types.UOffsetTFlags.py_type(venueId), 0)
-
+    return BallPickOffDataWireAddEndY(builder, endY)
+def BallPickOffDataWireAddVenueId(builder, venueId): builder.PrependUOffsetTRelativeSlot(16, flatbuffers.number_types.UOffsetTFlags.py_type(venueId), 0)
 def AddVenueId(builder, venueId):
-    BallPickOffDataWireAddVenueId(builder, venueId)
-
-def BallPickOffDataWireAddEndTime(builder, endTime):
-    builder.PrependFloat32Slot(17, endTime, 0.0)
-
+    return BallPickOffDataWireAddVenueId(builder, venueId)
+def BallPickOffDataWireAddEndTime(builder, endTime): builder.PrependFloat32Slot(17, endTime, 0.0)
 def AddEndTime(builder, endTime):
-    BallPickOffDataWireAddEndTime(builder, endTime)
-
-def BallPickOffDataWireAddPublishTimestamp(builder, publishTimestamp):
-    builder.PrependUOffsetTRelativeSlot(18, flatbuffers.number_types.UOffsetTFlags.py_type(publishTimestamp), 0)
-
+    return BallPickOffDataWireAddEndTime(builder, endTime)
+def BallPickOffDataWireAddPublishTimestamp(builder, publishTimestamp): builder.PrependUOffsetTRelativeSlot(18, flatbuffers.number_types.UOffsetTFlags.py_type(publishTimestamp), 0)
 def AddPublishTimestamp(builder, publishTimestamp):
-    BallPickOffDataWireAddPublishTimestamp(builder, publishTimestamp)
-
-def BallPickOffDataWireAddPolynomialX1(builder, polynomialX1):
-    builder.PrependFloat32Slot(19, polynomialX1, 0.0)
-
+    return BallPickOffDataWireAddPublishTimestamp(builder, publishTimestamp)
+def BallPickOffDataWireAddPolynomialX1(builder, polynomialX1): builder.PrependFloat32Slot(19, polynomialX1, 0.0)
 def AddPolynomialX1(builder, polynomialX1):
-    BallPickOffDataWireAddPolynomialX1(builder, polynomialX1)
-
-def BallPickOffDataWireAddStartX(builder, startX):
-    builder.PrependFloat32Slot(20, startX, 0.0)
-
+    return BallPickOffDataWireAddPolynomialX1(builder, polynomialX1)
+def BallPickOffDataWireAddStartX(builder, startX): builder.PrependFloat32Slot(20, startX, 0.0)
 def AddStartX(builder, startX):
-    BallPickOffDataWireAddStartX(builder, startX)
-
-def BallPickOffDataWireAddStartZ(builder, startZ):
-    builder.PrependFloat32Slot(21, startZ, 0.0)
-
+    return BallPickOffDataWireAddStartX(builder, startX)
+def BallPickOffDataWireAddStartZ(builder, startZ): builder.PrependFloat32Slot(21, startZ, 0.0)
 def AddStartZ(builder, startZ):
-    BallPickOffDataWireAddStartZ(builder, startZ)
-
-def BallPickOffDataWireAddEndSpeed(builder, endSpeed):
-    builder.PrependFloat32Slot(22, endSpeed, 0.0)
-
+    return BallPickOffDataWireAddStartZ(builder, startZ)
+def BallPickOffDataWireAddEndSpeed(builder, endSpeed): builder.PrependFloat32Slot(22, endSpeed, 0.0)
 def AddEndSpeed(builder, endSpeed):
-    BallPickOffDataWireAddEndSpeed(builder, endSpeed)
-
-def BallPickOffDataWireAddStartY(builder, startY):
-    builder.PrependFloat32Slot(23, startY, 0.0)
-
+    return BallPickOffDataWireAddEndSpeed(builder, endSpeed)
+def BallPickOffDataWireAddStartY(builder, startY): builder.PrependFloat32Slot(23, startY, 0.0)
 def AddStartY(builder, startY):
-    BallPickOffDataWireAddStartY(builder, startY)
-
-def BallPickOffDataWireEnd(builder):
-    return builder.EndObject()
-
+    return BallPickOffDataWireAddStartY(builder, startY)
+def BallPickOffDataWireEnd(builder): return builder.EndObject()
 def End(builder):
     return BallPickOffDataWireEnd(builder)

@@ -32,28 +32,28 @@ class BallPitchDataWire(object):
         return 0.0
 
     # BallPitchDataWire
-    def SzTop(self):
+    def Type(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(6))
         if o != 0:
-            return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
-        return 0.0
+            return self._tab.String(o + self._tab.Pos)
+        return None
 
     # BallPitchDataWire
-    def SzBot(self):
+    def SzTop(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(8))
         if o != 0:
             return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
         return 0.0
 
     # BallPitchDataWire
-    def PitchType(self):
+    def SzBot(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(10))
         if o != 0:
-            return self._tab.String(o + self._tab.Pos)
-        return None
+            return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
+        return 0.0
 
     # BallPitchDataWire
-    def Type(self):
+    def PitchType(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(12))
         if o != 0:
             return self._tab.String(o + self._tab.Pos)
@@ -64,8 +64,8 @@ class BallPitchDataWire(object):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(14))
         if o != 0:
             x = self._tab.Indirect(o + self._tab.Pos)
-            from Vec3 import Vec3
-            obj = Vec3()
+            from MLB.BallPitchDataReleaseDataWire import BallPitchDataReleaseDataWire
+            obj = BallPitchDataReleaseDataWire()
             obj.Init(self._tab.Bytes, x)
             return obj
         return None
@@ -75,62 +75,36 @@ class BallPitchDataWire(object):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(16))
         if o != 0:
             x = self._tab.Indirect(o + self._tab.Pos)
-            from BallPitchTrajectoryDataWire import BallPitchTrajectoryDataWire
-            obj = BallPitchTrajectoryDataWire()
+            from MLB.BallPitchDataTrajectoryDataWire import BallPitchDataTrajectoryDataWire
+            obj = BallPitchDataTrajectoryDataWire()
             obj.Init(self._tab.Bytes, x)
             return obj
         return None
 
-def BallPitchDataWireStart(builder):
-    builder.StartObject(7)
-
+def BallPitchDataWireStart(builder): builder.StartObject(7)
 def Start(builder):
-    BallPitchDataWireStart(builder)
-
-def BallPitchDataWireAddSpeed(builder, speed):
-    builder.PrependFloat32Slot(0, speed, 0.0)
-
+    return BallPitchDataWireStart(builder)
+def BallPitchDataWireAddSpeed(builder, speed): builder.PrependFloat32Slot(0, speed, 0.0)
 def AddSpeed(builder, speed):
-    BallPitchDataWireAddSpeed(builder, speed)
-
-def BallPitchDataWireAddSzTop(builder, szTop):
-    builder.PrependFloat32Slot(1, szTop, 0.0)
-
-def AddSzTop(builder, szTop):
-    BallPitchDataWireAddSzTop(builder, szTop)
-
-def BallPitchDataWireAddSzBot(builder, szBot):
-    builder.PrependFloat32Slot(2, szBot, 0.0)
-
-def AddSzBot(builder, szBot):
-    BallPitchDataWireAddSzBot(builder, szBot)
-
-def BallPitchDataWireAddPitchType(builder, pitchType):
-    builder.PrependUOffsetTRelativeSlot(3, flatbuffers.number_types.UOffsetTFlags.py_type(pitchType), 0)
-
-def AddPitchType(builder, pitchType):
-    BallPitchDataWireAddPitchType(builder, pitchType)
-
-def BallPitchDataWireAddType(builder, type):
-    builder.PrependUOffsetTRelativeSlot(4, flatbuffers.number_types.UOffsetTFlags.py_type(type), 0)
-
+    return BallPitchDataWireAddSpeed(builder, speed)
+def BallPitchDataWireAddType(builder, type): builder.PrependUOffsetTRelativeSlot(1, flatbuffers.number_types.UOffsetTFlags.py_type(type), 0)
 def AddType(builder, type):
-    BallPitchDataWireAddType(builder, type)
-
-def BallPitchDataWireAddReleaseData(builder, releaseData):
-    builder.PrependUOffsetTRelativeSlot(5, flatbuffers.number_types.UOffsetTFlags.py_type(releaseData), 0)
-
+    return BallPitchDataWireAddType(builder, type)
+def BallPitchDataWireAddSzTop(builder, szTop): builder.PrependFloat32Slot(2, szTop, 0.0)
+def AddSzTop(builder, szTop):
+    return BallPitchDataWireAddSzTop(builder, szTop)
+def BallPitchDataWireAddSzBot(builder, szBot): builder.PrependFloat32Slot(3, szBot, 0.0)
+def AddSzBot(builder, szBot):
+    return BallPitchDataWireAddSzBot(builder, szBot)
+def BallPitchDataWireAddPitchType(builder, pitchType): builder.PrependUOffsetTRelativeSlot(4, flatbuffers.number_types.UOffsetTFlags.py_type(pitchType), 0)
+def AddPitchType(builder, pitchType):
+    return BallPitchDataWireAddPitchType(builder, pitchType)
+def BallPitchDataWireAddReleaseData(builder, releaseData): builder.PrependUOffsetTRelativeSlot(5, flatbuffers.number_types.UOffsetTFlags.py_type(releaseData), 0)
 def AddReleaseData(builder, releaseData):
-    BallPitchDataWireAddReleaseData(builder, releaseData)
-
-def BallPitchDataWireAddTrajectoryData(builder, trajectoryData):
-    builder.PrependUOffsetTRelativeSlot(6, flatbuffers.number_types.UOffsetTFlags.py_type(trajectoryData), 0)
-
+    return BallPitchDataWireAddReleaseData(builder, releaseData)
+def BallPitchDataWireAddTrajectoryData(builder, trajectoryData): builder.PrependUOffsetTRelativeSlot(6, flatbuffers.number_types.UOffsetTFlags.py_type(trajectoryData), 0)
 def AddTrajectoryData(builder, trajectoryData):
-    BallPitchDataWireAddTrajectoryData(builder, trajectoryData)
-
-def BallPitchDataWireEnd(builder):
-    return builder.EndObject()
-
+    return BallPitchDataWireAddTrajectoryData(builder, trajectoryData)
+def BallPitchDataWireEnd(builder): return builder.EndObject()
 def End(builder):
     return BallPitchDataWireEnd(builder)
