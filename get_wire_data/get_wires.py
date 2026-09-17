@@ -215,7 +215,42 @@ def decode_skeletal_player(sp, bone_id_map=None):
     }
 
 
-def decode_actor_pose(ap):
+_QUAT_MAX = 0.7072  # zP.maxValue in the bundle
+
+
+def unpack_quat(u):
+    """Decode one uint32 "smallest-three" packed quaternion -> [x, y, z, w].
+
+    Mirrors zP.unpack in the Gameday poser bundle: 2 low bits pick the dropped
+    (largest) component; three 10-bit fields hold the others; w is restored via
+    the unit-length constraint and forced non-negative.
+    """
+    def dequant(v):
+        if v & 512:
+            v ^= 512
+            v -= 512
+        return v / 511.0 * _QUAT_MAX
+
+    dropped = u & 3
+    q = [0.0, 0.0, 0.0, 0.0]
+    ssq = 0.0
+    for s, shift in enumerate((22, 12, 2)):
+        a = dequant((u >> shift) & 1023)
+        q[(dropped + s + 1) % 4] = a
+        ssq += a * a
+    q[dropped] = (1.0 - ssq) ** 0.5 if ssq <= 1.0 else 0.0
+    if q[3] < 0:
+        q = [-c for c in q]
+    return q
+
+
+def decode_actor_pose(ap, bone_id_map=None):
+    node_ids = [ap.NodeIds(i) for i in range(ap.NodeIdsLength())]
+    packed = [ap.PackedQuats(i) for i in range(ap.PackedQuatsLength())]
+    joint_rotations = {}
+    for nid, pq in zip(node_ids, packed):
+        key = (bone_id_map or {}).get(str(nid), str(nid))
+        joint_rotations[key] = unpack_quat(pq)  # [x, y, z, w]
     return {
         "uid": ap.Uid(),
         "rootPos": _vec3(ap.RootPos()),
@@ -223,8 +258,7 @@ def decode_actor_pose(ap):
         "ground": ap.Ground(),
         "apex": ap.Apex(),
         "scale": ap.Scale(),
-        "nodeIds": [ap.NodeIds(i) for i in range(ap.NodeIdsLength())],
-        "packedQuats": [ap.PackedQuats(i) for i in range(ap.PackedQuatsLength())],
+        "jointRotations": joint_rotations,  # boneName -> quaternion [x,y,z,w]
     }
 
 
@@ -234,7 +268,7 @@ def decode_frame(fr, bone_id_map=None):
     players = [decode_skeletal_player(fr.RawJoints(i), bone_id_map)
                for i in range(fr.RawJointsLength())]
 
-    poses = [decode_actor_pose(fr.ActorPoses(i)) for i in range(fr.ActorPosesLength())]
+    poses = [decode_actor_pose(fr.ActorPoses(i), bone_id_map) for i in range(fr.ActorPosesLength())]
 
     ball_polys = []
     for i in range(fr.BallPolynomialsLength()):
@@ -301,21 +335,28 @@ class MannequinClient:
     BETA = "https://fieldvision-hls-beta.mlbinfra.com"
 
     def __init__(self, game_pk, play_id=None, token=None, client_id="gameday",
-                 env="prod", base_path="mannequin"):
+                 env="prod", base_path="mannequin", auth=None):
         self.game_pk = game_pk
         self.play_id = play_id
         self.token = token
+        self.auth = auth  # optional MlbAuth for automatic login/refresh
         self.client_id = client_id
         self.domain = self.BETA if env == "beta" else self.PROD
         self.base_path = base_path
         self.root = f"{game_pk}/plays/{play_id}" if play_id else f"{game_pk}"
         self._version = None
 
+    def _bearer(self):
+        if self.auth is not None:
+            return self.auth.token()  # logs in / refreshes as needed
+        return self.token
+
     @property
     def headers(self):
         h = {}
-        if self.token:
-            h["Authorization"] = self.token
+        tok = self._bearer()
+        if tok:
+            h["Authorization"] = tok
         if self.client_id:
             h["x-mannequin-client"] = self.client_id
         return h
@@ -383,8 +424,8 @@ class MannequinClient:
         frames = []
         for rec in records:
             idx = rec.get("index")
-            if idx is None:
-                continue
+            if idx is None or rec.get("isGap"):
+                continue  # gap records have no .bin chunk
             buf = self.chunk_bytes(idx, version)
             decoded = decode_tracking_data(buf, bone_id_map)
             frames.extend(decoded["frames"])
@@ -410,17 +451,26 @@ def main():
     ap.add_argument("--play-id", required=True, help="Play GUID (from the mannequin URL / gumbo playId)")
     ap.add_argument("--token", default=os.environ.get("MLB_BEARER_TOKEN"),
                     help="MLB bearer token (or set MLB_BEARER_TOKEN). Grab from DevTools while logged in.")
+    ap.add_argument("--login", action="store_true",
+                    help="Log in with MLB_USERNAME/MLB_PASSWORD to mint a token automatically.")
     ap.add_argument("--env", choices=["prod", "beta"], default="prod")
     ap.add_argument("--client-id", default="gameday")
     ap.add_argument("--version", default=None, help="Force a specific data version (default: latest)")
     ap.add_argument("--out", default=None, help="Write merged tracking JSON to this path")
     args = ap.parse_args()
 
+    auth = None
     if not args.token:
-        ap.error("No token. Pass --token or set MLB_BEARER_TOKEN (see module docstring for how to get one).")
+        # Fall back to credential login when a bearer token was not supplied.
+        if args.login or (os.environ.get("MLB_USERNAME") and os.environ.get("MLB_PASSWORD")):
+            from mlb_auth import MlbAuth
+            auth = MlbAuth()
+        else:
+            ap.error("No credentials. Pass --token / MLB_BEARER_TOKEN, or set "
+                     "MLB_USERNAME + MLB_PASSWORD (see module docstring).")
 
     client = MannequinClient(args.game_pk, args.play_id, token=args.token,
-                             client_id=args.client_id, env=args.env)
+                             auth=auth, client_id=args.client_id, env=args.env)
     play = client.download_play(args.version)
     print(f"version={play['version']}  frames={play['frameCount']}")
     if play["frames"]:

@@ -168,8 +168,10 @@ def main():
     ap = f["actorPoses"][0]
     assert ap["uid"] == 999
     assert ap["rootPos"] == {"x": 10.0, "y": 11.0, "z": 12.0}
-    assert ap["packedQuats"] == [111, 222, 333]
-    assert ap["nodeIds"] == [0, 1, 2]
+    # 3 packed quats -> 3 joint rotations keyed by bone name (node 0 maps via bone_id_map)
+    assert set(ap["jointRotations"].keys()) == {"joint_Pelvis", "1", "2"}
+    for q in ap["jointRotations"].values():
+        assert len(q) == 4 and abs(sum(c * c for c in q) - 1.0) < 1e-3  # unit quaternion
 
     assert len(f["ballPolynomials"]) == 1
     bp = f["ballPolynomials"][0]
