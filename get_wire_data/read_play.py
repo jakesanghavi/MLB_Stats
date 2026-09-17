@@ -94,14 +94,41 @@ class PlayReader:
                 out.append((e.get("time", f["time"]), e.get("dataType"), e.get("data")))
         return out
 
+    def live_action_intervals(self, min_seconds=0.75):
+        """[(start, end)] intervals where liveAction mode==true (the ball is live).
+
+        Short sub-second blips (warmup/setup jitter) are dropped. An unterminated
+        final 'true' is closed at the end of the clip.
+        """
+        if not self.frames:
+            return []
+        toggles = []
+        for f in self.frames:
+            for e in f.get("gameEvents", []):
+                if e.get("dataType") == 4:  # liveAction
+                    toggles.append((e.get("time", f["time"]), bool((e.get("data") or {}).get("mode"))))
+        toggles.sort(key=lambda x: x[0])
+        intervals = []
+        start = None
+        for t, mode in toggles:
+            if mode and start is None:
+                start = t
+            elif not mode and start is not None:
+                intervals.append((start, t))
+                start = None
+        if start is not None:
+            intervals.append((start, self.frames[-1]["time"]))
+        return [iv for iv in intervals if iv[1] - iv[0] >= min_seconds]
+
     def play_window(self, max_seconds=25.0, lead=2.0, trail=2.0, gap_merge=8.0):
         """Estimate the *actual* action window (absolute start, end seconds).
 
         Gameday 3D clips are over-inclusive (long lead-in/out, sometimes bleed
         from adjacent plays). We anchor on the in-stream ``playEvent{action:0}``
-        (the pitch) and take the contiguous ball-active window after it, capped
-        at ``max_seconds``. Falls back to the first tracked-ball time, then to
-        the whole clip.
+        (the pitch), take the contiguous ball-active window after it, and trim the
+        end to the sustained ``liveAction`` (ball-live) interval that contains the
+        pitch so trailing dead-ball tracking is excluded. Capped at ``max_seconds``.
+        Falls back to the first tracked-ball time, then to the whole clip.
         """
         if not self.frames:
             return None
@@ -138,8 +165,20 @@ class PlayReader:
                 seg_end, prev = bt, bt
             else:
                 break
-        t_end = min(seg_end, t_pitch + max_seconds)
-        return (max(t0, t_pitch - lead), min(tN, t_end + trail))
+
+        # sustained live-action interval overlapping [pitch, ball segment end]
+        start_anchor = t_pitch
+        t_end = seg_end
+        candidates = [iv for iv in self.live_action_intervals()
+                      if iv[1] >= t_pitch - 1.0 and iv[0] <= seg_end + 1.0]
+        if candidates:
+            containing = [iv for iv in candidates if iv[0] <= t_pitch <= iv[1]]
+            live = max(containing or candidates, key=lambda iv: iv[1] - iv[0])
+            start_anchor = min(t_pitch, live[0])
+            t_end = min(seg_end, live[1])  # trim trailing dead-ball tracking
+
+        t_end = min(t_end, t_pitch + max_seconds)
+        return (max(t0, start_anchor - lead), min(tN, t_end + trail))
 
     def summary(self):
         tracks = self.actor_tracks()

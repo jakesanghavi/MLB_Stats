@@ -34,6 +34,15 @@ TYPE_COLORS = {
     "coach": "#000000", "runner": "#775eef", "unknown": "#bbbbbb",
 }
 
+# When True, keep the entire ball path on screen for the whole play (past steps
+# persist as the animation evolves). When False, only a short recent trail is
+# shown and it resets across ball gaps.
+TRACK_ALL_TRAILS = True
+
+# A jump larger than this (seconds) between consecutive ball samples starts a new
+# trail segment (so disjoint ball phases aren't joined by a fake straight line).
+_BALL_GAP_BREAK = 0.3
+
 
 def _sample(track, t, max_gap):
     """Interpolate a sorted [(t, (x, z[, y])), ...] track at time t.
@@ -121,10 +130,15 @@ def reconstruct(play_dir, out_path="reconstruction.mp4", full=False, fps=30):
     ax.legend(handles=handles, loc="upper right", fontsize=8, framealpha=0.9)
 
     grid = np.arange(w0, w1, 1.0 / fps)
-    ball_hist = []
+    trail_xz = []          # accumulated trail points (NaN pairs break segments)
+    recent = []            # short recent trail (TRACK_ALL_TRAILS == False)
+    state = {"prev_ball_t": None}
 
     def update(i):
         t = grid[i]
+        if i == 0:  # reset persistent state when (re)rendering from the start
+            trail_xz.clear(); recent.clear(); state["prev_ball_t"] = None
+
         pts, cols = [], []
         for uid, tr in actor_tracks.items():
             v = _sample(tr, t, max_gap=1.0)  # hold/interp within an actor's own span
@@ -142,13 +156,27 @@ def reconstruct(play_dir, out_path="reconstruction.mp4", full=False, fps=30):
             x, z, y = bv
             ball_dot.set_offsets(np.array([[x, z]]))
             ball_dot.set_sizes([40 + max(0.0, y) * 8])
-            ball_hist.append((x, z))
+            gap = state["prev_ball_t"] is not None and (t - state["prev_ball_t"]) > _BALL_GAP_BREAK
+            if TRACK_ALL_TRAILS:
+                if gap:
+                    trail_xz.append((np.nan, np.nan))  # break, don't connect across gaps
+                trail_xz.append((x, z))
+            else:
+                if gap:
+                    recent.clear()
+                recent.append((x, z))
+                if len(recent) > 40:
+                    del recent[0]
+            state["prev_ball_t"] = t
         else:
             ball_dot.set_offsets(np.empty((0, 2)))
-            ball_hist.clear()  # reset trail across ball gaps
-        if ball_hist:
-            bh = np.array(ball_hist)
-            ball_trail.set_data(bh[:, 0], bh[:, 1])
+            if not TRACK_ALL_TRAILS:
+                recent.clear()
+
+        pathpts = trail_xz if TRACK_ALL_TRAILS else recent
+        if pathpts:
+            arr = np.array(pathpts, dtype=float)
+            ball_trail.set_data(arr[:, 0], arr[:, 1])
         else:
             ball_trail.set_data([], [])
 
