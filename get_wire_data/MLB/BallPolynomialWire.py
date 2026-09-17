@@ -39,22 +39,15 @@ class BallPolynomialWire(object):
         return None
 
     # BallPolynomialWire
-    def Dtype(self):
-        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(8))
-        if o != 0:
-            return self._tab.Get(flatbuffers.number_types.Int8Flags, o + self._tab.Pos)
-        return 0
-
-    # BallPolynomialWire
     def DataType(self):
-        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(10))
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(8))
         if o != 0:
             return self._tab.Get(flatbuffers.number_types.Uint8Flags, o + self._tab.Pos)
         return 0
 
     # BallPolynomialWire
     def Data(self):
-        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(12))
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(10))
         if o != 0:
             from flatbuffers.table import Table
             obj = Table(bytearray(), 0)
@@ -62,44 +55,21 @@ class BallPolynomialWire(object):
             return obj
         return None
 
-def BallPolynomialWireStart(builder):
-    builder.StartObject(5)
-
+def BallPolynomialWireStart(builder): builder.StartObject(4)
 def Start(builder):
-    BallPolynomialWireStart(builder)
-
-def BallPolynomialWireAddId(builder, id):
-    builder.PrependUOffsetTRelativeSlot(0, flatbuffers.number_types.UOffsetTFlags.py_type(id), 0)
-
+    return BallPolynomialWireStart(builder)
+def BallPolynomialWireAddId(builder, id): builder.PrependUOffsetTRelativeSlot(0, flatbuffers.number_types.UOffsetTFlags.py_type(id), 0)
 def AddId(builder, id):
-    BallPolynomialWireAddId(builder, id)
-
-def BallPolynomialWireAddTimestamp(builder, timestamp):
-    builder.PrependUOffsetTRelativeSlot(1, flatbuffers.number_types.UOffsetTFlags.py_type(timestamp), 0)
-
+    return BallPolynomialWireAddId(builder, id)
+def BallPolynomialWireAddTimestamp(builder, timestamp): builder.PrependUOffsetTRelativeSlot(1, flatbuffers.number_types.UOffsetTFlags.py_type(timestamp), 0)
 def AddTimestamp(builder, timestamp):
-    BallPolynomialWireAddTimestamp(builder, timestamp)
-
-def BallPolynomialWireAddDtype(builder, dtype):
-    builder.PrependInt8Slot(2, dtype, 0)
-
-def AddDtype(builder, dtype):
-    BallPolynomialWireAddDtype(builder, dtype)
-
-def BallPolynomialWireAddDataType(builder, dataType):
-    builder.PrependUint8Slot(3, dataType, 0)
-
+    return BallPolynomialWireAddTimestamp(builder, timestamp)
+def BallPolynomialWireAddDataType(builder, dataType): builder.PrependUint8Slot(2, dataType, 0)
 def AddDataType(builder, dataType):
-    BallPolynomialWireAddDataType(builder, dataType)
-
-def BallPolynomialWireAddData(builder, data):
-    builder.PrependUOffsetTRelativeSlot(4, flatbuffers.number_types.UOffsetTFlags.py_type(data), 0)
-
+    return BallPolynomialWireAddDataType(builder, dataType)
+def BallPolynomialWireAddData(builder, data): builder.PrependUOffsetTRelativeSlot(3, flatbuffers.number_types.UOffsetTFlags.py_type(data), 0)
 def AddData(builder, data):
-    BallPolynomialWireAddData(builder, data)
-
-def BallPolynomialWireEnd(builder):
-    return builder.EndObject()
-
+    return BallPolynomialWireAddData(builder, data)
+def BallPolynomialWireEnd(builder): return builder.EndObject()
 def End(builder):
     return BallPolynomialWireEnd(builder)

@@ -81,21 +81,21 @@ class BallThrowData(object):
         return 0.0
 
     # BallThrowData
-    def StartTime(self):
+    def ProjectedX(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(20))
         if o != 0:
             return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
         return 0.0
 
     # BallThrowData
-    def EndTime(self):
+    def ProjectedY(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(22))
         if o != 0:
             return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
         return 0.0
 
     # BallThrowData
-    def LandingTime(self):
+    def ProjectedZ(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(24))
         if o != 0:
             return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
@@ -165,172 +165,98 @@ class BallThrowData(object):
         return 0.0
 
     # BallThrowData
-    def ProjectedX(self):
+    def StartTime(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(44))
         if o != 0:
             return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
         return 0.0
 
     # BallThrowData
-    def ProjectedY(self):
+    def EndTime(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(46))
         if o != 0:
             return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
         return 0.0
 
     # BallThrowData
-    def ProjectedZ(self):
+    def LandingTime(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(48))
         if o != 0:
             return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
         return 0.0
 
-def BallThrowDataStart(builder):
-    builder.StartObject(23)
-
+def BallThrowDataStart(builder): builder.StartObject(23)
 def Start(builder):
-    BallThrowDataStart(builder)
-
-def BallThrowDataAddSpeed(builder, speed):
-    builder.PrependFloat32Slot(0, speed, 0.0)
-
+    return BallThrowDataStart(builder)
+def BallThrowDataAddSpeed(builder, speed): builder.PrependFloat32Slot(0, speed, 0.0)
 def AddSpeed(builder, speed):
-    BallThrowDataAddSpeed(builder, speed)
-
-def BallThrowDataAddEndSpeed(builder, endSpeed):
-    builder.PrependFloat32Slot(1, endSpeed, 0.0)
-
+    return BallThrowDataAddSpeed(builder, speed)
+def BallThrowDataAddEndSpeed(builder, endSpeed): builder.PrependFloat32Slot(1, endSpeed, 0.0)
 def AddEndSpeed(builder, endSpeed):
-    BallThrowDataAddEndSpeed(builder, endSpeed)
-
-def BallThrowDataAddStartX(builder, startX):
-    builder.PrependFloat32Slot(2, startX, 0.0)
-
+    return BallThrowDataAddEndSpeed(builder, endSpeed)
+def BallThrowDataAddStartX(builder, startX): builder.PrependFloat32Slot(2, startX, 0.0)
 def AddStartX(builder, startX):
-    BallThrowDataAddStartX(builder, startX)
-
-def BallThrowDataAddStartY(builder, startY):
-    builder.PrependFloat32Slot(3, startY, 0.0)
-
+    return BallThrowDataAddStartX(builder, startX)
+def BallThrowDataAddStartY(builder, startY): builder.PrependFloat32Slot(3, startY, 0.0)
 def AddStartY(builder, startY):
-    BallThrowDataAddStartY(builder, startY)
-
-def BallThrowDataAddStartZ(builder, startZ):
-    builder.PrependFloat32Slot(4, startZ, 0.0)
-
+    return BallThrowDataAddStartY(builder, startY)
+def BallThrowDataAddStartZ(builder, startZ): builder.PrependFloat32Slot(4, startZ, 0.0)
 def AddStartZ(builder, startZ):
-    BallThrowDataAddStartZ(builder, startZ)
-
-def BallThrowDataAddEndX(builder, endX):
-    builder.PrependFloat32Slot(5, endX, 0.0)
-
+    return BallThrowDataAddStartZ(builder, startZ)
+def BallThrowDataAddEndX(builder, endX): builder.PrependFloat32Slot(5, endX, 0.0)
 def AddEndX(builder, endX):
-    BallThrowDataAddEndX(builder, endX)
-
-def BallThrowDataAddEndY(builder, endY):
-    builder.PrependFloat32Slot(6, endY, 0.0)
-
+    return BallThrowDataAddEndX(builder, endX)
+def BallThrowDataAddEndY(builder, endY): builder.PrependFloat32Slot(6, endY, 0.0)
 def AddEndY(builder, endY):
-    BallThrowDataAddEndY(builder, endY)
-
-def BallThrowDataAddEndZ(builder, endZ):
-    builder.PrependFloat32Slot(7, endZ, 0.0)
-
+    return BallThrowDataAddEndY(builder, endY)
+def BallThrowDataAddEndZ(builder, endZ): builder.PrependFloat32Slot(7, endZ, 0.0)
 def AddEndZ(builder, endZ):
-    BallThrowDataAddEndZ(builder, endZ)
-
-def BallThrowDataAddStartTime(builder, startTime):
-    builder.PrependFloat32Slot(8, startTime, 0.0)
-
-def AddStartTime(builder, startTime):
-    BallThrowDataAddStartTime(builder, startTime)
-
-def BallThrowDataAddEndTime(builder, endTime):
-    builder.PrependFloat32Slot(9, endTime, 0.0)
-
-def AddEndTime(builder, endTime):
-    BallThrowDataAddEndTime(builder, endTime)
-
-def BallThrowDataAddLandingTime(builder, landingTime):
-    builder.PrependFloat32Slot(10, landingTime, 0.0)
-
-def AddLandingTime(builder, landingTime):
-    BallThrowDataAddLandingTime(builder, landingTime)
-
-def BallThrowDataAddPolynomialX1(builder, polynomialX1):
-    builder.PrependFloat32Slot(11, polynomialX1, 0.0)
-
-def AddPolynomialX1(builder, polynomialX1):
-    BallThrowDataAddPolynomialX1(builder, polynomialX1)
-
-def BallThrowDataAddPolynomialX2(builder, polynomialX2):
-    builder.PrependFloat32Slot(12, polynomialX2, 0.0)
-
-def AddPolynomialX2(builder, polynomialX2):
-    BallThrowDataAddPolynomialX2(builder, polynomialX2)
-
-def BallThrowDataAddPolynomialX3(builder, polynomialX3):
-    builder.PrependFloat32Slot(13, polynomialX3, 0.0)
-
-def AddPolynomialX3(builder, polynomialX3):
-    BallThrowDataAddPolynomialX3(builder, polynomialX3)
-
-def BallThrowDataAddPolynomialY1(builder, polynomialY1):
-    builder.PrependFloat32Slot(14, polynomialY1, 0.0)
-
-def AddPolynomialY1(builder, polynomialY1):
-    BallThrowDataAddPolynomialY1(builder, polynomialY1)
-
-def BallThrowDataAddPolynomialY2(builder, polynomialY2):
-    builder.PrependFloat32Slot(15, polynomialY2, 0.0)
-
-def AddPolynomialY2(builder, polynomialY2):
-    BallThrowDataAddPolynomialY2(builder, polynomialY2)
-
-def BallThrowDataAddPolynomialY3(builder, polynomialY3):
-    builder.PrependFloat32Slot(16, polynomialY3, 0.0)
-
-def AddPolynomialY3(builder, polynomialY3):
-    BallThrowDataAddPolynomialY3(builder, polynomialY3)
-
-def BallThrowDataAddPolynomialZ1(builder, polynomialZ1):
-    builder.PrependFloat32Slot(17, polynomialZ1, 0.0)
-
-def AddPolynomialZ1(builder, polynomialZ1):
-    BallThrowDataAddPolynomialZ1(builder, polynomialZ1)
-
-def BallThrowDataAddPolynomialZ2(builder, polynomialZ2):
-    builder.PrependFloat32Slot(18, polynomialZ2, 0.0)
-
-def AddPolynomialZ2(builder, polynomialZ2):
-    BallThrowDataAddPolynomialZ2(builder, polynomialZ2)
-
-def BallThrowDataAddPolynomialZ3(builder, polynomialZ3):
-    builder.PrependFloat32Slot(19, polynomialZ3, 0.0)
-
-def AddPolynomialZ3(builder, polynomialZ3):
-    BallThrowDataAddPolynomialZ3(builder, polynomialZ3)
-
-def BallThrowDataAddProjectedX(builder, projectedX):
-    builder.PrependFloat32Slot(20, projectedX, 0.0)
-
+    return BallThrowDataAddEndZ(builder, endZ)
+def BallThrowDataAddProjectedX(builder, projectedX): builder.PrependFloat32Slot(8, projectedX, 0.0)
 def AddProjectedX(builder, projectedX):
-    BallThrowDataAddProjectedX(builder, projectedX)
-
-def BallThrowDataAddProjectedY(builder, projectedY):
-    builder.PrependFloat32Slot(21, projectedY, 0.0)
-
+    return BallThrowDataAddProjectedX(builder, projectedX)
+def BallThrowDataAddProjectedY(builder, projectedY): builder.PrependFloat32Slot(9, projectedY, 0.0)
 def AddProjectedY(builder, projectedY):
-    BallThrowDataAddProjectedY(builder, projectedY)
-
-def BallThrowDataAddProjectedZ(builder, projectedZ):
-    builder.PrependFloat32Slot(22, projectedZ, 0.0)
-
+    return BallThrowDataAddProjectedY(builder, projectedY)
+def BallThrowDataAddProjectedZ(builder, projectedZ): builder.PrependFloat32Slot(10, projectedZ, 0.0)
 def AddProjectedZ(builder, projectedZ):
-    BallThrowDataAddProjectedZ(builder, projectedZ)
-
-def BallThrowDataEnd(builder):
-    return builder.EndObject()
-
+    return BallThrowDataAddProjectedZ(builder, projectedZ)
+def BallThrowDataAddPolynomialX1(builder, polynomialX1): builder.PrependFloat32Slot(11, polynomialX1, 0.0)
+def AddPolynomialX1(builder, polynomialX1):
+    return BallThrowDataAddPolynomialX1(builder, polynomialX1)
+def BallThrowDataAddPolynomialX2(builder, polynomialX2): builder.PrependFloat32Slot(12, polynomialX2, 0.0)
+def AddPolynomialX2(builder, polynomialX2):
+    return BallThrowDataAddPolynomialX2(builder, polynomialX2)
+def BallThrowDataAddPolynomialX3(builder, polynomialX3): builder.PrependFloat32Slot(13, polynomialX3, 0.0)
+def AddPolynomialX3(builder, polynomialX3):
+    return BallThrowDataAddPolynomialX3(builder, polynomialX3)
+def BallThrowDataAddPolynomialY1(builder, polynomialY1): builder.PrependFloat32Slot(14, polynomialY1, 0.0)
+def AddPolynomialY1(builder, polynomialY1):
+    return BallThrowDataAddPolynomialY1(builder, polynomialY1)
+def BallThrowDataAddPolynomialY2(builder, polynomialY2): builder.PrependFloat32Slot(15, polynomialY2, 0.0)
+def AddPolynomialY2(builder, polynomialY2):
+    return BallThrowDataAddPolynomialY2(builder, polynomialY2)
+def BallThrowDataAddPolynomialY3(builder, polynomialY3): builder.PrependFloat32Slot(16, polynomialY3, 0.0)
+def AddPolynomialY3(builder, polynomialY3):
+    return BallThrowDataAddPolynomialY3(builder, polynomialY3)
+def BallThrowDataAddPolynomialZ1(builder, polynomialZ1): builder.PrependFloat32Slot(17, polynomialZ1, 0.0)
+def AddPolynomialZ1(builder, polynomialZ1):
+    return BallThrowDataAddPolynomialZ1(builder, polynomialZ1)
+def BallThrowDataAddPolynomialZ2(builder, polynomialZ2): builder.PrependFloat32Slot(18, polynomialZ2, 0.0)
+def AddPolynomialZ2(builder, polynomialZ2):
+    return BallThrowDataAddPolynomialZ2(builder, polynomialZ2)
+def BallThrowDataAddPolynomialZ3(builder, polynomialZ3): builder.PrependFloat32Slot(19, polynomialZ3, 0.0)
+def AddPolynomialZ3(builder, polynomialZ3):
+    return BallThrowDataAddPolynomialZ3(builder, polynomialZ3)
+def BallThrowDataAddStartTime(builder, startTime): builder.PrependFloat32Slot(20, startTime, 0.0)
+def AddStartTime(builder, startTime):
+    return BallThrowDataAddStartTime(builder, startTime)
+def BallThrowDataAddEndTime(builder, endTime): builder.PrependFloat32Slot(21, endTime, 0.0)
+def AddEndTime(builder, endTime):
+    return BallThrowDataAddEndTime(builder, endTime)
+def BallThrowDataAddLandingTime(builder, landingTime): builder.PrependFloat32Slot(22, landingTime, 0.0)
+def AddLandingTime(builder, landingTime):
+    return BallThrowDataAddLandingTime(builder, landingTime)
+def BallThrowDataEnd(builder): return builder.EndObject()
 def End(builder):
     return BallThrowDataEnd(builder)

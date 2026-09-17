@@ -60,511 +60,383 @@ class BallHitDataWire(object):
         return 0.0
 
     # BallHitDataWire
-    def ActualX(self):
+    def ProjectedX(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(14))
         if o != 0:
             return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
         return 0.0
 
     # BallHitDataWire
-    def ActualY(self):
+    def ProjectedY(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(16))
         if o != 0:
             return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
         return 0.0
 
     # BallHitDataWire
-    def ActualZ(self):
+    def ProjectedZ(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(18))
         if o != 0:
             return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
         return 0.0
 
     # BallHitDataWire
-    def ProjectedX(self):
+    def ActualX(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(20))
         if o != 0:
             return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
         return 0.0
 
     # BallHitDataWire
-    def ProjectedY(self):
+    def ActualY(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(22))
         if o != 0:
             return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
         return 0.0
 
     # BallHitDataWire
-    def ProjectedZ(self):
+    def ActualZ(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(24))
         if o != 0:
             return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
         return 0.0
 
     # BallHitDataWire
-    def StartTime(self):
+    def PolynomialX1(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(26))
         if o != 0:
             return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
         return 0.0
 
     # BallHitDataWire
-    def EndTime(self):
+    def PolynomialX2(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(28))
         if o != 0:
             return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
         return 0.0
 
     # BallHitDataWire
-    def LandingTime(self):
+    def PolynomialX3(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(30))
         if o != 0:
             return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
         return 0.0
 
     # BallHitDataWire
-    def PolynomialX1(self):
+    def PolynomialX4(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(32))
         if o != 0:
             return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
         return 0.0
 
     # BallHitDataWire
-    def PolynomialX2(self):
+    def PolynomialX5(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(34))
         if o != 0:
             return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
         return 0.0
 
     # BallHitDataWire
-    def PolynomialX3(self):
+    def PolynomialX6(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(36))
         if o != 0:
             return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
         return 0.0
 
     # BallHitDataWire
-    def PolynomialX4(self):
+    def PolynomialX7(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(38))
         if o != 0:
             return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
         return 0.0
 
     # BallHitDataWire
-    def PolynomialX5(self):
+    def PolynomialX8(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(40))
         if o != 0:
             return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
         return 0.0
 
     # BallHitDataWire
-    def PolynomialX6(self):
+    def PolynomialX9(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(42))
         if o != 0:
             return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
         return 0.0
 
     # BallHitDataWire
-    def PolynomialX7(self):
+    def PolynomialY1(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(44))
         if o != 0:
             return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
         return 0.0
 
     # BallHitDataWire
-    def PolynomialX8(self):
+    def PolynomialY2(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(46))
         if o != 0:
             return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
         return 0.0
 
     # BallHitDataWire
-    def PolynomialX9(self):
+    def PolynomialY3(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(48))
         if o != 0:
             return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
         return 0.0
 
     # BallHitDataWire
-    def PolynomialY1(self):
+    def PolynomialY4(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(50))
         if o != 0:
             return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
         return 0.0
 
     # BallHitDataWire
-    def PolynomialY2(self):
+    def PolynomialY5(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(52))
         if o != 0:
             return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
         return 0.0
 
     # BallHitDataWire
-    def PolynomialY3(self):
+    def PolynomialY6(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(54))
         if o != 0:
             return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
         return 0.0
 
     # BallHitDataWire
-    def PolynomialY4(self):
+    def PolynomialY7(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(56))
         if o != 0:
             return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
         return 0.0
 
     # BallHitDataWire
-    def PolynomialY5(self):
+    def PolynomialY8(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(58))
         if o != 0:
             return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
         return 0.0
 
     # BallHitDataWire
-    def PolynomialY6(self):
+    def PolynomialY9(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(60))
         if o != 0:
             return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
         return 0.0
 
     # BallHitDataWire
-    def PolynomialY7(self):
+    def PolynomialZ1(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(62))
         if o != 0:
             return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
         return 0.0
 
     # BallHitDataWire
-    def PolynomialY8(self):
+    def PolynomialZ2(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(64))
         if o != 0:
             return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
         return 0.0
 
     # BallHitDataWire
-    def PolynomialY9(self):
+    def PolynomialZ3(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(66))
         if o != 0:
             return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
         return 0.0
 
     # BallHitDataWire
-    def PolynomialZ1(self):
+    def PolynomialZ4(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(68))
         if o != 0:
             return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
         return 0.0
 
     # BallHitDataWire
-    def PolynomialZ2(self):
+    def PolynomialZ5(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(70))
         if o != 0:
             return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
         return 0.0
 
     # BallHitDataWire
-    def PolynomialZ3(self):
+    def PolynomialZ6(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(72))
         if o != 0:
             return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
         return 0.0
 
     # BallHitDataWire
-    def PolynomialZ4(self):
+    def PolynomialZ7(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(74))
         if o != 0:
             return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
         return 0.0
 
     # BallHitDataWire
-    def PolynomialZ5(self):
+    def PolynomialZ8(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(76))
         if o != 0:
             return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
         return 0.0
 
     # BallHitDataWire
-    def PolynomialZ6(self):
+    def PolynomialZ9(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(78))
         if o != 0:
             return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
         return 0.0
 
     # BallHitDataWire
-    def PolynomialZ7(self):
+    def StartTime(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(80))
         if o != 0:
             return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
         return 0.0
 
     # BallHitDataWire
-    def PolynomialZ8(self):
+    def EndTime(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(82))
         if o != 0:
             return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
         return 0.0
 
     # BallHitDataWire
-    def PolynomialZ9(self):
+    def LandingTime(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(84))
         if o != 0:
             return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
         return 0.0
 
-def BallHitDataWireStart(builder):
-    builder.StartObject(41)
-
+def BallHitDataWireStart(builder): builder.StartObject(41)
 def Start(builder):
-    BallHitDataWireStart(builder)
-
-def BallHitDataWireAddSpeed(builder, speed):
-    builder.PrependFloat32Slot(0, speed, 0.0)
-
+    return BallHitDataWireStart(builder)
+def BallHitDataWireAddSpeed(builder, speed): builder.PrependFloat32Slot(0, speed, 0.0)
 def AddSpeed(builder, speed):
-    BallHitDataWireAddSpeed(builder, speed)
-
-def BallHitDataWireAddAngle(builder, angle):
-    builder.PrependFloat32Slot(1, angle, 0.0)
-
+    return BallHitDataWireAddSpeed(builder, speed)
+def BallHitDataWireAddAngle(builder, angle): builder.PrependFloat32Slot(1, angle, 0.0)
 def AddAngle(builder, angle):
-    BallHitDataWireAddAngle(builder, angle)
-
-def BallHitDataWireAddDirection(builder, direction):
-    builder.PrependFloat32Slot(2, direction, 0.0)
-
+    return BallHitDataWireAddAngle(builder, angle)
+def BallHitDataWireAddDirection(builder, direction): builder.PrependFloat32Slot(2, direction, 0.0)
 def AddDirection(builder, direction):
-    BallHitDataWireAddDirection(builder, direction)
-
-def BallHitDataWireAddDistance(builder, distance):
-    builder.PrependFloat32Slot(3, distance, 0.0)
-
+    return BallHitDataWireAddDirection(builder, direction)
+def BallHitDataWireAddDistance(builder, distance): builder.PrependFloat32Slot(3, distance, 0.0)
 def AddDistance(builder, distance):
-    BallHitDataWireAddDistance(builder, distance)
-
-def BallHitDataWireAddActualDistance(builder, actualDistance):
-    builder.PrependFloat32Slot(4, actualDistance, 0.0)
-
+    return BallHitDataWireAddDistance(builder, distance)
+def BallHitDataWireAddActualDistance(builder, actualDistance): builder.PrependFloat32Slot(4, actualDistance, 0.0)
 def AddActualDistance(builder, actualDistance):
-    BallHitDataWireAddActualDistance(builder, actualDistance)
-
-def BallHitDataWireAddActualX(builder, actualX):
-    builder.PrependFloat32Slot(5, actualX, 0.0)
-
-def AddActualX(builder, actualX):
-    BallHitDataWireAddActualX(builder, actualX)
-
-def BallHitDataWireAddActualY(builder, actualY):
-    builder.PrependFloat32Slot(6, actualY, 0.0)
-
-def AddActualY(builder, actualY):
-    BallHitDataWireAddActualY(builder, actualY)
-
-def BallHitDataWireAddActualZ(builder, actualZ):
-    builder.PrependFloat32Slot(7, actualZ, 0.0)
-
-def AddActualZ(builder, actualZ):
-    BallHitDataWireAddActualZ(builder, actualZ)
-
-def BallHitDataWireAddProjectedX(builder, projectedX):
-    builder.PrependFloat32Slot(8, projectedX, 0.0)
-
+    return BallHitDataWireAddActualDistance(builder, actualDistance)
+def BallHitDataWireAddProjectedX(builder, projectedX): builder.PrependFloat32Slot(5, projectedX, 0.0)
 def AddProjectedX(builder, projectedX):
-    BallHitDataWireAddProjectedX(builder, projectedX)
-
-def BallHitDataWireAddProjectedY(builder, projectedY):
-    builder.PrependFloat32Slot(9, projectedY, 0.0)
-
+    return BallHitDataWireAddProjectedX(builder, projectedX)
+def BallHitDataWireAddProjectedY(builder, projectedY): builder.PrependFloat32Slot(6, projectedY, 0.0)
 def AddProjectedY(builder, projectedY):
-    BallHitDataWireAddProjectedY(builder, projectedY)
-
-def BallHitDataWireAddProjectedZ(builder, projectedZ):
-    builder.PrependFloat32Slot(10, projectedZ, 0.0)
-
+    return BallHitDataWireAddProjectedY(builder, projectedY)
+def BallHitDataWireAddProjectedZ(builder, projectedZ): builder.PrependFloat32Slot(7, projectedZ, 0.0)
 def AddProjectedZ(builder, projectedZ):
-    BallHitDataWireAddProjectedZ(builder, projectedZ)
-
-def BallHitDataWireAddStartTime(builder, startTime):
-    builder.PrependFloat32Slot(11, startTime, 0.0)
-
-def AddStartTime(builder, startTime):
-    BallHitDataWireAddStartTime(builder, startTime)
-
-def BallHitDataWireAddEndTime(builder, endTime):
-    builder.PrependFloat32Slot(12, endTime, 0.0)
-
-def AddEndTime(builder, endTime):
-    BallHitDataWireAddEndTime(builder, endTime)
-
-def BallHitDataWireAddLandingTime(builder, landingTime):
-    builder.PrependFloat32Slot(13, landingTime, 0.0)
-
-def AddLandingTime(builder, landingTime):
-    BallHitDataWireAddLandingTime(builder, landingTime)
-
-def BallHitDataWireAddPolynomialX1(builder, polynomialX1):
-    builder.PrependFloat32Slot(14, polynomialX1, 0.0)
-
+    return BallHitDataWireAddProjectedZ(builder, projectedZ)
+def BallHitDataWireAddActualX(builder, actualX): builder.PrependFloat32Slot(8, actualX, 0.0)
+def AddActualX(builder, actualX):
+    return BallHitDataWireAddActualX(builder, actualX)
+def BallHitDataWireAddActualY(builder, actualY): builder.PrependFloat32Slot(9, actualY, 0.0)
+def AddActualY(builder, actualY):
+    return BallHitDataWireAddActualY(builder, actualY)
+def BallHitDataWireAddActualZ(builder, actualZ): builder.PrependFloat32Slot(10, actualZ, 0.0)
+def AddActualZ(builder, actualZ):
+    return BallHitDataWireAddActualZ(builder, actualZ)
+def BallHitDataWireAddPolynomialX1(builder, polynomialX1): builder.PrependFloat32Slot(11, polynomialX1, 0.0)
 def AddPolynomialX1(builder, polynomialX1):
-    BallHitDataWireAddPolynomialX1(builder, polynomialX1)
-
-def BallHitDataWireAddPolynomialX2(builder, polynomialX2):
-    builder.PrependFloat32Slot(15, polynomialX2, 0.0)
-
+    return BallHitDataWireAddPolynomialX1(builder, polynomialX1)
+def BallHitDataWireAddPolynomialX2(builder, polynomialX2): builder.PrependFloat32Slot(12, polynomialX2, 0.0)
 def AddPolynomialX2(builder, polynomialX2):
-    BallHitDataWireAddPolynomialX2(builder, polynomialX2)
-
-def BallHitDataWireAddPolynomialX3(builder, polynomialX3):
-    builder.PrependFloat32Slot(16, polynomialX3, 0.0)
-
+    return BallHitDataWireAddPolynomialX2(builder, polynomialX2)
+def BallHitDataWireAddPolynomialX3(builder, polynomialX3): builder.PrependFloat32Slot(13, polynomialX3, 0.0)
 def AddPolynomialX3(builder, polynomialX3):
-    BallHitDataWireAddPolynomialX3(builder, polynomialX3)
-
-def BallHitDataWireAddPolynomialX4(builder, polynomialX4):
-    builder.PrependFloat32Slot(17, polynomialX4, 0.0)
-
+    return BallHitDataWireAddPolynomialX3(builder, polynomialX3)
+def BallHitDataWireAddPolynomialX4(builder, polynomialX4): builder.PrependFloat32Slot(14, polynomialX4, 0.0)
 def AddPolynomialX4(builder, polynomialX4):
-    BallHitDataWireAddPolynomialX4(builder, polynomialX4)
-
-def BallHitDataWireAddPolynomialX5(builder, polynomialX5):
-    builder.PrependFloat32Slot(18, polynomialX5, 0.0)
-
+    return BallHitDataWireAddPolynomialX4(builder, polynomialX4)
+def BallHitDataWireAddPolynomialX5(builder, polynomialX5): builder.PrependFloat32Slot(15, polynomialX5, 0.0)
 def AddPolynomialX5(builder, polynomialX5):
-    BallHitDataWireAddPolynomialX5(builder, polynomialX5)
-
-def BallHitDataWireAddPolynomialX6(builder, polynomialX6):
-    builder.PrependFloat32Slot(19, polynomialX6, 0.0)
-
+    return BallHitDataWireAddPolynomialX5(builder, polynomialX5)
+def BallHitDataWireAddPolynomialX6(builder, polynomialX6): builder.PrependFloat32Slot(16, polynomialX6, 0.0)
 def AddPolynomialX6(builder, polynomialX6):
-    BallHitDataWireAddPolynomialX6(builder, polynomialX6)
-
-def BallHitDataWireAddPolynomialX7(builder, polynomialX7):
-    builder.PrependFloat32Slot(20, polynomialX7, 0.0)
-
+    return BallHitDataWireAddPolynomialX6(builder, polynomialX6)
+def BallHitDataWireAddPolynomialX7(builder, polynomialX7): builder.PrependFloat32Slot(17, polynomialX7, 0.0)
 def AddPolynomialX7(builder, polynomialX7):
-    BallHitDataWireAddPolynomialX7(builder, polynomialX7)
-
-def BallHitDataWireAddPolynomialX8(builder, polynomialX8):
-    builder.PrependFloat32Slot(21, polynomialX8, 0.0)
-
+    return BallHitDataWireAddPolynomialX7(builder, polynomialX7)
+def BallHitDataWireAddPolynomialX8(builder, polynomialX8): builder.PrependFloat32Slot(18, polynomialX8, 0.0)
 def AddPolynomialX8(builder, polynomialX8):
-    BallHitDataWireAddPolynomialX8(builder, polynomialX8)
-
-def BallHitDataWireAddPolynomialX9(builder, polynomialX9):
-    builder.PrependFloat32Slot(22, polynomialX9, 0.0)
-
+    return BallHitDataWireAddPolynomialX8(builder, polynomialX8)
+def BallHitDataWireAddPolynomialX9(builder, polynomialX9): builder.PrependFloat32Slot(19, polynomialX9, 0.0)
 def AddPolynomialX9(builder, polynomialX9):
-    BallHitDataWireAddPolynomialX9(builder, polynomialX9)
-
-def BallHitDataWireAddPolynomialY1(builder, polynomialY1):
-    builder.PrependFloat32Slot(23, polynomialY1, 0.0)
-
+    return BallHitDataWireAddPolynomialX9(builder, polynomialX9)
+def BallHitDataWireAddPolynomialY1(builder, polynomialY1): builder.PrependFloat32Slot(20, polynomialY1, 0.0)
 def AddPolynomialY1(builder, polynomialY1):
-    BallHitDataWireAddPolynomialY1(builder, polynomialY1)
-
-def BallHitDataWireAddPolynomialY2(builder, polynomialY2):
-    builder.PrependFloat32Slot(24, polynomialY2, 0.0)
-
+    return BallHitDataWireAddPolynomialY1(builder, polynomialY1)
+def BallHitDataWireAddPolynomialY2(builder, polynomialY2): builder.PrependFloat32Slot(21, polynomialY2, 0.0)
 def AddPolynomialY2(builder, polynomialY2):
-    BallHitDataWireAddPolynomialY2(builder, polynomialY2)
-
-def BallHitDataWireAddPolynomialY3(builder, polynomialY3):
-    builder.PrependFloat32Slot(25, polynomialY3, 0.0)
-
+    return BallHitDataWireAddPolynomialY2(builder, polynomialY2)
+def BallHitDataWireAddPolynomialY3(builder, polynomialY3): builder.PrependFloat32Slot(22, polynomialY3, 0.0)
 def AddPolynomialY3(builder, polynomialY3):
-    BallHitDataWireAddPolynomialY3(builder, polynomialY3)
-
-def BallHitDataWireAddPolynomialY4(builder, polynomialY4):
-    builder.PrependFloat32Slot(26, polynomialY4, 0.0)
-
+    return BallHitDataWireAddPolynomialY3(builder, polynomialY3)
+def BallHitDataWireAddPolynomialY4(builder, polynomialY4): builder.PrependFloat32Slot(23, polynomialY4, 0.0)
 def AddPolynomialY4(builder, polynomialY4):
-    BallHitDataWireAddPolynomialY4(builder, polynomialY4)
-
-def BallHitDataWireAddPolynomialY5(builder, polynomialY5):
-    builder.PrependFloat32Slot(27, polynomialY5, 0.0)
-
+    return BallHitDataWireAddPolynomialY4(builder, polynomialY4)
+def BallHitDataWireAddPolynomialY5(builder, polynomialY5): builder.PrependFloat32Slot(24, polynomialY5, 0.0)
 def AddPolynomialY5(builder, polynomialY5):
-    BallHitDataWireAddPolynomialY5(builder, polynomialY5)
-
-def BallHitDataWireAddPolynomialY6(builder, polynomialY6):
-    builder.PrependFloat32Slot(28, polynomialY6, 0.0)
-
+    return BallHitDataWireAddPolynomialY5(builder, polynomialY5)
+def BallHitDataWireAddPolynomialY6(builder, polynomialY6): builder.PrependFloat32Slot(25, polynomialY6, 0.0)
 def AddPolynomialY6(builder, polynomialY6):
-    BallHitDataWireAddPolynomialY6(builder, polynomialY6)
-
-def BallHitDataWireAddPolynomialY7(builder, polynomialY7):
-    builder.PrependFloat32Slot(29, polynomialY7, 0.0)
-
+    return BallHitDataWireAddPolynomialY6(builder, polynomialY6)
+def BallHitDataWireAddPolynomialY7(builder, polynomialY7): builder.PrependFloat32Slot(26, polynomialY7, 0.0)
 def AddPolynomialY7(builder, polynomialY7):
-    BallHitDataWireAddPolynomialY7(builder, polynomialY7)
-
-def BallHitDataWireAddPolynomialY8(builder, polynomialY8):
-    builder.PrependFloat32Slot(30, polynomialY8, 0.0)
-
+    return BallHitDataWireAddPolynomialY7(builder, polynomialY7)
+def BallHitDataWireAddPolynomialY8(builder, polynomialY8): builder.PrependFloat32Slot(27, polynomialY8, 0.0)
 def AddPolynomialY8(builder, polynomialY8):
-    BallHitDataWireAddPolynomialY8(builder, polynomialY8)
-
-def BallHitDataWireAddPolynomialY9(builder, polynomialY9):
-    builder.PrependFloat32Slot(31, polynomialY9, 0.0)
-
+    return BallHitDataWireAddPolynomialY8(builder, polynomialY8)
+def BallHitDataWireAddPolynomialY9(builder, polynomialY9): builder.PrependFloat32Slot(28, polynomialY9, 0.0)
 def AddPolynomialY9(builder, polynomialY9):
-    BallHitDataWireAddPolynomialY9(builder, polynomialY9)
-
-def BallHitDataWireAddPolynomialZ1(builder, polynomialZ1):
-    builder.PrependFloat32Slot(32, polynomialZ1, 0.0)
-
+    return BallHitDataWireAddPolynomialY9(builder, polynomialY9)
+def BallHitDataWireAddPolynomialZ1(builder, polynomialZ1): builder.PrependFloat32Slot(29, polynomialZ1, 0.0)
 def AddPolynomialZ1(builder, polynomialZ1):
-    BallHitDataWireAddPolynomialZ1(builder, polynomialZ1)
-
-def BallHitDataWireAddPolynomialZ2(builder, polynomialZ2):
-    builder.PrependFloat32Slot(33, polynomialZ2, 0.0)
-
+    return BallHitDataWireAddPolynomialZ1(builder, polynomialZ1)
+def BallHitDataWireAddPolynomialZ2(builder, polynomialZ2): builder.PrependFloat32Slot(30, polynomialZ2, 0.0)
 def AddPolynomialZ2(builder, polynomialZ2):
-    BallHitDataWireAddPolynomialZ2(builder, polynomialZ2)
-
-def BallHitDataWireAddPolynomialZ3(builder, polynomialZ3):
-    builder.PrependFloat32Slot(34, polynomialZ3, 0.0)
-
+    return BallHitDataWireAddPolynomialZ2(builder, polynomialZ2)
+def BallHitDataWireAddPolynomialZ3(builder, polynomialZ3): builder.PrependFloat32Slot(31, polynomialZ3, 0.0)
 def AddPolynomialZ3(builder, polynomialZ3):
-    BallHitDataWireAddPolynomialZ3(builder, polynomialZ3)
-
-def BallHitDataWireAddPolynomialZ4(builder, polynomialZ4):
-    builder.PrependFloat32Slot(35, polynomialZ4, 0.0)
-
+    return BallHitDataWireAddPolynomialZ3(builder, polynomialZ3)
+def BallHitDataWireAddPolynomialZ4(builder, polynomialZ4): builder.PrependFloat32Slot(32, polynomialZ4, 0.0)
 def AddPolynomialZ4(builder, polynomialZ4):
-    BallHitDataWireAddPolynomialZ4(builder, polynomialZ4)
-
-def BallHitDataWireAddPolynomialZ5(builder, polynomialZ5):
-    builder.PrependFloat32Slot(36, polynomialZ5, 0.0)
-
+    return BallHitDataWireAddPolynomialZ4(builder, polynomialZ4)
+def BallHitDataWireAddPolynomialZ5(builder, polynomialZ5): builder.PrependFloat32Slot(33, polynomialZ5, 0.0)
 def AddPolynomialZ5(builder, polynomialZ5):
-    BallHitDataWireAddPolynomialZ5(builder, polynomialZ5)
-
-def BallHitDataWireAddPolynomialZ6(builder, polynomialZ6):
-    builder.PrependFloat32Slot(37, polynomialZ6, 0.0)
-
+    return BallHitDataWireAddPolynomialZ5(builder, polynomialZ5)
+def BallHitDataWireAddPolynomialZ6(builder, polynomialZ6): builder.PrependFloat32Slot(34, polynomialZ6, 0.0)
 def AddPolynomialZ6(builder, polynomialZ6):
-    BallHitDataWireAddPolynomialZ6(builder, polynomialZ6)
-
-def BallHitDataWireAddPolynomialZ7(builder, polynomialZ7):
-    builder.PrependFloat32Slot(38, polynomialZ7, 0.0)
-
+    return BallHitDataWireAddPolynomialZ6(builder, polynomialZ6)
+def BallHitDataWireAddPolynomialZ7(builder, polynomialZ7): builder.PrependFloat32Slot(35, polynomialZ7, 0.0)
 def AddPolynomialZ7(builder, polynomialZ7):
-    BallHitDataWireAddPolynomialZ7(builder, polynomialZ7)
-
-def BallHitDataWireAddPolynomialZ8(builder, polynomialZ8):
-    builder.PrependFloat32Slot(39, polynomialZ8, 0.0)
-
+    return BallHitDataWireAddPolynomialZ7(builder, polynomialZ7)
+def BallHitDataWireAddPolynomialZ8(builder, polynomialZ8): builder.PrependFloat32Slot(36, polynomialZ8, 0.0)
 def AddPolynomialZ8(builder, polynomialZ8):
-    BallHitDataWireAddPolynomialZ8(builder, polynomialZ8)
-
-def BallHitDataWireAddPolynomialZ9(builder, polynomialZ9):
-    builder.PrependFloat32Slot(40, polynomialZ9, 0.0)
-
+    return BallHitDataWireAddPolynomialZ8(builder, polynomialZ8)
+def BallHitDataWireAddPolynomialZ9(builder, polynomialZ9): builder.PrependFloat32Slot(37, polynomialZ9, 0.0)
 def AddPolynomialZ9(builder, polynomialZ9):
-    BallHitDataWireAddPolynomialZ9(builder, polynomialZ9)
-
-def BallHitDataWireEnd(builder):
-    return builder.EndObject()
-
+    return BallHitDataWireAddPolynomialZ9(builder, polynomialZ9)
+def BallHitDataWireAddStartTime(builder, startTime): builder.PrependFloat32Slot(38, startTime, 0.0)
+def AddStartTime(builder, startTime):
+    return BallHitDataWireAddStartTime(builder, startTime)
+def BallHitDataWireAddEndTime(builder, endTime): builder.PrependFloat32Slot(39, endTime, 0.0)
+def AddEndTime(builder, endTime):
+    return BallHitDataWireAddEndTime(builder, endTime)
+def BallHitDataWireAddLandingTime(builder, landingTime): builder.PrependFloat32Slot(40, landingTime, 0.0)
+def AddLandingTime(builder, landingTime):
+    return BallHitDataWireAddLandingTime(builder, landingTime)
+def BallHitDataWireEnd(builder): return builder.EndObject()
 def End(builder):
     return BallHitDataWireEnd(builder)

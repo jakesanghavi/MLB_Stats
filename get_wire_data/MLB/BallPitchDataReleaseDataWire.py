@@ -6,71 +6,47 @@ import flatbuffers
 from flatbuffers.compat import import_numpy
 np = import_numpy()
 
-class Vec3(object):
+class BallPitchDataReleaseDataWire(object):
     __slots__ = ['_tab']
 
     @classmethod
     def GetRootAs(cls, buf, offset=0):
         n = flatbuffers.encode.Get(flatbuffers.packer.uoffset, buf, offset)
-        x = Vec3()
+        x = BallPitchDataReleaseDataWire()
         x.Init(buf, n + offset)
         return x
 
     @classmethod
-    def GetRootAsVec3(cls, buf, offset=0):
+    def GetRootAsBallPitchDataReleaseDataWire(cls, buf, offset=0):
         """This method is deprecated. Please switch to GetRootAs."""
         return cls.GetRootAs(buf, offset)
-    # Vec3
+    # BallPitchDataReleaseDataWire
     def Init(self, buf, pos):
         self._tab = flatbuffers.table.Table(buf, pos)
 
-    # Vec3
-    def X(self):
+    # BallPitchDataReleaseDataWire
+    def Angle(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(4))
         if o != 0:
             return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
         return 0.0
 
-    # Vec3
-    def Y(self):
+    # BallPitchDataReleaseDataWire
+    def Direction(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(6))
         if o != 0:
             return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
         return 0.0
 
-    # Vec3
-    def Z(self):
-        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(8))
-        if o != 0:
-            return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
-        return 0.0
-
-def Vec3Start(builder):
-    builder.StartObject(3)
-
+def BallPitchDataReleaseDataWireStart(builder): builder.StartObject(2)
 def Start(builder):
-    Vec3Start(builder)
-
-def Vec3AddX(builder, x):
-    builder.PrependFloat32Slot(0, x, 0.0)
-
-def AddX(builder, x):
-    Vec3AddX(builder, x)
-
-def Vec3AddY(builder, y):
-    builder.PrependFloat32Slot(1, y, 0.0)
-
-def AddY(builder, y):
-    Vec3AddY(builder, y)
-
-def Vec3AddZ(builder, z):
-    builder.PrependFloat32Slot(2, z, 0.0)
-
-def AddZ(builder, z):
-    Vec3AddZ(builder, z)
-
-def Vec3End(builder):
-    return builder.EndObject()
-
+    return BallPitchDataReleaseDataWireStart(builder)
+def BallPitchDataReleaseDataWireAddAngle(builder, angle): builder.PrependFloat32Slot(0, angle, 0.0)
+def AddAngle(builder, angle):
+    return BallPitchDataReleaseDataWireAddAngle(builder, angle)
+def BallPitchDataReleaseDataWireAddDirection(builder, direction): builder.PrependFloat32Slot(1, direction, 0.0)
+def AddDirection(builder, direction):
+    return BallPitchDataReleaseDataWireAddDirection(builder, direction)
+def BallPitchDataReleaseDataWireEnd(builder): return builder.EndObject()
 def End(builder):
-    return Vec3End(builder)
+    return BallPitchDataReleaseDataWireEnd(builder)

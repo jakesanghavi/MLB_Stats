@@ -52,38 +52,21 @@ class PlayEventWireStrikezone(object):
             return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
         return 0.0
 
-def PlayEventWireStrikezoneStart(builder):
-    builder.StartObject(4)
-
+def PlayEventWireStrikezoneStart(builder): builder.StartObject(4)
 def Start(builder):
-    PlayEventWireStrikezoneStart(builder)
-
-def PlayEventWireStrikezoneAddTop(builder, top):
-    builder.PrependFloat32Slot(0, top, 0.0)
-
+    return PlayEventWireStrikezoneStart(builder)
+def PlayEventWireStrikezoneAddTop(builder, top): builder.PrependFloat32Slot(0, top, 0.0)
 def AddTop(builder, top):
-    PlayEventWireStrikezoneAddTop(builder, top)
-
-def PlayEventWireStrikezoneAddBottom(builder, bottom):
-    builder.PrependFloat32Slot(1, bottom, 0.0)
-
+    return PlayEventWireStrikezoneAddTop(builder, top)
+def PlayEventWireStrikezoneAddBottom(builder, bottom): builder.PrependFloat32Slot(1, bottom, 0.0)
 def AddBottom(builder, bottom):
-    PlayEventWireStrikezoneAddBottom(builder, bottom)
-
-def PlayEventWireStrikezoneAddWidth(builder, width):
-    builder.PrependFloat32Slot(2, width, 0.0)
-
+    return PlayEventWireStrikezoneAddBottom(builder, bottom)
+def PlayEventWireStrikezoneAddWidth(builder, width): builder.PrependFloat32Slot(2, width, 0.0)
 def AddWidth(builder, width):
-    PlayEventWireStrikezoneAddWidth(builder, width)
-
-def PlayEventWireStrikezoneAddDepth(builder, depth):
-    builder.PrependFloat32Slot(3, depth, 0.0)
-
+    return PlayEventWireStrikezoneAddWidth(builder, width)
+def PlayEventWireStrikezoneAddDepth(builder, depth): builder.PrependFloat32Slot(3, depth, 0.0)
 def AddDepth(builder, depth):
-    PlayEventWireStrikezoneAddDepth(builder, depth)
-
-def PlayEventWireStrikezoneEnd(builder):
-    return builder.EndObject()
-
+    return PlayEventWireStrikezoneAddDepth(builder, depth)
+def PlayEventWireStrikezoneEnd(builder): return builder.EndObject()
 def End(builder):
     return PlayEventWireStrikezoneEnd(builder)
