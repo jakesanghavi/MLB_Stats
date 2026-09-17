@@ -1,0 +1,375 @@
+// Auto-reconstructed from MLB Gameday 3D (FieldVision) web bundle gd.min.js
+// Envelope: TrackingDataWire -> frames[] (TrackingFrameWire) -> {actorPoses, ballPosition, rawJoints, ...}
+namespace MLB;
+
+struct Vec3Wire { x:float; y:float; z:float; }
+struct LimitsWire { start:double; end:double; }
+
+union BallPolynomialDataWire {
+  BallBounceDataWire,
+  BallHitDataWire,
+  BallHitLaunchWire,
+  BallHitRefinedWire,
+  BallPitchDataWire,
+  BallPitchRefinedWire,
+  BallThrowData,
+  BallPickOffDataWire,
+  BallPitchReleasePointWire,
+  BallPitchSpinWire
+}
+
+union GameEventDataWire {
+  CountEventDataWire,
+  TeamScoreEventDataWire,
+  BattingOrderEventDataWire,
+  LiveActionEventDataWire,
+  InningEventDataWire,
+  AtBatEventDataWire,
+  PlayEventDataWire,
+  HandedEventDataWire,
+  PositionAssignmentEventDataWire,
+  GumboTimecodeEventDataWire,
+  StatusEventDataWire,
+  BatImpactEventDataWire,
+  HighFrequencyBatMarkerEventDataWire,
+  ABSEventDataWire
+}
+
+table ABSEventDataWire {
+  depth:float;
+  width:float;
+  top:float;
+  bottom:float;
+  ballIntersection:Vec3Wire;
+  ballDiam:float;
+}
+table ActorPoseWire {
+  uid:uint;
+  rootPos:Vec3Wire;
+  packedQuats:[uint];
+  nodeIds:[ushort];
+  ground:float;
+  apex:float;
+  scale:float;
+  batRootPos:Vec3Wire;
+}
+table AtBatEventDataWire {
+}
+table BallBounceDataWire {
+  speed:float;
+  endSpeed:float;
+  startX:float;
+  startY:float;
+  startZ:float;
+  endX:float;
+  endY:float;
+  endZ:float;
+  projectedX:float;
+  projectedY:float;
+  projectedZ:float;
+  polynomialX1:float;
+  polynomialX2:float;
+  polynomialX3:float;
+  polynomialY1:float;
+  polynomialY2:float;
+  polynomialY3:float;
+  polynomialZ1:float;
+  polynomialZ2:float;
+  polynomialZ3:float;
+  startTime:float;
+  endTime:float;
+  landingTime:float;
+}
+table BallHitDataWire {
+  speed:float;
+  angle:float;
+  direction:float;
+  distance:float;
+  actualDistance:float;
+  projectedX:float;
+  projectedY:float;
+  projectedZ:float;
+  actualX:float;
+  actualY:float;
+  actualZ:float;
+  polynomialX1:float;
+  polynomialX2:float;
+  polynomialX3:float;
+  polynomialX4:float;
+  polynomialX5:float;
+  polynomialX6:float;
+  polynomialX7:float;
+  polynomialX8:float;
+  polynomialX9:float;
+  polynomialY1:float;
+  polynomialY2:float;
+  polynomialY3:float;
+  polynomialY4:float;
+  polynomialY5:float;
+  polynomialY6:float;
+  polynomialY7:float;
+  polynomialY8:float;
+  polynomialY9:float;
+  polynomialZ1:float;
+  polynomialZ2:float;
+  polynomialZ3:float;
+  polynomialZ4:float;
+  polynomialZ5:float;
+  polynomialZ6:float;
+  polynomialZ7:float;
+  polynomialZ8:float;
+  polynomialZ9:float;
+  startTime:float;
+  endTime:float;
+  landingTime:float;
+}
+table BallHitLaunchWire {
+  speed:float;
+  angle:float;
+  direction:float;
+}
+table BallHitRefinedWire {
+  launchSpinRate:float;
+  launchSpinAxis:float;
+  apexX:float;
+  apexY:float;
+  apexZ:float;
+}
+table BallPickOffDataWire {
+  predictedLandingY:float;
+  predictedLandingZ:float;
+  predictedLandingTime:float;
+  predictedLandingX:float;
+  speed:float;
+  polynomialX2:float;
+  polynomialY1:float;
+  polynomialX3:float;
+  polynomialY2:float;
+  polynomialZ1:float;
+  polynomialY3:float;
+  polynomialZ2:float;
+  polynomialZ3:float;
+  endZ:float;
+  endX:float;
+  endY:float;
+  venueId:string;
+  endTime:float;
+  publishTimestamp:string;
+  polynomialX1:float;
+  startX:float;
+  startZ:float;
+  endSpeed:float;
+  startY:float;
+}
+table BallPitchDataReleaseDataWire {
+  angle:float;
+  direction:float;
+}
+table BallPitchDataTrajectoryDataWire {
+  verticalBreak:float;
+  verticalBreakInduced:float;
+  horizontalBreak:float;
+  location:Vec3Wire;
+  zoneSpeed:float;
+  verticalApproachAngle:float;
+  horizontalApproachAngle:float;
+  zoneTime:float;
+  trajectoryPolynomialX:Vec3Wire;
+  trajectoryPolynomialY:Vec3Wire;
+  trajectoryPolynomialZ:Vec3Wire;
+}
+table BallPitchDataWire {
+  speed:float;
+  type:string;
+  szTop:float;
+  szBot:float;
+  pitchType:string;
+  releaseData:BallPitchDataReleaseDataWire;
+  trajectoryData:BallPitchDataTrajectoryDataWire;
+}
+table BallPitchRefinedWire {
+  szTop:float;
+  szBot:float;
+  spinRate:float;
+  spinAxis:float;
+  x:float;
+  y:float;
+  z:float;
+  extension:float;
+  perceivedSpeed:float;
+}
+table BallPitchReleasePointWire {
+  extension:float;
+  releaseTimestamp:string;
+  releasePosition:Vec3Wire;
+  publishTimestamp:string;
+  x:float;
+  y:float;
+  effectiveVelocity:float;
+  z:float;
+  releaseSpeed:float;
+  venueId:string;
+}
+table BallPitchSpinWire {
+  actualFrameRate:float;
+  xx:float;
+  yy:float;
+  zz:float;
+  xy:float;
+  yz:float;
+  xz:float;
+  spinReducedConfidence:float;
+  spinRate:float;
+  publishTimestamp:string;
+  spinAxis:float;
+  x:float;
+  y:float;
+  frame0Time:float;
+  z:float;
+  spinVector:Vec3Wire;
+  venueId:string;
+  zx:float;
+  yx:float;
+  zy:float;
+}
+table BallThrowData {
+  speed:float;
+  endSpeed:float;
+  startX:float;
+  startY:float;
+  startZ:float;
+  endX:float;
+  endY:float;
+  endZ:float;
+  projectedX:float;
+  projectedY:float;
+  projectedZ:float;
+  polynomialX1:float;
+  polynomialX2:float;
+  polynomialX3:float;
+  polynomialY1:float;
+  polynomialY2:float;
+  polynomialY3:float;
+  polynomialZ1:float;
+  polynomialZ2:float;
+  polynomialZ3:float;
+  startTime:float;
+  endTime:float;
+  landingTime:float;
+}
+table BallPolynomialWire {
+  id:string;
+  timestamp:string;
+  data:BallPolynomialDataWire;
+}
+table BatImpactEventDataWire {
+}
+table BattingOrderEventDataWire {
+  team:byte;
+  playerIds:[uint];
+}
+table CountEventDataWire {
+  balls:ushort;
+  strikes:ushort;
+  outs:ushort;
+}
+table GumboTimecodeEventDataWire {
+  timecode:string;
+}
+table HandedEventDataWire {
+  action:byte;
+  side:byte;
+  actorId:uint;
+}
+table HighFrequencyBatMarkerEventDataWire {
+  action:byte;
+}
+table InningEventDataWire {
+  currentInning:ushort;
+  action:byte;
+  battingTeamId:ushort;
+  fieldingTeamId:ushort;
+}
+table LiveActionEventDataWire {
+  mode:bool;
+}
+table PlayEventWireStrikezone {
+  top:float;
+  bottom:float;
+  width:float;
+  depth:float;
+}
+table PlayEventDataWire {
+  action:byte;
+  index:ushort;
+  playId:string;
+  strikezone:PlayEventWireStrikezone;
+}
+table PositionAssignmentEventDataWire {
+  trackUid:uint;
+  newPosition:ushort;
+}
+table StatusEventDataWire {
+  status:byte;
+}
+table TeamScoreEventDataWire {
+  speed:float;
+  angle:float;
+  direction:float;
+}
+table GameEventWire {
+  data:GameEventDataWire;
+  time:double;
+  isKeyFramed:byte;
+}
+table SkeletalPlayerWire {
+  positionId:ushort;
+  trackId:uint;
+  jointPositions:[float];
+  jointIds:[uint];
+  playerId:uint;
+  jerseyNumber:uint;
+  roleId:uint;
+}
+table TrackedEventWire {
+  timestamp:string;
+  batSide:string;
+  pitchHand:string;
+  atBatNumber:ushort;
+  pitchNumber:ushort;
+  pickoffNumber:ushort;
+  szTop:float;
+  szBot:float;
+  eventType:string;
+  x:float;
+  y:float;
+  z:float;
+  position:ushort;
+  eventTypeId:byte;
+}
+table TrackingBatPositionWire {
+  headPosition:Vec3Wire;
+  handlePosition:Vec3Wire;
+}
+table TrackingFrameWire {
+  actorPoses:[ActorPoseWire];
+  ballPosition:Vec3Wire;
+  gameEvents:[GameEventWire];
+  trackedEvents:[TrackedEventWire];
+  inferredBat:TrackingBatPositionWire;
+  ballPolynomials:[BallPolynomialWire];
+  rawJoints:[SkeletalPlayerWire];
+  num:uint;
+  time:double;
+  timestamp:string;
+  isGap:bool;
+  gapDuration:double;
+}
+table TrackingDataWire {
+  version:string;
+  frames:[TrackingFrameWire];
+  limits:LimitsWire;
+  eventKeyFrame:[GameEventWire];
+}
+
+root_type TrackingDataWire;
