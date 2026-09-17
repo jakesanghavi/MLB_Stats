@@ -94,6 +94,53 @@ class PlayReader:
                 out.append((e.get("time", f["time"]), e.get("dataType"), e.get("data")))
         return out
 
+    def play_window(self, max_seconds=25.0, lead=2.0, trail=2.0, gap_merge=8.0):
+        """Estimate the *actual* action window (absolute start, end seconds).
+
+        Gameday 3D clips are over-inclusive (long lead-in/out, sometimes bleed
+        from adjacent plays). We anchor on the in-stream ``playEvent{action:0}``
+        (the pitch) and take the contiguous ball-active window after it, capped
+        at ``max_seconds``. Falls back to the first tracked-ball time, then to
+        the whole clip.
+        """
+        if not self.frames:
+            return None
+        t0 = self.frames[0]["time"]
+        tN = self.frames[-1]["time"]
+
+        t_pitch = None
+        for f in self.frames:
+            for e in f.get("gameEvents", []):
+                if e.get("dataType") == 7 and (e.get("data") or {}).get("action") == 0:
+                    t_pitch = e.get("time", f["time"])
+                    break
+            if t_pitch is not None:
+                break
+
+        ball_t = [t for t, _, _, _ in self.ball_track()]
+        if t_pitch is None:
+            if not ball_t:
+                return (t0, tN)
+            t_pitch = ball_t[0]
+
+        # walk the contiguous ball-active segment covering/after the pitch
+        seg_end = t_pitch
+        started = False
+        prev = None
+        for bt in ball_t:
+            if bt < t_pitch - 1.0:
+                prev = bt
+                continue
+            if not started:
+                started, seg_end, prev = True, bt, bt
+                continue
+            if bt - prev <= gap_merge:
+                seg_end, prev = bt, bt
+            else:
+                break
+        t_end = min(seg_end, t_pitch + max_seconds)
+        return (max(t0, t_pitch - lead), min(tN, t_end + trail))
+
     def summary(self):
         tracks = self.actor_tracks()
         types = {}
