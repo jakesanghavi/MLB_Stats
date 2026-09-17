@@ -412,6 +412,39 @@ class MannequinClient:
         version = version or self.latest_version()
         return self._get_bytes(f"{self.root}/{version}/{index}.bin")
 
+    def download_raw(self, out_dir, version=None):
+        """Save all raw play files (json manifests + every non-gap chunk) to disk.
+
+        Writes: versions.json, {version}/manifest.json, metadata.json,
+        labels.json, uniforms.json and each {index}.bin. Returns the manifest.
+        """
+        from pathlib import Path as _Path
+        version = version or self.latest_version()
+        out = _Path(out_dir)
+        out.mkdir(parents=True, exist_ok=True)
+        (out / "versions.json").write_text(json.dumps(self.versions()))
+        manifest = self.manifest(version)
+        (out / "manifest.json").write_text(json.dumps(manifest))
+        for name, fetch in (("metadata.json", self.metadata),
+                            ("labels.json", self.labels),
+                            ("uniforms.json", self.uniforms)):
+            try:
+                (out / name).write_text(json.dumps(fetch(version)))
+            except Exception as e:  # optional files may 404
+                print(f"  ({name}: {e})")
+        records = manifest.get("records", []) if isinstance(manifest, dict) else []
+        n = 0
+        for rec in records:
+            idx = rec.get("index")
+            if idx is None or rec.get("isGap"):
+                continue
+            (out / f"{idx}.bin").write_bytes(self.chunk_bytes(idx, version))
+            n += 1
+        (out / "play.json").write_text(json.dumps(
+            {"gamePk": self.game_pk, "playId": self.play_id, "version": version}))
+        print(f"saved {n} chunks + manifests to {out}")
+        return manifest
+
     def download_play(self, version=None):
         """Fetch every chunk in the manifest and return merged per-play tracking."""
         version = version or self.latest_version()
