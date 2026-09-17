@@ -1,0 +1,11 @@
+// fM.fbs
+namespace MLB;
+
+table PlayEventWireStrikezone {
+  top: float;
+  bottom: float;
+  width: float;
+  depth: float;
+}
+
+root_type PlayEventWireStrikezone;

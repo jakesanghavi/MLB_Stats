@@ -1,0 +1,14 @@
+// SkeletalPlayerWire.fbs
+namespace MLB;
+
+table SkeletalPlayerWire {
+  positionId: short;
+  trackId: uint;
+  jointPositions: [float];
+  jointIds: [uint];
+  playerId: uint;
+  jerseyNumber: uint;
+  roleId: uint;
+}
+
+root_type SkeletalPlayerWire;

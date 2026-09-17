@@ -1,0 +1,1905 @@
+{
+    "version": "1.6.1",
+    "gamePk": 824781,
+    "ruleSettings": [
+        {
+            "settingId": 1,
+            "settingName": "strikeZoneTopFactor",
+            "settingDisplayName": "Strike Zone Top",
+            "settingDescription": "Top of strike zone as a percentage of player height",
+            "valueType": "percentage",
+            "settingValue": 53.5
+        },
+        {
+            "settingId": 2,
+            "settingName": "strikeZoneBottomFactor",
+            "settingDisplayName": "Strike Zone Bottom",
+            "settingDescription": "Bottom of strike zone as a percentage of player height",
+            "valueType": "percentage",
+            "settingValue": 27
+        },
+        {
+            "settingId": 3,
+            "settingName": "strikeZoneWidth",
+            "settingDisplayName": "Strike Zone Width",
+            "settingDescription": "Width of strike zone in inches",
+            "valueType": "numeric",
+            "settingValue": 17
+        },
+        {
+            "settingId": 37,
+            "settingName": "strikeZoneMeasurementSystem",
+            "settingDisplayName": "Strike Zone Measurement System",
+            "settingDescription": "Measurement system used for calculating strike zone top and bottom values",
+            "valueType": "numeric",
+            "settingValue": 4
+        },
+        {
+            "settingId": 4,
+            "settingName": "strikeZoneDepth",
+            "settingDisplayName": "Strike Zone Depth",
+            "settingDescription": "Depth of strike zone in inches from apex of plate",
+            "valueType": "numeric",
+            "settingValue": 8.5
+        },
+        {
+            "settingId": 16,
+            "settingName": "strikeZoneFlat",
+            "settingDisplayName": "Strike Zone Flat",
+            "settingDescription": "Use a flat (no depth) strike zone. ",
+            "valueType": "boolean",
+            "settingValue": true
+        },
+        {
+            "settingId": 5,
+            "settingName": "designatedHitter",
+            "settingDisplayName": "Designated Hitter",
+            "settingDescription": "Boolean value indicating if the designated hitter rule is allowed",
+            "valueType": "boolean",
+            "settingValue": true
+        },
+        {
+            "settingId": 7,
+            "settingName": "extraInningsRunnerOnSecond",
+            "settingDisplayName": "Extra Innings Runner on Second",
+            "settingDescription": "Boolean value indicating if extra innings begin with a runner on second base",
+            "valueType": "boolean",
+            "settingValue": true
+        },
+        {
+            "settingId": 8,
+            "settingName": "replayChallenges",
+            "settingDisplayName": "Replay Challenges",
+            "settingDescription": "Number of replay challenges granted to each team",
+            "valueType": "numeric",
+            "settingValue": 1
+        },
+        {
+            "settingId": 9,
+            "settingName": "absChallenges",
+            "settingDisplayName": "ABS Challenges",
+            "settingDescription": "Number of ABS challenges granted to each team",
+            "valueType": "numeric",
+            "settingValue": 2
+        },
+        {
+            "settingId": 21,
+            "settingName": "baseSize",
+            "settingDisplayName": "Base Size",
+            "settingDescription": "Size of bases (in inches squared)",
+            "valueType": "numeric",
+            "settingValue": 18
+        },
+        {
+            "settingId": 22,
+            "settingName": "defensiveShiftBanned",
+            "settingDisplayName": "Defensive Shift Banned",
+            "settingDescription": "Defensive shifts are banned",
+            "valueType": "boolean",
+            "settingValue": true
+        },
+        {
+            "settingId": 47,
+            "settingName": "absChallengesPerExtraInning",
+            "settingDisplayName": "ABS Challenges Per Extra Inning",
+            "settingDescription": "The number of ABS challenges allowed per extra inning",
+            "valueType": "numeric",
+            "settingValue": 1
+        },
+        {
+            "settingId": 23,
+            "settingName": "pitchTimer",
+            "settingDisplayName": "Pitch Timer",
+            "settingDescription": "Pitch timers are used to regulate time between pitches",
+            "valueType": "boolean",
+            "settingValue": true
+        },
+        {
+            "settingId": 24,
+            "settingName": "pitchTimerBasesEmpty",
+            "settingDisplayName": "Pitch Timer with Bases Empty",
+            "settingDescription": "Number of seconds between pitches that the pitcher has to begin his motion when no runners are on base",
+            "valueType": "numeric",
+            "settingValue": 15
+        },
+        {
+            "settingId": 25,
+            "settingName": "pitchTimerRunnersOn",
+            "settingDisplayName": "Pitch Timer with Runners On Base",
+            "settingDescription": "Number of seconds between pitches that the pitcher has to begin his motion when there is a runner on base",
+            "valueType": "numeric",
+            "settingValue": 18
+        },
+        {
+            "settingId": 26,
+            "settingName": "pitchTimerBatter",
+            "settingDisplayName": "Pitch Timer for Batter",
+            "settingDescription": "Number of seconds left on the pitch timer when the batter must be in the box and alert to the pitcher",
+            "valueType": "numeric",
+            "settingValue": 8
+        },
+        {
+            "settingId": 27,
+            "settingName": "pitcherDisengagementRule",
+            "settingDisplayName": "Pitcher Disengagement Rule",
+            "settingDescription": "Pitchers are allowed a maximum number of disengagements (stepping off the rubber) between runner movements",
+            "valueType": "boolean",
+            "settingValue": true
+        },
+        {
+            "settingId": 28,
+            "settingName": "pitcherDisengagementLimit",
+            "settingDisplayName": "Pitcher Disengagement Limit",
+            "settingDescription": "Number of disengagements allowed before possible violations",
+            "valueType": "numeric",
+            "settingValue": 2
+        },
+        {
+            "settingId": 29,
+            "settingName": "batterDisengagementRule",
+            "settingDisplayName": "Batter Disengagement Rule",
+            "settingDescription": "Batters are allowed a maximum number of disengagements (batter timeouts) per at bat",
+            "valueType": "boolean",
+            "settingValue": true
+        },
+        {
+            "settingId": 30,
+            "settingName": "batterDisengagementLimit",
+            "settingDisplayName": "Batter Disengagement Limit",
+            "settingDescription": "Number of disengagements allowed per at bat",
+            "valueType": "numeric",
+            "settingValue": 1
+        },
+        {
+            "settingId": 31,
+            "settingName": "moundVisitRule",
+            "settingDisplayName": "Mound Visit Rule",
+            "settingDescription": "Mound visits are limited",
+            "valueType": "boolean",
+            "settingValue": true
+        },
+        {
+            "settingId": 32,
+            "settingName": "moundVisitLimit",
+            "settingDisplayName": "Mound Visit Limit",
+            "settingDescription": "Number of mound visits allowed for each team in the first 9 innings.",
+            "valueType": "numeric",
+            "settingValue": 4
+        },
+        {
+            "settingId": 33,
+            "settingName": "moundVisitsAdded9thInning",
+            "settingDisplayName": "Mound Visits Added in 9th Inning",
+            "settingDescription": "Number of additional mound visits given to a team in the 9th inning if they have 0 remaining. ",
+            "valueType": "numeric",
+            "settingValue": 1
+        },
+        {
+            "settingId": 11,
+            "settingName": "absType",
+            "settingDisplayName": "ABS Type",
+            "settingDescription": "Type of ABS (none, full, challenge)",
+            "valueType": "text",
+            "settingValue": "challengeABS"
+        }
+    ],
+    "venueId": 3,
+    "boneIdMap": {
+        "0": "joint_Pelvis",
+        "1": "joint_HipMaster",
+        "2": "joint_HipRT",
+        "3": "joint_KneeRT",
+        "4": "joint_FootRT",
+        "5": "joint_BallRT",
+        "6": "joint_ToeRT",
+        "7": "joint_ToeRT_end",
+        "8": "joint_ThighRollRT",
+        "9": "joint_ThighRollRT_end",
+        "10": "joint_HipLT",
+        "11": "joint_KneeLT",
+        "12": "joint_FootLT",
+        "13": "joint_BallLT",
+        "14": "joint_ToeLT",
+        "15": "joint_ToeLT_end",
+        "16": "joint_ThighRollLT",
+        "17": "joint_ThighRollLT_end",
+        "18": "joint_TorsoA",
+        "19": "joint_TorsoB",
+        "20": "joint_Neck",
+        "21": "joint_Neck2",
+        "22": "joint_Head",
+        "23": "joint_EyeRT",
+        "24": "joint_EyeLT",
+        "25": "joint_ClavicleRT",
+        "26": "joint_ShoulderRT",
+        "27": "joint_ElbowRT",
+        "28": "joint_HandRT",
+        "29": "joint_WeaponRT",
+        "30": "joint_WeaponRT_end",
+        "31": "joint_PinkyART",
+        "32": "joint_PinkyBRT",
+        "33": "joint_PinkyCRT",
+        "34": "joint_PinkyDRT",
+        "35": "joint_PinkyDRT_end",
+        "36": "joint_RingART",
+        "37": "joint_RingBRT",
+        "38": "joint_RingCRT",
+        "39": "joint_RingDRT",
+        "40": "joint_RingDRT_end",
+        "41": "joint_FingersART",
+        "42": "joint_FingersBRT",
+        "43": "joint_FingersCRT",
+        "44": "joint_FingersDRT",
+        "45": "joint_FingersDRT_end",
+        "46": "joint_IndexART",
+        "47": "joint_IndexBRT",
+        "48": "joint_IndexCRT",
+        "49": "joint_IndexDRT",
+        "50": "joint_IndexDRT_end",
+        "51": "joint_ThumbART",
+        "52": "joint_ThumbBRT",
+        "53": "joint_ThumbCRT",
+        "54": "joint_ThumbDRT",
+        "55": "joint_ThumbDRT_end",
+        "56": "joint_WristRollRT",
+        "57": "joint_WristRollRT_end",
+        "58": "joint_ForeArmRollRT",
+        "59": "joint_ForeArmRollRT_end",
+        "60": "joint_UpperArmRollRT",
+        "61": "joint_UpperArmRollRT_end",
+        "62": "joint_ClavicleRollRT",
+        "63": "joint_ClavicleRollRT_end",
+        "64": "joint_ClavicleLT",
+        "65": "joint_ShoulderLT",
+        "66": "joint_ElbowLT",
+        "67": "joint_HandLT",
+        "68": "joint_WeaponLT",
+        "69": "joint_WeaponLT_end",
+        "70": "joint_PinkyALT",
+        "71": "joint_PinkyBLT",
+        "72": "joint_PinkyCLT",
+        "73": "joint_PinkyDLT",
+        "74": "joint_PinkyDLT_end",
+        "75": "joint_RingALT",
+        "76": "joint_RingBLT",
+        "77": "joint_RingCLT",
+        "78": "joint_RingDLT",
+        "79": "joint_RingDLT_end",
+        "80": "joint_FingersALT",
+        "81": "joint_FingersBLT",
+        "82": "joint_FingersCLT",
+        "83": "joint_FingersDLT",
+        "84": "joint_FingersDLT_end",
+        "85": "joint_IndexALT",
+        "86": "joint_IndexBLT",
+        "87": "joint_IndexCLT",
+        "88": "joint_IndexDLT",
+        "89": "joint_IndexDLT_end",
+        "90": "joint_ThumbALT",
+        "91": "joint_ThumbBLT",
+        "92": "joint_ThumbCLT",
+        "93": "joint_ThumbDLT",
+        "94": "joint_ThumbDLT_end",
+        "95": "joint_WristRollLT",
+        "96": "joint_WristRollLT_end",
+        "97": "joint_ForeArmRollLT",
+        "98": "joint_ForeArmRollLT_end",
+        "99": "joint_UpperArmRollLT",
+        "100": "joint_UpperArmRollLT_end",
+        "101": "joint_ClavicleRollLT",
+        "102": "joint_ClavicleRollLT_end"
+    },
+    "batBoneIdMap": {
+        "103": "bottom",
+        "104": "handle",
+        "105": "body",
+        "106": "midbody",
+        "107": "spot",
+        "108": "top"
+    },
+    "boxscore": {
+        "teams": {
+            "away": {
+                "team": {
+                    "id": 135,
+                    "abbreviation": "SD"
+                },
+                "players": {
+                    "ID669134": {
+                        "person": {
+                            "id": 669134,
+                            "boxscoreName": "Campusano",
+                            "useName": "Luis",
+                            "nameFirstLast": "Luis Campusano",
+                            "lastName": "Campusano",
+                            "initLastName": "L Campusano",
+                            "height": "5' 10\"",
+                            "heightInches": 70,
+                            "pitchHand": {
+                                "code": "R",
+                                "description": "Right"
+                            },
+                            "primaryPosition": {
+                                "code": "2",
+                                "name": "Catcher",
+                                "type": "Catcher",
+                                "abbreviation": "C"
+                            },
+                            "batSide": {
+                                "code": "R",
+                                "description": "Right"
+                            },
+                            "strikeZoneTop": 3.119,
+                            "strikeZoneBottom": 1.574
+                        },
+                        "jerseyNumber": "12",
+                        "parentTeamId": 135
+                    },
+                    "ID666023": {
+                        "person": {
+                            "id": 666023,
+                            "boxscoreName": "Fermin",
+                            "useName": "Freddy",
+                            "nameFirstLast": "Freddy Fermin",
+                            "lastName": "Fermin",
+                            "initLastName": "F Fermin",
+                            "height": "5' 10\"",
+                            "heightInches": 70,
+                            "pitchHand": {
+                                "code": "R",
+                                "description": "Right"
+                            },
+                            "primaryPosition": {
+                                "code": "2",
+                                "name": "Catcher",
+                                "type": "Catcher",
+                                "abbreviation": "C"
+                            },
+                            "batSide": {
+                                "code": "R",
+                                "description": "Right"
+                            },
+                            "strikeZoneTop": 3.105,
+                            "strikeZoneBottom": 1.567
+                        },
+                        "jerseyNumber": "54",
+                        "parentTeamId": 135
+                    },
+                    "ID650633": {
+                        "person": {
+                            "id": 650633,
+                            "boxscoreName": "King, M",
+                            "useName": "Michael",
+                            "nameFirstLast": "Michael King",
+                            "lastName": "King",
+                            "initLastName": "M King",
+                            "height": "6' 3\"",
+                            "heightInches": 75,
+                            "pitchHand": {
+                                "code": "R",
+                                "description": "Right"
+                            },
+                            "primaryPosition": {
+                                "code": "1",
+                                "name": "Pitcher",
+                                "type": "Pitcher",
+                                "abbreviation": "P"
+                            },
+                            "batSide": {
+                                "code": "R",
+                                "description": "Right"
+                            },
+                            "strikeZoneTop": 3.344,
+                            "strikeZoneBottom": 1.688
+                        },
+                        "jerseyNumber": "34",
+                        "parentTeamId": 135
+                    },
+                    "ID695243": {
+                        "person": {
+                            "id": 695243,
+                            "boxscoreName": "Miller, M",
+                            "useName": "Mason",
+                            "nameFirstLast": "Mason Miller",
+                            "lastName": "Miller",
+                            "initLastName": "M Miller",
+                            "height": "6' 5\"",
+                            "heightInches": 77,
+                            "pitchHand": {
+                                "code": "R",
+                                "description": "Right"
+                            },
+                            "primaryPosition": {
+                                "code": "1",
+                                "name": "Pitcher",
+                                "type": "Pitcher",
+                                "abbreviation": "P"
+                            },
+                            "batSide": {
+                                "code": "R",
+                                "description": "Right"
+                            },
+                            "strikeZoneTop": 3.433,
+                            "strikeZoneBottom": 1.733
+                        },
+                        "jerseyNumber": "22",
+                        "parentTeamId": 135
+                    },
+                    "ID688158": {
+                        "person": {
+                            "id": 688158,
+                            "boxscoreName": "Morgan, D",
+                            "useName": "David",
+                            "nameFirstLast": "David Morgan",
+                            "lastName": "Morgan",
+                            "initLastName": "D Morgan",
+                            "height": "6' 0\"",
+                            "heightInches": 72,
+                            "pitchHand": {
+                                "code": "R",
+                                "description": "Right"
+                            },
+                            "primaryPosition": {
+                                "code": "1",
+                                "name": "Pitcher",
+                                "type": "Pitcher",
+                                "abbreviation": "P"
+                            },
+                            "batSide": {
+                                "code": "R",
+                                "description": "Right"
+                            },
+                            "strikeZoneTop": 3.21,
+                            "strikeZoneBottom": 1.62
+                        },
+                        "jerseyNumber": "66",
+                        "parentTeamId": 135
+                    },
+                    "ID593974": {
+                        "person": {
+                            "id": 593974,
+                            "boxscoreName": "Peralta, W",
+                            "useName": "Wandy",
+                            "nameFirstLast": "Wandy Peralta",
+                            "lastName": "Peralta",
+                            "initLastName": "W Peralta",
+                            "height": "6' 0\"",
+                            "heightInches": 72,
+                            "pitchHand": {
+                                "code": "L",
+                                "description": "Left"
+                            },
+                            "primaryPosition": {
+                                "code": "1",
+                                "name": "Pitcher",
+                                "type": "Pitcher",
+                                "abbreviation": "P"
+                            },
+                            "batSide": {
+                                "code": "L",
+                                "description": "Left"
+                            },
+                            "strikeZoneTop": 3.21,
+                            "strikeZoneBottom": 1.62
+                        },
+                        "jerseyNumber": "58",
+                        "parentTeamId": 135
+                    },
+                    "ID592206": {
+                        "person": {
+                            "id": 592206,
+                            "boxscoreName": "Castellanos, N",
+                            "useName": "Nick",
+                            "nameFirstLast": "Nick Castellanos",
+                            "lastName": "Castellanos",
+                            "initLastName": "N Castellanos",
+                            "height": "6' 3\"",
+                            "heightInches": 75,
+                            "pitchHand": {
+                                "code": "R",
+                                "description": "Right"
+                            },
+                            "primaryPosition": {
+                                "code": "9",
+                                "name": "Outfielder",
+                                "type": "Outfielder",
+                                "abbreviation": "RF"
+                            },
+                            "batSide": {
+                                "code": "R",
+                                "description": "Right"
+                            },
+                            "strikeZoneTop": 3.33,
+                            "strikeZoneBottom": 1.68
+                        },
+                        "jerseyNumber": "21",
+                        "parentTeamId": 135
+                    },
+                    "ID621111": {
+                        "person": {
+                            "id": 621111,
+                            "boxscoreName": "Buehler",
+                            "useName": "Walker",
+                            "nameFirstLast": "Walker Buehler",
+                            "lastName": "Buehler",
+                            "initLastName": "W Buehler",
+                            "height": "6' 2\"",
+                            "heightInches": 74,
+                            "pitchHand": {
+                                "code": "R",
+                                "description": "Right"
+                            },
+                            "primaryPosition": {
+                                "code": "1",
+                                "name": "Pitcher",
+                                "type": "Pitcher",
+                                "abbreviation": "P"
+                            },
+                            "batSide": {
+                                "code": "R",
+                                "description": "Right"
+                            },
+                            "strikeZoneTop": 3.29,
+                            "strikeZoneBottom": 1.6
+                        },
+                        "jerseyNumber": "10",
+                        "parentTeamId": 135
+                    },
+                    "ID701538": {
+                        "person": {
+                            "id": 701538,
+                            "boxscoreName": "Merrill",
+                            "useName": "Jackson",
+                            "nameFirstLast": "Jackson Merrill",
+                            "lastName": "Merrill",
+                            "initLastName": "J Merrill",
+                            "height": "6' 2\"",
+                            "heightInches": 74,
+                            "pitchHand": {
+                                "code": "R",
+                                "description": "Right"
+                            },
+                            "primaryPosition": {
+                                "code": "8",
+                                "name": "Outfielder",
+                                "type": "Outfielder",
+                                "abbreviation": "CF"
+                            },
+                            "batSide": {
+                                "code": "L",
+                                "description": "Left"
+                            },
+                            "strikeZoneTop": 3.32,
+                            "strikeZoneBottom": 1.676
+                        },
+                        "jerseyNumber": "3",
+                        "parentTeamId": 135
+                    },
+                    "ID608566": {
+                        "person": {
+                            "id": 608566,
+                            "boxscoreName": "Márquez",
+                            "useName": "Germán",
+                            "nameFirstLast": "Germán Márquez",
+                            "lastName": "Márquez",
+                            "initLastName": "G Márquez",
+                            "height": "6' 1\"",
+                            "heightInches": 73,
+                            "pitchHand": {
+                                "code": "R",
+                                "description": "Right"
+                            },
+                            "primaryPosition": {
+                                "code": "1",
+                                "name": "Pitcher",
+                                "type": "Pitcher",
+                                "abbreviation": "P"
+                            },
+                            "batSide": {
+                                "code": "R",
+                                "description": "Right"
+                            },
+                            "strikeZoneTop": 3.255,
+                            "strikeZoneBottom": 1.643
+                        },
+                        "jerseyNumber": "33",
+                        "parentTeamId": 135
+                    },
+                    "ID699134": {
+                        "person": {
+                            "id": 699134,
+                            "boxscoreName": "Rodriguez, B",
+                            "useName": "Bradgley",
+                            "nameFirstLast": "Bradgley Rodriguez",
+                            "lastName": "Rodriguez",
+                            "initLastName": "B Rodriguez",
+                            "height": "6' 1\"",
+                            "heightInches": 73,
+                            "pitchHand": {
+                                "code": "R",
+                                "description": "Right"
+                            },
+                            "primaryPosition": {
+                                "code": "1",
+                                "name": "Pitcher",
+                                "type": "Pitcher",
+                                "abbreviation": "P"
+                            },
+                            "batSide": {
+                                "code": "R",
+                                "description": "Right"
+                            },
+                            "strikeZoneTop": 3.255,
+                            "strikeZoneBottom": 1.643
+                        },
+                        "jerseyNumber": "72",
+                        "parentTeamId": 135
+                    },
+                    "ID669093": {
+                        "person": {
+                            "id": 669093,
+                            "boxscoreName": "Estrada, J",
+                            "useName": "Jeremiah",
+                            "nameFirstLast": "Jeremiah Estrada",
+                            "lastName": "Estrada",
+                            "initLastName": "J Estrada",
+                            "height": "6' 1\"",
+                            "heightInches": 73,
+                            "pitchHand": {
+                                "code": "R",
+                                "description": "Right"
+                            },
+                            "primaryPosition": {
+                                "code": "1",
+                                "name": "Pitcher",
+                                "type": "Pitcher",
+                                "abbreviation": "P"
+                            },
+                            "batSide": {
+                                "code": "S",
+                                "description": "Switch"
+                            },
+                            "strikeZoneTop": 3.255,
+                            "strikeZoneBottom": 1.643
+                        },
+                        "jerseyNumber": "56",
+                        "parentTeamId": 135
+                    },
+                    "ID657757": {
+                        "person": {
+                            "id": 657757,
+                            "boxscoreName": "Sheets",
+                            "useName": "Gavin",
+                            "nameFirstLast": "Gavin Sheets",
+                            "lastName": "Sheets",
+                            "initLastName": "G Sheets",
+                            "height": "6' 3\"",
+                            "heightInches": 75,
+                            "pitchHand": {
+                                "code": "L",
+                                "description": "Left"
+                            },
+                            "primaryPosition": {
+                                "code": "7",
+                                "name": "Outfielder",
+                                "type": "Outfielder",
+                                "abbreviation": "LF"
+                            },
+                            "batSide": {
+                                "code": "L",
+                                "description": "Left"
+                            },
+                            "strikeZoneTop": 3.351,
+                            "strikeZoneBottom": 1.691
+                        },
+                        "jerseyNumber": "30",
+                        "parentTeamId": 135
+                    },
+                    "ID657656": {
+                        "person": {
+                            "id": 657656,
+                            "boxscoreName": "Laureano",
+                            "useName": "Ramón",
+                            "nameFirstLast": "Ramón Laureano",
+                            "lastName": "Laureano",
+                            "initLastName": "R Laureano",
+                            "height": "5' 9\"",
+                            "heightInches": 69,
+                            "pitchHand": {
+                                "code": "R",
+                                "description": "Right"
+                            },
+                            "primaryPosition": {
+                                "code": "9",
+                                "name": "Outfielder",
+                                "type": "Outfielder",
+                                "abbreviation": "RF"
+                            },
+                            "batSide": {
+                                "code": "R",
+                                "description": "Right"
+                            },
+                            "strikeZoneTop": 3.065,
+                            "strikeZoneBottom": 1.547
+                        },
+                        "jerseyNumber": "5",
+                        "parentTeamId": 135
+                    },
+                    "ID670970": {
+                        "person": {
+                            "id": 670970,
+                            "boxscoreName": "Morejon",
+                            "useName": "Adrian",
+                            "nameFirstLast": "Adrian Morejon",
+                            "lastName": "Morejon",
+                            "initLastName": "A Morejon",
+                            "height": "5' 11\"",
+                            "heightInches": 71,
+                            "pitchHand": {
+                                "code": "L",
+                                "description": "Left"
+                            },
+                            "primaryPosition": {
+                                "code": "1",
+                                "name": "Pitcher",
+                                "type": "Pitcher",
+                                "abbreviation": "P"
+                            },
+                            "batSide": {
+                                "code": "L",
+                                "description": "Left"
+                            },
+                            "strikeZoneTop": 3.165,
+                            "strikeZoneBottom": 1.598
+                        },
+                        "jerseyNumber": "50",
+                        "parentTeamId": 135
+                    },
+                    "ID592518": {
+                        "person": {
+                            "id": 592518,
+                            "boxscoreName": "Machado, M",
+                            "useName": "Manny",
+                            "nameFirstLast": "Manny Machado",
+                            "lastName": "Machado",
+                            "initLastName": "M Machado",
+                            "height": "6' 2\"",
+                            "heightInches": 74,
+                            "pitchHand": {
+                                "code": "R",
+                                "description": "Right"
+                            },
+                            "primaryPosition": {
+                                "code": "5",
+                                "name": "Third Base",
+                                "type": "Infielder",
+                                "abbreviation": "3B"
+                            },
+                            "batSide": {
+                                "code": "R",
+                                "description": "Right"
+                            },
+                            "strikeZoneTop": 3.314,
+                            "strikeZoneBottom": 1.672
+                        },
+                        "jerseyNumber": "13",
+                        "parentTeamId": 135
+                    },
+                    "ID601713": {
+                        "person": {
+                            "id": 601713,
+                            "boxscoreName": "Pivetta",
+                            "useName": "Nick",
+                            "nameFirstLast": "Nick Pivetta",
+                            "lastName": "Pivetta",
+                            "initLastName": "N Pivetta",
+                            "height": "6' 5\"",
+                            "heightInches": 77,
+                            "pitchHand": {
+                                "code": "R",
+                                "description": "Right"
+                            },
+                            "primaryPosition": {
+                                "code": "1",
+                                "name": "Pitcher",
+                                "type": "Pitcher",
+                                "abbreviation": "P"
+                            },
+                            "batSide": {
+                                "code": "R",
+                                "description": "Right"
+                            },
+                            "strikeZoneTop": 3.433,
+                            "strikeZoneBottom": 1.733
+                        },
+                        "jerseyNumber": "27",
+                        "parentTeamId": 135
+                    },
+                    "ID609280": {
+                        "person": {
+                            "id": 609280,
+                            "boxscoreName": "Andujar",
+                            "useName": "Miguel",
+                            "nameFirstLast": "Miguel Andujar",
+                            "lastName": "Andujar",
+                            "initLastName": "M Andujar",
+                            "height": "6' 0\"",
+                            "heightInches": 72,
+                            "pitchHand": {
+                                "code": "R",
+                                "description": "Right"
+                            },
+                            "primaryPosition": {
+                                "code": "7",
+                                "name": "Outfielder",
+                                "type": "Outfielder",
+                                "abbreviation": "LF"
+                            },
+                            "batSide": {
+                                "code": "R",
+                                "description": "Right"
+                            },
+                            "strikeZoneTop": 3.191,
+                            "strikeZoneBottom": 1.61
+                        },
+                        "jerseyNumber": "41",
+                        "parentTeamId": 135
+                    },
+                    "ID665487": {
+                        "person": {
+                            "id": 665487,
+                            "boxscoreName": "Tatis Jr.",
+                            "useName": "Fernando",
+                            "nameFirstLast": "Fernando Tatis Jr.",
+                            "lastName": "Tatis",
+                            "initLastName": "F Tatis Jr.",
+                            "height": "6' 3\"",
+                            "heightInches": 75,
+                            "pitchHand": {
+                                "code": "R",
+                                "description": "Right"
+                            },
+                            "primaryPosition": {
+                                "code": "9",
+                                "name": "Outfielder",
+                                "type": "Outfielder",
+                                "abbreviation": "RF"
+                            },
+                            "batSide": {
+                                "code": "R",
+                                "description": "Right"
+                            },
+                            "strikeZoneTop": 3.346,
+                            "strikeZoneBottom": 1.689
+                        },
+                        "jerseyNumber": "23",
+                        "parentTeamId": 135
+                    },
+                    "ID664034": {
+                        "person": {
+                            "id": 664034,
+                            "boxscoreName": "France, T",
+                            "useName": "Ty",
+                            "nameFirstLast": "Ty France",
+                            "lastName": "France",
+                            "initLastName": "T France",
+                            "height": "5' 10\"",
+                            "heightInches": 70,
+                            "pitchHand": {
+                                "code": "R",
+                                "description": "Right"
+                            },
+                            "primaryPosition": {
+                                "code": "3",
+                                "name": "First Base",
+                                "type": "Infielder",
+                                "abbreviation": "1B"
+                            },
+                            "batSide": {
+                                "code": "R",
+                                "description": "Right"
+                            },
+                            "strikeZoneTop": 3.103,
+                            "strikeZoneBottom": 1.566
+                        },
+                        "jerseyNumber": "25",
+                        "parentTeamId": 135
+                    },
+                    "ID669369": {
+                        "person": {
+                            "id": 669369,
+                            "boxscoreName": "Johnson, B",
+                            "useName": "Bryce",
+                            "nameFirstLast": "Bryce Johnson",
+                            "lastName": "Johnson",
+                            "initLastName": "B Johnson",
+                            "height": "5' 11\"",
+                            "heightInches": 71,
+                            "pitchHand": {
+                                "code": "R",
+                                "description": "Right"
+                            },
+                            "primaryPosition": {
+                                "code": "8",
+                                "name": "Outfielder",
+                                "type": "Outfielder",
+                                "abbreviation": "CF"
+                            },
+                            "batSide": {
+                                "code": "S",
+                                "description": "Switch"
+                            },
+                            "strikeZoneTop": 3.186,
+                            "strikeZoneBottom": 1.608
+                        },
+                        "jerseyNumber": "29",
+                        "parentTeamId": 135
+                    },
+                    "ID593428": {
+                        "person": {
+                            "id": 593428,
+                            "boxscoreName": "Bogaerts",
+                            "useName": "Xander",
+                            "nameFirstLast": "Xander Bogaerts",
+                            "lastName": "Bogaerts",
+                            "initLastName": "X Bogaerts",
+                            "height": "6' 2\"",
+                            "heightInches": 74,
+                            "pitchHand": {
+                                "code": "R",
+                                "description": "Right"
+                            },
+                            "primaryPosition": {
+                                "code": "6",
+                                "name": "Shortstop",
+                                "type": "Infielder",
+                                "abbreviation": "SS"
+                            },
+                            "batSide": {
+                                "code": "R",
+                                "description": "Right"
+                            },
+                            "strikeZoneTop": 3.285,
+                            "strikeZoneBottom": 1.658
+                        },
+                        "jerseyNumber": "2",
+                        "parentTeamId": 135
+                    },
+                    "ID606996": {
+                        "person": {
+                            "id": 606996,
+                            "boxscoreName": "Hart",
+                            "useName": "Kyle",
+                            "nameFirstLast": "Kyle Hart",
+                            "lastName": "Hart",
+                            "initLastName": "K Hart",
+                            "height": "6' 5\"",
+                            "heightInches": 77,
+                            "pitchHand": {
+                                "code": "L",
+                                "description": "Left"
+                            },
+                            "primaryPosition": {
+                                "code": "1",
+                                "name": "Pitcher",
+                                "type": "Pitcher",
+                                "abbreviation": "P"
+                            },
+                            "batSide": {
+                                "code": "L",
+                                "description": "Left"
+                            },
+                            "strikeZoneTop": 3.433,
+                            "strikeZoneBottom": 1.733
+                        },
+                        "jerseyNumber": "68",
+                        "parentTeamId": 135
+                    },
+                    "ID676760": {
+                        "person": {
+                            "id": 676760,
+                            "boxscoreName": "Marinaccio",
+                            "useName": "Ron",
+                            "nameFirstLast": "Ron Marinaccio",
+                            "lastName": "Marinaccio",
+                            "initLastName": "R Marinaccio",
+                            "height": "6' 2\"",
+                            "heightInches": 74,
+                            "pitchHand": {
+                                "code": "R",
+                                "description": "Right"
+                            },
+                            "primaryPosition": {
+                                "code": "1",
+                                "name": "Pitcher",
+                                "type": "Pitcher",
+                                "abbreviation": "P"
+                            },
+                            "batSide": {
+                                "code": "R",
+                                "description": "Right"
+                            },
+                            "strikeZoneTop": 3.299,
+                            "strikeZoneBottom": 1.665
+                        },
+                        "jerseyNumber": "97",
+                        "parentTeamId": 135
+                    },
+                    "ID630105": {
+                        "person": {
+                            "id": 630105,
+                            "boxscoreName": "Cronenworth",
+                            "useName": "Jake",
+                            "nameFirstLast": "Jake Cronenworth",
+                            "lastName": "Cronenworth",
+                            "initLastName": "J Cronenworth",
+                            "height": "5' 11\"",
+                            "heightInches": 71,
+                            "pitchHand": {
+                                "code": "R",
+                                "description": "Right"
+                            },
+                            "primaryPosition": {
+                                "code": "4",
+                                "name": "Second Base",
+                                "type": "Infielder",
+                                "abbreviation": "2B"
+                            },
+                            "batSide": {
+                                "code": "L",
+                                "description": "Left"
+                            },
+                            "strikeZoneTop": 3.172,
+                            "strikeZoneBottom": 1.601
+                        },
+                        "jerseyNumber": "9",
+                        "parentTeamId": 135
+                    },
+                    "ID681190": {
+                        "person": {
+                            "id": 681190,
+                            "boxscoreName": "Vásquez, R",
+                            "useName": "Randy",
+                            "nameFirstLast": "Randy Vásquez",
+                            "lastName": "Vásquez",
+                            "initLastName": "R Vásquez",
+                            "height": "6' 0\"",
+                            "heightInches": 72,
+                            "pitchHand": {
+                                "code": "R",
+                                "description": "Right"
+                            },
+                            "primaryPosition": {
+                                "code": "1",
+                                "name": "Pitcher",
+                                "type": "Pitcher",
+                                "abbreviation": "P"
+                            },
+                            "batSide": {
+                                "code": "R",
+                                "description": "Right"
+                            },
+                            "strikeZoneTop": 3.21,
+                            "strikeZoneBottom": 1.62
+                        },
+                        "jerseyNumber": "98",
+                        "parentTeamId": 135
+                    }
+                }
+            },
+            "home": {
+                "team": {
+                    "id": 111,
+                    "abbreviation": "BOS",
+                    "venue": {
+                        "id": 3,
+                        "name": "Fenway Park",
+                        "link": "/api/v1/venues/3"
+                    }
+                },
+                "players": {
+                    "ID701350": {
+                        "person": {
+                            "id": 701350,
+                            "boxscoreName": "Anthony",
+                            "useName": "Roman",
+                            "nameFirstLast": "Roman Anthony",
+                            "lastName": "Anthony",
+                            "initLastName": "R Anthony",
+                            "height": "6' 3\"",
+                            "heightInches": 75,
+                            "pitchHand": {
+                                "code": "R",
+                                "description": "Right"
+                            },
+                            "primaryPosition": {
+                                "code": "9",
+                                "name": "Outfielder",
+                                "type": "Outfielder",
+                                "abbreviation": "RF"
+                            },
+                            "batSide": {
+                                "code": "L",
+                                "description": "Left"
+                            },
+                            "strikeZoneTop": 3.326,
+                            "strikeZoneBottom": 1.679
+                        },
+                        "jerseyNumber": "19",
+                        "parentTeamId": 111
+                    },
+                    "ID575929": {
+                        "person": {
+                            "id": 575929,
+                            "boxscoreName": "Contreras, Wn",
+                            "useName": "Willson",
+                            "nameFirstLast": "Willson Contreras",
+                            "lastName": "Contreras",
+                            "initLastName": "W Contreras",
+                            "height": "6' 0\"",
+                            "heightInches": 72,
+                            "pitchHand": {
+                                "code": "R",
+                                "description": "Right"
+                            },
+                            "primaryPosition": {
+                                "code": "3",
+                                "name": "First Base",
+                                "type": "Infielder",
+                                "abbreviation": "1B"
+                            },
+                            "batSide": {
+                                "code": "R",
+                                "description": "Right"
+                            },
+                            "strikeZoneTop": 3.23,
+                            "strikeZoneBottom": 1.63
+                        },
+                        "jerseyNumber": "40",
+                        "parentTeamId": 111
+                    },
+                    "ID813349": {
+                        "person": {
+                            "id": 813349,
+                            "boxscoreName": "Early",
+                            "useName": "Connelly",
+                            "nameFirstLast": "Connelly Early",
+                            "lastName": "Early",
+                            "initLastName": "C Early",
+                            "height": "6' 3\"",
+                            "heightInches": 75,
+                            "pitchHand": {
+                                "code": "L",
+                                "description": "Left"
+                            },
+                            "primaryPosition": {
+                                "code": "1",
+                                "name": "Pitcher",
+                                "type": "Pitcher",
+                                "abbreviation": "P"
+                            },
+                            "batSide": {
+                                "code": "L",
+                                "description": "Left"
+                            },
+                            "strikeZoneTop": 3.344,
+                            "strikeZoneBottom": 1.688
+                        },
+                        "jerseyNumber": "71",
+                        "parentTeamId": 111
+                    },
+                    "ID669711": {
+                        "person": {
+                            "id": 669711,
+                            "boxscoreName": "Weissert",
+                            "useName": "Greg",
+                            "nameFirstLast": "Greg Weissert",
+                            "lastName": "Weissert",
+                            "initLastName": "G Weissert",
+                            "height": "6' 2\"",
+                            "heightInches": 74,
+                            "pitchHand": {
+                                "code": "R",
+                                "description": "Right"
+                            },
+                            "primaryPosition": {
+                                "code": "1",
+                                "name": "Pitcher",
+                                "type": "Pitcher",
+                                "abbreviation": "P"
+                            },
+                            "batSide": {
+                                "code": "R",
+                                "description": "Right"
+                            },
+                            "strikeZoneTop": 3.299,
+                            "strikeZoneBottom": 1.665
+                        },
+                        "jerseyNumber": "57",
+                        "parentTeamId": 111
+                    },
+                    "ID657136": {
+                        "person": {
+                            "id": 657136,
+                            "boxscoreName": "Wong",
+                            "useName": "Connor",
+                            "nameFirstLast": "Connor Wong",
+                            "lastName": "Wong",
+                            "initLastName": "C Wong",
+                            "height": "5' 10\"",
+                            "heightInches": 70,
+                            "pitchHand": {
+                                "code": "R",
+                                "description": "Right"
+                            },
+                            "primaryPosition": {
+                                "code": "2",
+                                "name": "Catcher",
+                                "type": "Catcher",
+                                "abbreviation": "C"
+                            },
+                            "batSide": {
+                                "code": "R",
+                                "description": "Right"
+                            },
+                            "strikeZoneTop": 3.106,
+                            "strikeZoneBottom": 1.567
+                        },
+                        "jerseyNumber": "12",
+                        "parentTeamId": 111
+                    },
+                    "ID596115": {
+                        "person": {
+                            "id": 596115,
+                            "boxscoreName": "Story",
+                            "useName": "Trevor",
+                            "nameFirstLast": "Trevor Story",
+                            "lastName": "Story",
+                            "initLastName": "T Story",
+                            "height": "6' 1\"",
+                            "heightInches": 73,
+                            "pitchHand": {
+                                "code": "R",
+                                "description": "Right"
+                            },
+                            "primaryPosition": {
+                                "code": "6",
+                                "name": "Shortstop",
+                                "type": "Infielder",
+                                "abbreviation": "SS"
+                            },
+                            "batSide": {
+                                "code": "R",
+                                "description": "Right"
+                            },
+                            "strikeZoneTop": 3.242,
+                            "strikeZoneBottom": 1.636
+                        },
+                        "jerseyNumber": "10",
+                        "parentTeamId": 111
+                    },
+                    "ID677161": {
+                        "person": {
+                            "id": 677161,
+                            "boxscoreName": "Kelly, Z",
+                            "useName": "Zack",
+                            "nameFirstLast": "Zack Kelly",
+                            "lastName": "Kelly",
+                            "initLastName": "Z Kelly",
+                            "height": "6' 3\"",
+                            "heightInches": 75,
+                            "pitchHand": {
+                                "code": "R",
+                                "description": "Right"
+                            },
+                            "primaryPosition": {
+                                "code": "1",
+                                "name": "Pitcher",
+                                "type": "Pitcher",
+                                "abbreviation": "P"
+                            },
+                            "batSide": {
+                                "code": "R",
+                                "description": "Right"
+                            },
+                            "strikeZoneTop": 3.344,
+                            "strikeZoneBottom": 1.688
+                        },
+                        "jerseyNumber": "76",
+                        "parentTeamId": 111
+                    },
+                    "ID678394": {
+                        "person": {
+                            "id": 678394,
+                            "boxscoreName": "Bello",
+                            "useName": "Brayan",
+                            "nameFirstLast": "Brayan Bello",
+                            "lastName": "Bello",
+                            "initLastName": "B Bello",
+                            "height": "6' 1\"",
+                            "heightInches": 73,
+                            "pitchHand": {
+                                "code": "R",
+                                "description": "Right"
+                            },
+                            "primaryPosition": {
+                                "code": "1",
+                                "name": "Pitcher",
+                                "type": "Pitcher",
+                                "abbreviation": "P"
+                            },
+                            "batSide": {
+                                "code": "R",
+                                "description": "Right"
+                            },
+                            "strikeZoneTop": 3.255,
+                            "strikeZoneBottom": 1.643
+                        },
+                        "jerseyNumber": "66",
+                        "parentTeamId": 111
+                    },
+                    "ID677800": {
+                        "person": {
+                            "id": 677800,
+                            "boxscoreName": "Abreu, W",
+                            "useName": "Wilyer",
+                            "nameFirstLast": "Wilyer Abreu",
+                            "lastName": "Abreu",
+                            "initLastName": "W Abreu",
+                            "height": "5' 10\"",
+                            "heightInches": 70,
+                            "pitchHand": {
+                                "code": "L",
+                                "description": "Left"
+                            },
+                            "primaryPosition": {
+                                "code": "9",
+                                "name": "Outfielder",
+                                "type": "Outfielder",
+                                "abbreviation": "RF"
+                            },
+                            "batSide": {
+                                "code": "L",
+                                "description": "Left"
+                            },
+                            "strikeZoneTop": 3.117,
+                            "strikeZoneBottom": 1.573
+                        },
+                        "jerseyNumber": "52",
+                        "parentTeamId": 111
+                    },
+                    "ID543243": {
+                        "person": {
+                            "id": 543243,
+                            "boxscoreName": "Gray, S",
+                            "useName": "Sonny",
+                            "nameFirstLast": "Sonny Gray",
+                            "lastName": "Gray",
+                            "initLastName": "S Gray",
+                            "height": "5' 10\"",
+                            "heightInches": 70,
+                            "pitchHand": {
+                                "code": "R",
+                                "description": "Right"
+                            },
+                            "primaryPosition": {
+                                "code": "1",
+                                "name": "Pitcher",
+                                "type": "Pitcher",
+                                "abbreviation": "P"
+                            },
+                            "batSide": {
+                                "code": "R",
+                                "description": "Right"
+                            },
+                            "strikeZoneTop": 3.38,
+                            "strikeZoneBottom": 1.57
+                        },
+                        "jerseyNumber": "54",
+                        "parentTeamId": 111
+                    },
+                    "ID655316": {
+                        "person": {
+                            "id": 655316,
+                            "boxscoreName": "Monasterio",
+                            "useName": "Andruw",
+                            "nameFirstLast": "Andruw Monasterio",
+                            "lastName": "Monasterio",
+                            "initLastName": "A Monasterio",
+                            "height": "5' 11\"",
+                            "heightInches": 71,
+                            "pitchHand": {
+                                "code": "R",
+                                "description": "Right"
+                            },
+                            "primaryPosition": {
+                                "code": "6",
+                                "name": "Shortstop",
+                                "type": "Infielder",
+                                "abbreviation": "SS"
+                            },
+                            "batSide": {
+                                "code": "R",
+                                "description": "Right"
+                            },
+                            "strikeZoneTop": 3.148,
+                            "strikeZoneBottom": 1.589
+                        },
+                        "jerseyNumber": "32",
+                        "parentTeamId": 111
+                    },
+                    "ID643396": {
+                        "person": {
+                            "id": 643396,
+                            "boxscoreName": "Kiner-Falefa",
+                            "useName": "Isiah",
+                            "nameFirstLast": "Isiah Kiner-Falefa",
+                            "lastName": "Kiner-Falefa",
+                            "initLastName": "I Kiner-Falefa",
+                            "height": "5' 10\"",
+                            "heightInches": 70,
+                            "pitchHand": {
+                                "code": "R",
+                                "description": "Right"
+                            },
+                            "primaryPosition": {
+                                "code": "6",
+                                "name": "Shortstop",
+                                "type": "Infielder",
+                                "abbreviation": "SS"
+                            },
+                            "batSide": {
+                                "code": "R",
+                                "description": "Right"
+                            },
+                            "strikeZoneTop": 3.125,
+                            "strikeZoneBottom": 1.577
+                        },
+                        "jerseyNumber": "2",
+                        "parentTeamId": 111
+                    },
+                    "ID676979": {
+                        "person": {
+                            "id": 676979,
+                            "boxscoreName": "Crochet",
+                            "useName": "Garrett",
+                            "nameFirstLast": "Garrett Crochet",
+                            "lastName": "Crochet",
+                            "initLastName": "G Crochet",
+                            "height": "6' 6\"",
+                            "heightInches": 78,
+                            "pitchHand": {
+                                "code": "L",
+                                "description": "Left"
+                            },
+                            "primaryPosition": {
+                                "code": "1",
+                                "name": "Pitcher",
+                                "type": "Pitcher",
+                                "abbreviation": "P"
+                            },
+                            "batSide": {
+                                "code": "L",
+                                "description": "Left"
+                            },
+                            "strikeZoneTop": 3.66,
+                            "strikeZoneBottom": 1.68
+                        },
+                        "jerseyNumber": "35",
+                        "parentTeamId": 111
+                    },
+                    "ID686580": {
+                        "person": {
+                            "id": 686580,
+                            "boxscoreName": "Slaten",
+                            "useName": "Justin",
+                            "nameFirstLast": "Justin Slaten",
+                            "lastName": "Slaten",
+                            "initLastName": "J Slaten",
+                            "height": "6' 4\"",
+                            "heightInches": 76,
+                            "pitchHand": {
+                                "code": "R",
+                                "description": "Right"
+                            },
+                            "primaryPosition": {
+                                "code": "1",
+                                "name": "Pitcher",
+                                "type": "Pitcher",
+                                "abbreviation": "P"
+                            },
+                            "batSide": {
+                                "code": "R",
+                                "description": "Right"
+                            },
+                            "strikeZoneTop": 3.388,
+                            "strikeZoneBottom": 1.71
+                        },
+                        "jerseyNumber": "63",
+                        "parentTeamId": 111
+                    },
+                    "ID702332": {
+                        "person": {
+                            "id": 702332,
+                            "boxscoreName": "Durbin",
+                            "useName": "Caleb",
+                            "nameFirstLast": "Caleb Durbin",
+                            "lastName": "Durbin",
+                            "initLastName": "C Durbin",
+                            "height": "5' 6\"",
+                            "heightInches": 66,
+                            "pitchHand": {
+                                "code": "R",
+                                "description": "Right"
+                            },
+                            "primaryPosition": {
+                                "code": "5",
+                                "name": "Third Base",
+                                "type": "Infielder",
+                                "abbreviation": "3B"
+                            },
+                            "batSide": {
+                                "code": "R",
+                                "description": "Right"
+                            },
+                            "strikeZoneTop": 2.947,
+                            "strikeZoneBottom": 1.487
+                        },
+                        "jerseyNumber": "5",
+                        "parentTeamId": 111
+                    },
+                    "ID624133": {
+                        "person": {
+                            "id": 624133,
+                            "boxscoreName": "Suarez",
+                            "useName": "Ranger",
+                            "nameFirstLast": "Ranger Suarez",
+                            "lastName": "Suarez",
+                            "initLastName": "R Suarez",
+                            "height": "6' 1\"",
+                            "heightInches": 73,
+                            "pitchHand": {
+                                "code": "L",
+                                "description": "Left"
+                            },
+                            "primaryPosition": {
+                                "code": "1",
+                                "name": "Pitcher",
+                                "type": "Pitcher",
+                                "abbreviation": "P"
+                            },
+                            "batSide": {
+                                "code": "L",
+                                "description": "Left"
+                            },
+                            "strikeZoneTop": 3.255,
+                            "strikeZoneBottom": 1.643
+                        },
+                        "jerseyNumber": "55",
+                        "parentTeamId": 111
+                    },
+                    "ID700413": {
+                        "person": {
+                            "id": 700413,
+                            "boxscoreName": "Uberstine",
+                            "useName": "Tyler",
+                            "nameFirstLast": "Tyler Uberstine",
+                            "lastName": "Uberstine",
+                            "initLastName": "T Uberstine",
+                            "height": "6' 1\"",
+                            "heightInches": 73,
+                            "pitchHand": {
+                                "code": "R",
+                                "description": "Right"
+                            },
+                            "primaryPosition": {
+                                "code": "1",
+                                "name": "Pitcher",
+                                "type": "Pitcher",
+                                "abbreviation": "P"
+                            },
+                            "batSide": {
+                                "code": "R",
+                                "description": "Right"
+                            },
+                            "strikeZoneTop": 3.255,
+                            "strikeZoneBottom": 1.643
+                        },
+                        "jerseyNumber": "79",
+                        "parentTeamId": 111
+                    },
+                    "ID665966": {
+                        "person": {
+                            "id": 665966,
+                            "boxscoreName": "Narváez",
+                            "useName": "Carlos",
+                            "nameFirstLast": "Carlos Narváez",
+                            "lastName": "Narváez",
+                            "initLastName": "C Narváez",
+                            "height": "5' 11\"",
+                            "heightInches": 71,
+                            "pitchHand": {
+                                "code": "R",
+                                "description": "Right"
+                            },
+                            "primaryPosition": {
+                                "code": "2",
+                                "name": "Catcher",
+                                "type": "Catcher",
+                                "abbreviation": "C"
+                            },
+                            "batSide": {
+                                "code": "R",
+                                "description": "Right"
+                            },
+                            "strikeZoneTop": 3.181,
+                            "strikeZoneBottom": 1.605
+                        },
+                        "jerseyNumber": "75",
+                        "parentTeamId": 111
+                    },
+                    "ID680776": {
+                        "person": {
+                            "id": 680776,
+                            "boxscoreName": "Duran, Ja",
+                            "useName": "Jarren",
+                            "nameFirstLast": "Jarren Duran",
+                            "lastName": "Duran",
+                            "initLastName": "J Duran",
+                            "height": "6' 0\"",
+                            "heightInches": 72,
+                            "pitchHand": {
+                                "code": "R",
+                                "description": "Right"
+                            },
+                            "primaryPosition": {
+                                "code": "7",
+                                "name": "Outfielder",
+                                "type": "Outfielder",
+                                "abbreviation": "LF"
+                            },
+                            "batSide": {
+                                "code": "L",
+                                "description": "Left"
+                            },
+                            "strikeZoneTop": 3.23,
+                            "strikeZoneBottom": 1.63
+                        },
+                        "jerseyNumber": "16",
+                        "parentTeamId": 111
+                    },
+                    "ID678882": {
+                        "person": {
+                            "id": 678882,
+                            "boxscoreName": "Rafaela",
+                            "useName": "Ceddanne",
+                            "nameFirstLast": "Ceddanne Rafaela",
+                            "lastName": "Rafaela",
+                            "initLastName": "C Rafaela",
+                            "height": "5' 10\"",
+                            "heightInches": 70,
+                            "pitchHand": {
+                                "code": "R",
+                                "description": "Right"
+                            },
+                            "primaryPosition": {
+                                "code": "8",
+                                "name": "Outfielder",
+                                "type": "Outfielder",
+                                "abbreviation": "CF"
+                            },
+                            "batSide": {
+                                "code": "R",
+                                "description": "Right"
+                            },
+                            "strikeZoneTop": 3.11,
+                            "strikeZoneBottom": 1.57
+                        },
+                        "jerseyNumber": "3",
+                        "parentTeamId": 111
+                    },
+                    "ID663558": {
+                        "person": {
+                            "id": 663558,
+                            "boxscoreName": "Morán",
+                            "useName": "Jovani",
+                            "nameFirstLast": "Jovani Morán",
+                            "lastName": "Moran",
+                            "initLastName": "J Morán",
+                            "height": "6' 1\"",
+                            "heightInches": 73,
+                            "pitchHand": {
+                                "code": "L",
+                                "description": "Left"
+                            },
+                            "primaryPosition": {
+                                "code": "1",
+                                "name": "Pitcher",
+                                "type": "Pitcher",
+                                "abbreviation": "P"
+                            },
+                            "batSide": {
+                                "code": "L",
+                                "description": "Left"
+                            },
+                            "strikeZoneTop": 3.255,
+                            "strikeZoneBottom": 1.643
+                        },
+                        "jerseyNumber": "47",
+                        "parentTeamId": 111
+                    },
+                    "ID807799": {
+                        "person": {
+                            "id": 807799,
+                            "boxscoreName": "Yoshida",
+                            "useName": "Masataka",
+                            "nameFirstLast": "Masataka Yoshida",
+                            "lastName": "Yoshida",
+                            "initLastName": "M Yoshida",
+                            "height": "5' 8\"",
+                            "heightInches": 68,
+                            "pitchHand": {
+                                "code": "R",
+                                "description": "Right"
+                            },
+                            "primaryPosition": {
+                                "code": "7",
+                                "name": "Outfielder",
+                                "type": "Outfielder",
+                                "abbreviation": "LF"
+                            },
+                            "batSide": {
+                                "code": "L",
+                                "description": "Left"
+                            },
+                            "strikeZoneTop": 3.022,
+                            "strikeZoneBottom": 1.525
+                        },
+                        "jerseyNumber": "7",
+                        "parentTeamId": 111
+                    },
+                    "ID543056": {
+                        "person": {
+                            "id": 543056,
+                            "boxscoreName": "Coulombe",
+                            "useName": "Danny",
+                            "nameFirstLast": "Danny Coulombe",
+                            "lastName": "Coulombe",
+                            "initLastName": "D Coulombe",
+                            "height": "5' 10\"",
+                            "heightInches": 70,
+                            "pitchHand": {
+                                "code": "L",
+                                "description": "Left"
+                            },
+                            "primaryPosition": {
+                                "code": "1",
+                                "name": "Pitcher",
+                                "type": "Pitcher",
+                                "abbreviation": "P"
+                            },
+                            "batSide": {
+                                "code": "L",
+                                "description": "Left"
+                            },
+                            "strikeZoneTop": 3.121,
+                            "strikeZoneBottom": 1.575
+                        },
+                        "jerseyNumber": "67",
+                        "parentTeamId": 111
+                    },
+                    "ID691785": {
+                        "person": {
+                            "id": 691785,
+                            "boxscoreName": "Mayer",
+                            "useName": "Marcelo",
+                            "nameFirstLast": "Marcelo Mayer",
+                            "lastName": "Mayer",
+                            "initLastName": "M Mayer",
+                            "height": "6' 3\"",
+                            "heightInches": 75,
+                            "pitchHand": {
+                                "code": "R",
+                                "description": "Right"
+                            },
+                            "primaryPosition": {
+                                "code": "5",
+                                "name": "Third Base",
+                                "type": "Infielder",
+                                "abbreviation": "3B"
+                            },
+                            "batSide": {
+                                "code": "L",
+                                "description": "Left"
+                            },
+                            "strikeZoneTop": 3.342,
+                            "strikeZoneBottom": 1.687
+                        },
+                        "jerseyNumber": "11",
+                        "parentTeamId": 111
+                    },
+                    "ID547973": {
+                        "person": {
+                            "id": 547973,
+                            "boxscoreName": "Chapman",
+                            "useName": "Aroldis",
+                            "nameFirstLast": "Aroldis Chapman",
+                            "lastName": "Chapman",
+                            "initLastName": "A Chapman",
+                            "height": "6' 4\"",
+                            "heightInches": 76,
+                            "pitchHand": {
+                                "code": "L",
+                                "description": "Left"
+                            },
+                            "primaryPosition": {
+                                "code": "1",
+                                "name": "Pitcher",
+                                "type": "Pitcher",
+                                "abbreviation": "P"
+                            },
+                            "batSide": {
+                                "code": "L",
+                                "description": "Left"
+                            },
+                            "strikeZoneTop": 3.388,
+                            "strikeZoneBottom": 1.71
+                        },
+                        "jerseyNumber": "44",
+                        "parentTeamId": 111
+                    },
+                    "ID670245": {
+                        "person": {
+                            "id": 670245,
+                            "boxscoreName": "Watson, R",
+                            "useName": "Ryan",
+                            "nameFirstLast": "Ryan Watson",
+                            "lastName": "Watson",
+                            "initLastName": "R Watson",
+                            "height": "6' 5\"",
+                            "heightInches": 77,
+                            "pitchHand": {
+                                "code": "R",
+                                "description": "Right"
+                            },
+                            "primaryPosition": {
+                                "code": "1",
+                                "name": "Pitcher",
+                                "type": "Pitcher",
+                                "abbreviation": "P"
+                            },
+                            "batSide": {
+                                "code": "R",
+                                "description": "Right"
+                            },
+                            "strikeZoneTop": 3.433,
+                            "strikeZoneBottom": 1.733
+                        },
+                        "jerseyNumber": "56",
+                        "parentTeamId": 111
+                    }
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,27 @@
+namespace MLB;
+
+table Vec3 {
+  x: float;
+  y: float;
+  z: float;
+}
+
+table BallPitchTrajectoryDataWire {
+  verticalBreak: float;
+  verticalBreakInduced: float;
+  horizontalBreak: float;
+
+  horizontalApproachAngle: float;
+  verticalApproachAngle: float;
+
+  zoneSpeed: float;
+  zoneTime: float;
+
+  location: Vec3;
+
+  trajectoryPolynomialX: Vec3;
+  trajectoryPolynomialY: Vec3;
+  trajectoryPolynomialZ: Vec3;
+}
+
+root_type BallPitchTrajectoryDataWire;

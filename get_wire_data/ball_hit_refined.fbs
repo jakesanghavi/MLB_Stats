@@ -1,0 +1,11 @@
+namespace MLB;
+
+table BallHitRefinedWire {
+  launchSpinRate: float;
+  launchSpinAxis: float;
+  apexX: float;
+  apexY: float;
+  apexZ: float;
+}
+
+root_type BallHitRefinedWire;

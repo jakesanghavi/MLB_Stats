@@ -1,0 +1,26 @@
+namespace MLB;
+
+table Vec3 {
+  x: float;
+  y: float;
+  z: float;
+}
+
+table BallPitchReleasePointWire {
+  extension: float;
+  releaseTimestamp: string;
+  publishTimestamp: string;
+
+  releaseSpeed: float;
+  effectiveVelocity: float;
+
+  venueId: string;
+
+  releasePosition: Vec3;
+
+  x: float;
+  y: float;
+  z: float;
+}
+
+root_type BallPitchReleasePointWire;

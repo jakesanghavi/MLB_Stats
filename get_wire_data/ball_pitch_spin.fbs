@@ -1,0 +1,39 @@
+namespace MLB;
+
+table Vec3 {
+  x: float;
+  y: float;
+  z: float;
+}
+
+table BallPitchSpinWire {
+  actualFrameRate: float;
+  frame0Time: ulong;
+
+  publishTimestamp: string;
+  venueId: string;
+
+  spinRate: float;
+  spinAxis: float;
+  spinReducedConfidence: float;
+
+  spinVector: Vec3;
+
+  x: float;
+  y: float;
+  z: float;
+
+  xx: float;
+  xy: float;
+  xz: float;
+
+  yx: float;
+  yy: float;
+  yz: float;
+
+  zx: float;
+  zy: float;
+  zz: float;
+}
+
+root_type BallPitchSpinWire;

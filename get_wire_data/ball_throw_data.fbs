@@ -1,0 +1,34 @@
+// WT.fbs
+namespace MLB;
+
+table BallThrowData {
+  speed: float;
+  endSpeed: float;
+  startX: float;
+  startY: float;
+  startZ: float;
+  endX: float;
+  endY: float;
+  endZ: float;
+  startTime: float;
+  endTime: float;
+  landingTime: float;
+
+  polynomialX1: float;
+  polynomialX2: float;
+  polynomialX3: float;
+
+  polynomialY1: float;
+  polynomialY2: float;
+  polynomialY3: float;
+
+  polynomialZ1: float;
+  polynomialZ2: float;
+  polynomialZ3: float;
+
+  projectedX: float;
+  projectedY: float;
+  projectedZ: float;
+}
+
+root_type BallThrowData;

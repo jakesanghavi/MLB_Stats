@@ -1,0 +1,53 @@
+namespace MLB;
+
+table BallHitDataWire {
+  speed: float;
+  angle: float;
+  direction: float;
+  distance: float;
+  actualDistance: float;
+
+  actualX: float;
+  actualY: float;
+  actualZ: float;
+
+  projectedX: float;
+  projectedY: float;
+  projectedZ: float;
+
+  startTime: float;
+  endTime: float;
+  landingTime: float;
+
+  polynomialX1: float;
+  polynomialX2: float;
+  polynomialX3: float;
+  polynomialX4: float;
+  polynomialX5: float;
+  polynomialX6: float;
+  polynomialX7: float;
+  polynomialX8: float;
+  polynomialX9: float;
+
+  polynomialY1: float;
+  polynomialY2: float;
+  polynomialY3: float;
+  polynomialY4: float;
+  polynomialY5: float;
+  polynomialY6: float;
+  polynomialY7: float;
+  polynomialY8: float;
+  polynomialY9: float;
+
+  polynomialZ1: float;
+  polynomialZ2: float;
+  polynomialZ3: float;
+  polynomialZ4: float;
+  polynomialZ5: float;
+  polynomialZ6: float;
+  polynomialZ7: float;
+  polynomialZ8: float;
+  polynomialZ9: float;
+}
+
+root_type BallHitDataWire;

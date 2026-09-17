@@ -1,0 +1,13 @@
+// MLB.fbs
+namespace MLB;
+
+struct Vec3 {
+  x:float;
+  y:float;
+  z:float;
+}
+
+table TrackingBatPositionWire {
+  headPosition:Vec3;
+  handlePosition:Vec3;
+}

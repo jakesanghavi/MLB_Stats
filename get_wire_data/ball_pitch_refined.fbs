@@ -1,0 +1,18 @@
+namespace MLB;
+
+table BallPitchRefinedWire {
+  szTop: float;
+  szBot: float;
+
+  spinRate: float;
+  spinAxis: float;
+
+  extension: float;
+  perceivedSpeed: float;
+
+  x: float;
+  y: float;
+  z: float;
+}
+
+root_type BallPitchRefinedWire;

@@ -1,0 +1,36 @@
+namespace MLB;
+
+table BallBounceDataWire {
+  speed: float;
+  endSpeed: float;
+
+  startX: float;
+  startY: float;
+  startZ: float;
+
+  endX: float;
+  endY: float;
+  endZ: float;
+
+  startTime: float;
+  endTime: float;
+  landingTime: float;
+
+  projectedX: float;
+  projectedY: float;
+  projectedZ: float;
+
+  polynomialX1: float;
+  polynomialX2: float;
+  polynomialX3: float;
+
+  polynomialY1: float;
+  polynomialY2: float;
+  polynomialY3: float;
+
+  polynomialZ1: float;
+  polynomialZ2: float;
+  polynomialZ3: float;
+}
+
+root_type BallBounceDataWire;

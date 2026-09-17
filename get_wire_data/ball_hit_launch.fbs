@@ -1,0 +1,9 @@
+namespace MLB;
+
+table BallHitLaunchWire {
+  speed:float;
+  angle:float;
+  direction:float;
+}
+
+root_type BallHitLaunchWire;

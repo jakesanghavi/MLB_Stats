@@ -1,0 +1,37 @@
+namespace MLB;
+
+table BallPickOffDataWire {
+  predictedLandingY:float;
+  predictedLandingZ:float;
+  predictedLandingTime:float;
+  predictedLandingX:float;
+
+  speed:float;
+
+  polynomialX2:float;
+  polynomialY1:float;
+  polynomialX3:float;
+  polynomialY2:float;
+  polynomialZ1:float;
+  polynomialY3:float;
+  polynomialZ2:float;
+  polynomialZ3:float;
+
+  endZ:float;
+  endX:float;
+  endY:float;
+
+  venueId:string;
+
+  endTime:float;
+  publishTimestamp:string;
+
+  polynomialX1:float;
+
+  startX:float;
+  startZ:float;
+  endSpeed:float;
+  startY:float;
+}
+
+root_type BallPickOffDataWire;
