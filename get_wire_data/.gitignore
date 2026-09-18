@@ -1,7 +1,0 @@
-__pycache__/
-*.py[cod]
-assets/ballparks/*.glb
-assets/ballparks/*.npz
-viewer/data/
-play_**
-**.mp4
