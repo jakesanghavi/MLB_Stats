@@ -182,7 +182,7 @@ def _mesh_plot_tris(verts, faces):
 
 
 def reconstruct3d(play_dir, out_path="reconstruction3d.mp4", view="action",
-                  zoom=45.0, fps=20, azim=-72.0, elev=16.0, full=False,
+                  zoom=70.0, fps=20, azim=-72.0, elev=16.0, full=False,
                   include_field=None, include_stadium=None, ballpark_glb=None):
     if include_field is None:
         include_field = INCLUDE_FIELD
@@ -278,11 +278,11 @@ def reconstruct3d(play_dir, out_path="reconstruction3d.mp4", view="action",
         if view == "follow" and cx is not None:
             ax.set_xlim(cx - zoom, cx + zoom)
             ax.set_ylim(cz + zoom, cz - zoom)  # inverted (outfield up)
-            ax.set_box_aspect((2 * zoom, 2 * zoom, zspan))
+            ax.set_box_aspect((2 * zoom, 2 * zoom, zspan), zoom=1.6)
         else:
             ax.set_xlim(xlo, xhi)
             ax.set_ylim(zhi, zlo)  # inverted
-            ax.set_box_aspect(((xhi - xlo), (zhi - zlo), zspan))
+            ax.set_box_aspect(((xhi - xlo), (zhi - zlo), zspan), zoom=1.6)
 
     apply_bounds()
 
@@ -391,7 +391,7 @@ if __name__ == "__main__":
     ap.add_argument("play_dir")
     ap.add_argument("out", nargs="?", default="reconstruction3d.mp4")
     ap.add_argument("--view", choices=["action", "full", "infield", "follow"], default="action")
-    ap.add_argument("--zoom", type=float, default=45.0, help="follow half-width (ft)")
+    ap.add_argument("--zoom", type=float, default=70.0, help="follow half-width (ft)")
     ap.add_argument("--fps", type=int, default=20)
     ap.add_argument("--azim", type=float, default=-72.0)
     ap.add_argument("--elev", type=float, default=16.0)
