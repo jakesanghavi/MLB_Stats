@@ -126,18 +126,32 @@ class RigSkeleton:
         world = self.fk_matrices(root_pos, quats_by_name, scale)
         return {i: world[i][:3, 3] for i in range(len(self.nodes)) if world[i] is not None}
 
-    def head_pose(self, world_mats):
-        """Eye-midpoint position plus head local +Z (look) and +Y (up)."""
+    def eye_position(self, world_mats):
+        """Estimated eye midpoint.
+
+        Gameday actor poses do not include ``joint_Head`` / eye quats — only
+        pelvis through neck (and sometimes fingers). The head and eyes stay at
+        the glTF bind pose parented to the tracked neck, so this is eye-height
+        on the neck, not a tracked skull or gaze.
+        """
         head = world_mats[self.name_to_idx["joint_Head"]]
         if head is None:
             return None
         eye_l = world_mats[self.name_to_idx["joint_EyeLT"]]
         eye_r = world_mats[self.name_to_idx["joint_EyeRT"]]
         if eye_l is not None and eye_r is not None:
-            pos = 0.5 * (eye_l[:3, 3] + eye_r[:3, 3])
-        else:
-            pos = head[:3, 3].copy()
-        # Eyes sit on local −X of joint_Head; that axis is face-forward.
+            return 0.5 * (eye_l[:3, 3] + eye_r[:3, 3])
+        return head[:3, 3].copy()
+
+    def head_pose(self, world_mats):
+        """Bind-pose face axis at the estimated eyes. Not tracked gaze."""
+        head = world_mats[self.name_to_idx["joint_Head"]]
+        if head is None:
+            return None
+        pos = self.eye_position(world_mats)
+        if pos is None:
+            return None
+        # Eyes sit on local −X of the bind-pose head.
         fwd = -head[:3, 0]
         up = head[:3, 1].copy()
         fn = float(np.linalg.norm(fwd))

@@ -16,7 +16,10 @@ from reconstruct3d import (
     _pitch_release_time, _pitcher_xz,
 )
 from stadium import find_ballpark_glb, _home_abbr, _venue_id
-from views import load_bios, names_from_boxscore, resolve_name, classify_views
+from views import (
+    load_bios, names_from_boxscore, resolve_name, classify_views,
+    look_target, look_from_eye, smooth_head_series,
+)
 
 
 def _r(v, n=3):
@@ -84,6 +87,7 @@ def export_play(play_dir, out_json, fps=20.0, full=False):
             "head": [],
         })
     views = classify_views(classify_in)
+    uid_slot = {v["uid"]: v.get("slot") for v in views["players"] + views["officials"]}
 
     ball_frames = []
     bat_frames = []
@@ -114,12 +118,24 @@ def export_play(play_dir, out_json, fps=20.0, full=False):
                 amin = np.minimum(amin, p)
                 amax = np.maximum(amax, p)
             actors_out[ai]["frames"].append(segs)
-            hp = rig.head_pose(mats)
+            eye = rig.eye_position(mats)
+            if eye is None:
+                actors_out[ai]["head"].append(None)
+                continue
+            slot = uid_slot.get(actors_out[ai]["uid"])
+            tgt = look_target(slot, b)
+            hp = look_from_eye(eye, tgt)
             if hp is None:
                 actors_out[ai]["head"].append(None)
             else:
                 pos, fwd, up = hp
                 actors_out[ai]["head"].append([_r(v) for v in (*pos, *fwd, *up)])
+
+    for a in actors_out:
+        a["head"] = [
+            None if h is None else [_r(v) for v in h]
+            for h in smooth_head_series(a["head"], fps)
+        ]
 
     glb_name = None
     venue_id = _venue_id(reader)

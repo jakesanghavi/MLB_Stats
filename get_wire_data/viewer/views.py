@@ -1,6 +1,9 @@
 """Name lookup and start-of-play role/position guesses for POV views."""
 import csv
+import math
 from pathlib import Path
+
+import numpy as np
 
 # world xz: +X toward 1B, +Z toward the catcher, outfield −Z
 _BAG_1B = (63.64, -63.64)
@@ -128,6 +131,76 @@ def _label(slot, name):
     if slot and name:
         return f"{slot} - {name}"
     return slot or name
+
+
+PLATE_LOOK = (0.0, 2.5, 0.0)
+MOUND_LOOK = (0.0, 5.0, -60.5)
+OFFENSE_LOOK = {"Batter", "C", "1B runner", "2B runner", "3B runner"}
+
+
+def look_target(slot, ball_xyz=None):
+    """Attention point: the ball when we have it, else mound/plate by role.
+
+    The wire has no gaze. Bind-pose head −X is just the neck pointing a static
+    skull, which jitters and often faces the stands or the dirt.
+    """
+    if ball_xyz is not None:
+        return (float(ball_xyz[0]), float(ball_xyz[1]), float(ball_xyz[2]))
+    if slot in OFFENSE_LOOK:
+        return MOUND_LOOK
+    return PLATE_LOOK
+
+
+def look_from_eye(eye, target, push=0.35):
+    """Camera at the eyes, looking at ``target``, world-up."""
+    pos = np.asarray(eye, dtype=float)
+    tgt = np.asarray(target, dtype=float)
+    fwd = tgt - pos
+    n = float(np.linalg.norm(fwd))
+    if n < 1e-6:
+        return None
+    fwd = fwd / n
+    up = np.array([0.0, 1.0, 0.0])
+    if abs(float(np.dot(fwd, up))) > 0.95:
+        up = np.array([0.0, 0.0, 1.0])
+    up = up - fwd * float(np.dot(up, fwd))
+    un = float(np.linalg.norm(up))
+    if un < 1e-6:
+        return None
+    up = up / un
+    return pos + fwd * push, fwd, up
+
+
+def smooth_head_series(heads, fps, tau_pos=0.08, tau_fwd=0.15):
+    """EMA on exported [pos,fwd,up] samples. ``heads`` items are lists or None."""
+    if fps <= 0:
+        return heads
+    a_pos = 1.0 - math.exp(-1.0 / (fps * tau_pos))
+    a_fwd = 1.0 - math.exp(-1.0 / (fps * tau_fwd))
+    out = []
+    prev = None
+    for h in heads:
+        if h is None:
+            out.append(None)
+            prev = None
+            continue
+        pos = np.array(h[:3], dtype=float)
+        fwd = np.array(h[3:6], dtype=float)
+        up = np.array(h[6:9], dtype=float)
+        if prev is None:
+            prev = (pos, fwd, up)
+        else:
+            pos = prev[0] * (1.0 - a_pos) + pos * a_pos
+            fwd = prev[1] * (1.0 - a_fwd) + fwd * a_fwd
+            fn = float(np.linalg.norm(fwd))
+            fwd = fwd / fn if fn > 1e-8 else prev[1]
+            up = prev[2] * (1.0 - a_fwd) + up * a_fwd
+            up = up - fwd * float(np.dot(up, fwd))
+            un = float(np.linalg.norm(up))
+            up = up / un if un > 1e-8 else prev[2]
+            prev = (pos, fwd, up)
+        out.append([float(v) for v in (*prev[0], *prev[1], *prev[2])])
+    return out
 
 
 def classify_views(actors):

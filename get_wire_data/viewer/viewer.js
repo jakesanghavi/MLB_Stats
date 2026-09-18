@@ -63,6 +63,7 @@ let lastPreset = "action";
 let povUid = null;
 let povLabel = null;
 let actorLines = [];
+let headMarkers = [];
 let applyingSliders = false;
 let suppressControlEvent = false;
 const defaultNear = 0.5;
@@ -186,9 +187,28 @@ function headAt(uid, i) {
   };
 }
 
+function headAtF(uid, t) {
+  if (!play) return null;
+  const n = play.times.length;
+  if (!n) return null;
+  const x = Math.max(0, Math.min(n - 1, t));
+  const i0 = Math.floor(x);
+  const i1 = Math.min(n - 1, i0 + 1);
+  const a = headAt(uid, i0);
+  const b = headAt(uid, i1);
+  if (!a) return b;
+  if (!b || i0 === i1) return a;
+  const f = x - i0;
+  return {
+    pos: a.pos.clone().lerp(b.pos, f),
+    fwd: a.fwd.clone().lerp(b.fwd, f).normalize(),
+    up: a.up.clone().lerp(b.up, f).normalize(),
+  };
+}
+
 function applyPov() {
   if (povUid == null) return;
-  const h = headAt(povUid, frame);
+  const h = headAtF(povUid, playing ? playhead : frame);
   if (!h) return;
   camera.near = 0.12;
   if (camera.fov < 60) {
@@ -349,6 +369,7 @@ function applyFollow(snapNow) {
 
 function buildActors() {
   actorLines.forEach((l) => skeletonGroup.remove(l));
+  headMarkers.forEach((m) => skeletonGroup.remove(m));
   actorLines = play.actors.map((a) => {
     const geom = new THREE.BufferGeometry();
     const maxSegs = Math.max(
@@ -362,6 +383,15 @@ function buildActors() {
     );
     skeletonGroup.add(line);
     return line;
+  });
+  headMarkers = play.actors.map((a) => {
+    const mesh = new THREE.Mesh(
+      new THREE.SphereGeometry(0.28, 10, 8),
+      new THREE.MeshStandardMaterial({ color: a.color, roughness: 0.6 })
+    );
+    mesh.visible = false;
+    skeletonGroup.add(mesh);
+    return mesh;
   });
 }
 
@@ -385,6 +415,14 @@ function showFrame(i, syncHead = true) {
       line.visible = false;
     }
     attr.needsUpdate = true;
+    const marker = headMarkers[ai];
+    const h = a.head && a.head[frame];
+    if (marker && h && h.length >= 3 && a.uid !== povUid) {
+      marker.position.set(h[0], h[1], h[2]);
+      marker.visible = true;
+    } else if (marker) {
+      marker.visible = false;
+    }
   });
 
   const ball = play.ball[frame];
