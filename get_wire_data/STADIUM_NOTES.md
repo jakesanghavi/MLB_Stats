@@ -46,8 +46,10 @@ nodes: MLB_Ballpark_StartingCube, STL_Field, STL_Stadium, CameraCollider
 ```
 
 - Geometry is Draco-compressed. `glb.load_glb_nodes` decodes it with DracoPy.
-- Node TRS on the field/stadium is scale `0.01` + 90° about X; after that the
-  mesh is in tracking feet (home near origin, outfield −Z, mound z ≈ −60).
+- Node TRS on the field/stadium is scale `0.01` + 90° about X; that yields **meters**
+  (cm→m). Gameday then multiplies the whole scene by `FI = 3.28084` (m→ft). Tracking
+  is already feet, home at the origin, outfield −Z. After `× 3.28084` the mesh
+  snaps to the diamond: home, rubber at z = −60.5, bases, Busch CF wall at 400 ft.
 - `STL_Field` ~18k tris (grass/dirt). `STL_Stadium` ~400k tris (bowl). We
   skip the collider and starting cube, then quadric-decimate to ~6k / ~16k tris
   for matplotlib.

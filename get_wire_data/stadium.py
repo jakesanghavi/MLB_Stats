@@ -2,8 +2,9 @@
 
 The stadium files are Draco-compressed and far too dense for matplotlib, so we
 decode with DracoPy, apply the node TRS (scale 0.01 + 90° X on current parks),
-and quadric-decimate. Cached as ``*.field.npz`` / ``*.stadium.npz`` next to the
-.glb so later runs skip the heavy decode.
+and quadric-decimate, then scale meters→feet (Gameday ``FI = 3.28084``). Cached
+as ``*.field.npz`` / ``*.stadium.npz`` next to the .glb so later runs skip the
+heavy decode.
 """
 import os
 from pathlib import Path
@@ -29,6 +30,9 @@ VENUE_ABBR = {
 
 FIELD_FACE_TARGET = 6000
 STADIUM_FACE_TARGET = 16000
+# Gameday viewer: after GLTFLoader applies node TRS the mesh is in meters;
+# they then do scene.scale.set(FI, FI, FI). Tracking data is already feet.
+M_TO_FT = 3.28084
 
 
 def _home_abbr(reader):
@@ -111,13 +115,19 @@ def _load_cached(path, target):
     if not path.exists():
         return None
     data = np.load(path)
-    if int(data["target"]) != int(target):
-        return None
+    try:
+        if int(data["target"]) != int(target):
+            return None
+        if abs(float(data["m_to_ft"]) - M_TO_FT) > 1e-4:
+            return None
+    except (KeyError, ValueError, TypeError):
+        return None  # old meter-scale cache
     return data["verts"], data["faces"]
 
 
 def _save_cached(path, verts, faces, target):
-    np.savez_compressed(path, verts=verts, faces=faces, target=np.array(target))
+    np.savez_compressed(path, verts=verts, faces=faces,
+                        target=np.array(target), m_to_ft=np.array(M_TO_FT))
 
 
 def _pick_nodes(nodes, kind):
@@ -171,16 +181,20 @@ def load_park_meshes(glb_path, want_field=True, want_stadium=True,
             raise KeyError(f"no *_Field node in {glb_path} (have {list(nodes)})")
         verts, faces = _merge(nodes, names)
         verts, faces = _decimate(verts, faces, field_faces)
+        verts = verts * M_TO_FT
         _save_cached(_cache_path(glb_path, "field"), verts, faces, field_faces)
         out["field"] = (verts, faces)
-        print(f"  field -> {len(faces)} tris")
+        print(f"  field -> {len(faces)} tris  "
+              f"z[{verts[:, 2].min():.1f},{verts[:, 2].max():.1f}] ft")
     if "stadium" in needed:
         names = _pick_nodes(nodes, "stadium")
         if not names:
             raise KeyError(f"no *_Stadium node in {glb_path} (have {list(nodes)})")
         verts, faces = _merge(nodes, names)
         verts, faces = _decimate(verts, faces, stadium_faces)
+        verts = verts * M_TO_FT
         _save_cached(_cache_path(glb_path, "stadium"), verts, faces, stadium_faces)
         out["stadium"] = (verts, faces)
-        print(f"  stadium -> {len(faces)} tris")
+        print(f"  stadium -> {len(faces)} tris  "
+              f"z[{verts[:, 2].min():.1f},{verts[:, 2].max():.1f}] ft")
     return out

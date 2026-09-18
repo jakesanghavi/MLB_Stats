@@ -241,35 +241,37 @@ def reconstruct3d(play_dir, out_path="reconstruction3d.mp4", view="action",
         # locks on the action instead of being pulled around by deep fielders.
         F_center.append((ball[0], ball[2]) if ball is not None else None)
 
-    # static bounds
+    # static bounds — frame the play, not the whole park (park is a backdrop)
     allpts = np.array([pt for segs in F_segs for seg in segs for pt in seg])
     if view == "infield":
-        xlo, xhi, zlo, zhi = -80, 80, -175, 30
-    else:  # action / full
-        xlo, xhi = np.percentile(allpts[:, 0], [1, 99])
-        zlo, zhi = np.percentile(allpts[:, 1], [1, 99])
-        px = (xhi - xlo) * 0.08 + 5; pz = (zhi - zlo) * 0.08 + 5
-        xlo, xhi, zlo, zhi = xlo - px, xhi + px, zlo - pz, zhi + pz
-        if park:
-            park_pts = np.vstack([v for v, _f in park.values()])
-            xlo = min(xlo, float(np.percentile(park_pts[:, 0], 1)))
-            xhi = max(xhi, float(np.percentile(park_pts[:, 0], 99)))
-            zlo = min(zlo, float(np.percentile(park_pts[:, 2], 1)))
-            zhi = max(zhi, float(np.percentile(park_pts[:, 2], 99)))
+        xlo, xhi, zlo, zhi = -100, 100, -160, 22
+    else:  # action / full: tight actor fit, small pad, do not grow to stadium
+        xlo, xhi = float(allpts[:, 0].min()), float(allpts[:, 0].max())
+        zlo, zhi = float(allpts[:, 1].min()), float(allpts[:, 1].max())
+        pad = 8.0
+        xlo, xhi, zlo, zhi = xlo - pad, xhi + pad, zlo - pad, zhi + pad
 
-    fig = plt.figure(figsize=(11, 8))
+    fig = plt.figure(figsize=(12, 8), facecolor="white")
     ax = fig.add_subplot(111, projection="3d")
+    ax.set_position([0.0, 0.0, 1.0, 1.0])
+    fig.subplots_adjust(left=0, right=1, bottom=0, top=1)
     if include_stadium:
-        ax.set_zlim(-1, 40)
-        zspan = 41
+        ax.set_zlim(-2, 70)
+        zspan = 72
     elif include_field:
-        ax.set_zlim(-0.5, 12)
-        zspan = 12.5
+        ax.set_zlim(-1, 16)
+        zspan = 17
     else:
         ax.set_zlim(0, 10)
         zspan = 12
-    ax.set_xlabel("field X (ft)"); ax.set_ylabel("field Z (ft, inverted)")
-    ax.set_zlabel("height (ft)")
+    ax.set_axis_off()
+    ax.grid(False)
+    ax.xaxis.pane.fill = False
+    ax.yaxis.pane.fill = False
+    ax.zaxis.pane.fill = False
+    ax.xaxis.pane.set_edgecolor((1, 1, 1, 0))
+    ax.yaxis.pane.set_edgecolor((1, 1, 1, 0))
+    ax.zaxis.pane.set_edgecolor((1, 1, 1, 0))
     ax.view_init(elev=elev, azim=azim)
 
     def apply_bounds(cx=None, cz=None):
@@ -318,7 +320,8 @@ def reconstruct3d(play_dir, out_path="reconstruction3d.mp4", view="action",
         handles.append(Line2D([0], [0], color=_FIELD_COLOR, lw=6, label="Field"))
     if include_stadium:
         handles.append(Line2D([0], [0], color=_STADIUM_COLOR, lw=6, label="Stadium"))
-    ax.legend(handles=handles, loc="upper right", fontsize=8)
+    ax.legend(handles=handles, loc="upper right", fontsize=8, framealpha=0.85,
+              borderpad=0.4)
 
     # initial follow center: first tracked ball, else infield
     first_c = next((c for c in F_center if c is not None), (0.0, -60.0))
@@ -372,7 +375,7 @@ def reconstruct3d(play_dir, out_path="reconstruction3d.mp4", view="action",
 
     if str(out_path).lower().endswith(".png"):
         update(min(40, len(grid) - 1))
-        fig.savefig(out_path, dpi=130, bbox_inches="tight")
+        fig.savefig(out_path, dpi=130, facecolor=fig.get_facecolor())
         plt.close(fig)
         print(f"wrote {out_path} (preview frame)")
         return out_path
