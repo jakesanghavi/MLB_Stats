@@ -377,6 +377,7 @@ def reconstruct3d(play_dir, out_path="reconstruction3d.mp4", view="action",
         print(f"wrote {out_path} (preview frame)")
         return out_path
     anim = FuncAnimation(fig, update, frames=len(grid), blit=False, interval=1000 / fps)
+    anim.save(out_path, writer=FFMpegWriter(fps=fps, bitrate=3200))
     plt.close(fig)
     print(f"wrote {out_path} ({len(grid)} frames @ {fps}fps)")
     return out_path
