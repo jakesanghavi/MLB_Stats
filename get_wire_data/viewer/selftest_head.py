@@ -8,7 +8,9 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from reconstruct3d import _slerp_quat, _sample_pose
-from views import look_from_eye, look_target, smooth_head_series
+from views import (
+    look_from_eye, look_target, look_pose, smart_forward, smooth_head_series,
+)
 
 
 def test_slerp_90():
@@ -65,6 +67,34 @@ def test_smooth_kills_spike():
     print("ok smooth", [round(v, 3) for v in spike])
 
 
+def test_head_pose_modes():
+    eye = np.array([0.0, 6.0, -60.0])
+    neck = np.array([0.0, 0.0, 1.0])  # facing plate
+    ball = (0.0, 8.0, -20.0)
+    neck_look = look_pose("FOLLOW_NECK", eye, neck, (0, 1, 0), "P", ball)
+    assert neck_look[1][2] > 0.95, neck_look[1]
+    always = look_pose("ALWAYS_BALL", eye, np.array([1.0, 0.0, 0.0]), (0, 1, 0), "P", ball)
+    to_ball = np.array(ball) - eye
+    to_ball = to_ball / np.linalg.norm(to_ball)
+    assert abs(np.dot(always[1], to_ball)) > 0.99, always[1]
+    # ball in front of neck -> SMART uses ball
+    smart = look_pose("SMART_VISION", eye, neck, (0, 1, 0), "P", ball)
+    assert abs(np.dot(smart[1], to_ball)) > 0.99, smart[1]
+    # ball behind, plate in front -> SMART keeps plate, ALWAYS still tracks ball
+    behind = (0.0, 6.0, -200.0)
+    smart_b = smart_forward(eye, neck, "P", behind)
+    always_b = look_pose("ALWAYS_BALL", eye, neck, (0, 1, 0), "P", behind)
+    to_behind = np.array(behind) - eye
+    to_behind = to_behind / np.linalg.norm(to_behind)
+    assert smart_b[2] > 0.7, smart_b  # still facing +Z / plate-ish
+    assert np.dot(always_b[1], to_behind) > 0.95, always_b[1]
+    # clamp: only a back target, turn at most 80 deg
+    clamped = smart_forward(eye, neck, "P", behind, cone_deg=80.0)
+    # neck +Z vs behind is ~180; clamp 80 leaves a +Z component
+    assert clamped[2] > 0.0, clamped
+    print("ok head_pose modes")
+
+
 def test_wire_has_no_head(play_dir=None):
     d = Path(play_dir or "/tmp/gd/play_822849_8313f274-c733-325e-8df0-beaee0ddb6e1")
     if not d.exists():
@@ -92,5 +122,6 @@ if __name__ == "__main__":
     test_sample_pose_slerps()
     test_look_target()
     test_smooth_kills_spike()
+    test_head_pose_modes()
     test_wire_has_no_head()
     print("ok")

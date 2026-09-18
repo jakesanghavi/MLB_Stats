@@ -17,8 +17,8 @@ from reconstruct3d import (
 )
 from stadium import find_ballpark_glb, _home_abbr, _venue_id
 from views import (
-    load_bios, names_from_boxscore, resolve_name, classify_views,
-    look_target, look_from_eye, smooth_head_series,
+    HEAD_POSE, HEAD_POSES, load_bios, names_from_boxscore, resolve_name,
+    classify_views, smooth_head_series,
 )
 
 
@@ -30,7 +30,7 @@ def _xyz(p):
     return [_r(p[0]), _r(p[1]), _r(p[2])]
 
 
-def export_play(play_dir, out_json, fps=20.0, full=False):
+def export_play(play_dir, out_json, fps=20.0, full=False, head_pose=None):
     t0_wall = time.perf_counter()
     play_dir = Path(play_dir)
     out_json = Path(out_json)
@@ -88,6 +88,9 @@ def export_play(play_dir, out_json, fps=20.0, full=False):
         })
     views = classify_views(classify_in)
     uid_slot = {v["uid"]: v.get("slot") for v in views["players"] + views["officials"]}
+    mode = head_pose if head_pose in HEAD_POSES else HEAD_POSE
+    for a in actors_out:
+        a["slot"] = uid_slot.get(a["uid"])
 
     ball_frames = []
     bat_frames = []
@@ -119,17 +122,14 @@ def export_play(play_dir, out_json, fps=20.0, full=False):
                 amax = np.maximum(amax, p)
             actors_out[ai]["frames"].append(segs)
             eye = rig.eye_position(mats)
-            if eye is None:
+            hp = rig.head_pose(mats)
+            if eye is None or hp is None:
                 actors_out[ai]["head"].append(None)
                 continue
-            slot = uid_slot.get(actors_out[ai]["uid"])
-            tgt = look_target(slot, b)
-            hp = look_from_eye(eye, tgt)
-            if hp is None:
-                actors_out[ai]["head"].append(None)
-            else:
-                pos, fwd, up = hp
-                actors_out[ai]["head"].append([_r(v) for v in (*pos, *fwd, *up)])
+            _pos, neck_fwd, neck_up = hp
+            actors_out[ai]["head"].append(
+                [_r(v) for v in (*eye, *neck_fwd, *neck_up)]
+            )
 
     for a in actors_out:
         a["head"] = [
@@ -169,12 +169,13 @@ def export_play(play_dir, out_json, fps=20.0, full=False):
         "bat": bat_frames,
         "actors": actors_out,
         "views": views,
+        "headPose": mode,
     }
     out_json.write_text(json.dumps(payload, separators=(",", ":")))
     dt = time.perf_counter() - t0_wall
     n_views = len(views["players"]) + len(views["officials"])
     print(f"exported {out_json}  {len(grid)} frames  {out_json.stat().st_size / 1e6:.2f} MB  "
-          f"{n_views} views  ({dt:.2f}s)")
+          f"{n_views} views  head={mode}  ({dt:.2f}s)")
     for v in views["players"] + views["officials"]:
         print(f"  view  {v['label']}")
     return payload, glb_path
@@ -186,9 +187,10 @@ def main():
     ap.add_argument("out", nargs="?", default=None)
     ap.add_argument("--fps", type=float, default=20.0)
     ap.add_argument("--full", action="store_true")
+    ap.add_argument("--head-pose", choices=list(HEAD_POSES), default=HEAD_POSE)
     args = ap.parse_args()
     out = args.out or str(Path(__file__).resolve().parent / "data" / "play.json")
-    export_play(args.play_dir, out, fps=args.fps, full=args.full)
+    export_play(args.play_dir, out, fps=args.fps, full=args.full, head_pose=args.head_pose)
 
 
 if __name__ == "__main__":

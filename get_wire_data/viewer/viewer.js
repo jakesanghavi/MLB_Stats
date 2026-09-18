@@ -62,6 +62,7 @@ let follow = false;
 let lastPreset = "action";
 let povUid = null;
 let povLabel = null;
+let headPose = "SMART_VISION";
 let actorLines = [];
 let headMarkers = [];
 let applyingSliders = false;
@@ -114,6 +115,7 @@ function hudText() {
   const time = play ? play.times[frame] : 0;
   return [
     `preset      ${povLabel || (follow ? "follow" : lastPreset)}`,
+    `head        ${headPose}`,
     `t           ${time.toFixed(3)} s`,
     `position    ${fmtVec(p)}`,
     `look-at     ${fmtVec(t)}`,
@@ -175,6 +177,99 @@ function actorIndex(uid) {
   return play.actors.findIndex((a) => a.uid === uid);
 }
 
+function slotFor(uid) {
+  const ai = actorIndex(uid);
+  if (ai >= 0 && play.actors[ai].slot) return play.actors[ai].slot;
+  const views = play.views || {};
+  for (const v of [...(views.players || []), ...(views.officials || [])]) {
+    if (v.uid === uid) return v.slot || null;
+  }
+  return null;
+}
+
+function ballAt(i) {
+  const b = play && play.ball && play.ball[i];
+  return b ? new THREE.Vector3(b[0], b[1], b[2]) : null;
+}
+
+function roleFallback(slot) {
+  if (slot === "1B runner") return new THREE.Vector3(0, 3, -127.28);
+  if (slot === "2B runner") return new THREE.Vector3(-63.64, 3, -63.64);
+  if (slot === "3B runner") return new THREE.Vector3(0, 2.5, 0);
+  if (slot === "Batter" || slot === "C" || (slot && slot.endsWith("runner"))) {
+    return new THREE.Vector3(0, 5, -60.5);
+  }
+  return new THREE.Vector3(0, 2.5, 0);
+}
+
+function basisFromFwd(eye, fwd, upHint) {
+  const f = fwd.clone().normalize();
+  let up = (upHint || new THREE.Vector3(0, 1, 0)).clone();
+  if (Math.abs(f.dot(up.clone().normalize())) > 0.95) {
+    up.set(0, 0, 1);
+  }
+  up.addScaledVector(f, -up.dot(f));
+  if (up.lengthSq() < 1e-8) up.set(0, 1, 0);
+  up.normalize();
+  return { pos: eye.clone().addScaledVector(f, 0.35), fwd: f, up };
+}
+
+function turnToward(neck, want, maxDeg) {
+  const a = neck.clone().normalize();
+  const b = want.clone().normalize();
+  const ang = THREE.MathUtils.radToDeg(a.angleTo(b));
+  if (ang <= maxDeg) return b;
+  if (ang < 1e-3) return a;
+  const q = new THREE.Quaternion().setFromUnitVectors(a, b);
+  const q2 = new THREE.Quaternion().slerpQuaternions(
+    new THREE.Quaternion(),
+    q,
+    maxDeg / ang
+  );
+  return a.clone().applyQuaternion(q2).normalize();
+}
+
+function smartFwd(eye, neck, slot, ball) {
+  const cone = 80;
+  const ranked = [];
+  if (ball) ranked.push({ pri: 0, tgt: ball });
+  if (slot === "1B runner") ranked.push({ pri: 1, tgt: new THREE.Vector3(0, 3, -127.28) });
+  if (slot === "2B runner") ranked.push({ pri: 1, tgt: new THREE.Vector3(-63.64, 3, -63.64) });
+  if (slot === "3B runner") ranked.push({ pri: 1, tgt: new THREE.Vector3(0, 2.5, 0) });
+  ranked.push({ pri: 2, tgt: roleFallback(slot) });
+  const scored = [];
+  for (const r of ranked) {
+    const d = r.tgt.clone().sub(eye);
+    if (d.lengthSq() < 1e-6) continue;
+    d.normalize();
+    scored.push({ pri: r.pri, ang: THREE.MathUtils.radToDeg(neck.angleTo(d)), d });
+  }
+  if (!scored.length) return neck.clone();
+  const inCone = scored.filter((s) => s.ang <= cone);
+  if (inCone.length) {
+    inCone.sort((a, b) => a.pri - b.pri || a.ang - b.ang);
+    return inCone[0].d;
+  }
+  scored.sort((a, b) => a.pri - b.pri);
+  return turnToward(neck, scored[0].d, cone);
+}
+
+function resolveLook(neckSample, uid, i) {
+  const eye = neckSample.pos;
+  const neck = neckSample.fwd;
+  const neckUp = neckSample.up;
+  if (headPose === "FOLLOW_NECK") {
+    return basisFromFwd(eye, neck, neckUp);
+  }
+  const ball = ballAt(i);
+  const slot = slotFor(uid);
+  if (headPose === "ALWAYS_BALL") {
+    const tgt = ball || roleFallback(slot);
+    return basisFromFwd(eye, tgt.clone().sub(eye), null);
+  }
+  return basisFromFwd(eye, smartFwd(eye, neck, slot, ball), null);
+}
+
 function headAt(uid, i) {
   const ai = actorIndex(uid);
   if (ai < 0) return null;
@@ -196,14 +291,15 @@ function headAtF(uid, t) {
   const i1 = Math.min(n - 1, i0 + 1);
   const a = headAt(uid, i0);
   const b = headAt(uid, i1);
-  if (!a) return b;
-  if (!b || i0 === i1) return a;
+  if (!a) return b ? resolveLook(b, uid, i1) : null;
+  if (!b || i0 === i1) return resolveLook(a, uid, i0);
   const f = x - i0;
-  return {
+  const neck = {
     pos: a.pos.clone().lerp(b.pos, f),
     fwd: a.fwd.clone().lerp(b.fwd, f).normalize(),
     up: a.up.clone().lerp(b.up, f).normalize(),
   };
+  return resolveLook(neck, uid, f < 0.5 ? i0 : i1);
 }
 
 function applyPov() {
@@ -231,7 +327,9 @@ function exitPov() {
   camera.near = defaultNear;
   camera.up.set(0, 1, 0);
   camera.updateProjectionMatrix();
-  document.querySelectorAll("#views button").forEach((b) => b.classList.remove("active"));
+  document.querySelectorAll("#views-players button, #views-officials button").forEach((b) => {
+    b.classList.remove("active");
+  });
   if (play) {
     showFrame(frame, false);
   }
@@ -247,10 +345,19 @@ function setPov(uid, label) {
   lastPreset = "pov";
   povUid = uid;
   povLabel = label || "pov";
-  document.querySelectorAll("#views button").forEach((b) => {
+  document.querySelectorAll("#views-players button, #views-officials button").forEach((b) => {
     b.classList.toggle("active", Number(b.dataset.uid) === uid);
   });
   applyPov();
+  refreshHud();
+}
+
+function setHeadPose(mode) {
+  headPose = mode || "SMART_VISION";
+  document.querySelectorAll("#head-pose button").forEach((b) => {
+    b.classList.toggle("active", b.dataset.head === headPose);
+  });
+  if (povUid != null) applyPov();
   refreshHud();
 }
 
@@ -513,6 +620,9 @@ function bindUi() {
   document.querySelectorAll("#presets [data-preset]").forEach((btn) => {
     btn.addEventListener("click", () => snap(btn.dataset.preset));
   });
+  document.querySelectorAll("#head-pose [data-head]").forEach((btn) => {
+    btn.addEventListener("click", () => setHeadPose(btn.dataset.head));
+  });
   $("btn-copy").addEventListener("click", copyHud);
   $("btn-play").addEventListener("click", togglePlay);
   $("s-time").addEventListener("input", () => {
@@ -594,6 +704,7 @@ async function main() {
   buildViews();
   await loadPark(play.ballpark);
   bindUi();
+  setHeadPose(play.headPose || "SMART_VISION");
   showFrame(0);
   snap("action");
   requestAnimationFrame(tick);

@@ -34,6 +34,13 @@
 
   <aside id="views">
     <div class="hud-title">Player view</div>
+    <div class="view-sep head-pose-label">Head pose</div>
+    <div id="head-pose" class="view-list">
+      <button type="button" data-head="FOLLOW_NECK">Follow neck</button>
+      <button type="button" data-head="ALWAYS_BALL">Always ball</button>
+      <button type="button" data-head="SMART_VISION">Smart vision</button>
+    </div>
+    <div class="view-sep">Players</div>
     <div id="views-players" class="view-list"></div>
     <div class="view-sep">Officials</div>
     <div id="views-officials" class="view-list"></div>
@@ -55,7 +62,7 @@
     <span id="v-time">0.00s</span>
   </div>
 
-  <div id="help">drag orbit · right-drag pan · scroll zoom · space play · player view = eye height, look at the play</div>
+  <div id="help">drag orbit · right-drag pan · scroll zoom · space play · player view = eye height</div>
 
   <script type="module" src="viewer.js"></script>
 </body>

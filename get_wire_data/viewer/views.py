@@ -135,7 +135,130 @@ def _label(slot, name):
 
 PLATE_LOOK = (0.0, 2.5, 0.0)
 MOUND_LOOK = (0.0, 5.0, -60.5)
+BAG_LOOK = {
+    "1B runner": (0.0, 3.0, -127.28),
+    "2B runner": (-63.64, 3.0, -63.64),
+    "3B runner": (0.0, 2.5, 0.0),
+}
 OFFENSE_LOOK = {"Batter", "C", "1B runner", "2B runner", "3B runner"}
+
+# FOLLOW_NECK   bind-pose face on the tracked neck (old POV)
+# ALWAYS_BALL   eyes look at the ball, else mound/plate
+# SMART_VISION  look at the ball/role target if it sits in the neck cone;
+#               otherwise turn toward it only as far as a head can (not gaze)
+HEAD_POSES = ("FOLLOW_NECK", "ALWAYS_BALL", "SMART_VISION")
+HEAD_POSE = "SMART_VISION"
+SMART_CONE_DEG = 80.0
+EYE_PUSH = 0.35
+
+
+def _unit(v):
+    v = np.asarray(v, dtype=float)
+    n = float(np.linalg.norm(v))
+    if n < 1e-8:
+        return None
+    return v / n
+
+
+def _ang_deg(a, b):
+    a, b = _unit(a), _unit(b)
+    if a is None or b is None:
+        return 180.0
+    return float(np.degrees(np.arccos(np.clip(np.dot(a, b), -1.0, 1.0))))
+
+
+def _slerp_dir(a, b, f):
+    a, b = _unit(a), _unit(b)
+    if a is None:
+        return b
+    if b is None:
+        return a
+    f = float(np.clip(f, 0.0, 1.0))
+    dot = float(np.clip(np.dot(a, b), -1.0, 1.0))
+    if dot > 0.9995:
+        return _unit(a + f * (b - a))
+    theta = math.acos(dot)
+    s = math.sin(theta)
+    return (math.sin((1.0 - f) * theta) * a + math.sin(f * theta) * b) / s
+
+
+def _turn_toward(neck, want, max_deg):
+    ang = _ang_deg(neck, want)
+    if ang <= max_deg:
+        return _unit(want)
+    if ang < 1e-3:
+        return _unit(neck)
+    return _slerp_dir(neck, want, max_deg / ang)
+
+
+def _basis_from_fwd(eye, fwd, up=None, push=EYE_PUSH):
+    fwd = _unit(fwd)
+    if fwd is None:
+        return None
+    if up is None:
+        up = np.array([0.0, 1.0, 0.0])
+    up = np.asarray(up, dtype=float)
+    upu = _unit(up)
+    if upu is not None and abs(float(np.dot(fwd, upu))) > 0.95:
+        up = np.array([0.0, 0.0, 1.0])
+    up = up - fwd * float(np.dot(up, fwd))
+    up = _unit(up)
+    if up is None:
+        return None
+    eye = np.asarray(eye, dtype=float)
+    return eye + fwd * push, fwd, up
+
+
+def role_fallback(slot):
+    if slot in BAG_LOOK:
+        return BAG_LOOK[slot]
+    if slot in OFFENSE_LOOK:
+        return MOUND_LOOK
+    return PLATE_LOOK
+
+
+def attention_targets(slot, ball_xyz=None):
+    """(priority, xyz) — lower priority wins. Ball, then next bag, then mound/plate."""
+    out = []
+    if ball_xyz is not None:
+        out.append((0, (float(ball_xyz[0]), float(ball_xyz[1]), float(ball_xyz[2]))))
+    if slot in BAG_LOOK:
+        out.append((1, BAG_LOOK[slot]))
+    out.append((2, role_fallback(slot)))
+    return out
+
+
+def smart_forward(eye, neck_fwd, slot, ball_xyz=None, cone_deg=SMART_CONE_DEG):
+    """Best attention dir inside the neck cone, else clamp toward it."""
+    neck = _unit(neck_fwd)
+    if neck is None:
+        return None
+    eye = np.asarray(eye, dtype=float)
+    ranked = []
+    for pri, tgt in attention_targets(slot, ball_xyz):
+        d = _unit(np.asarray(tgt, dtype=float) - eye)
+        if d is None:
+            continue
+        ranked.append((pri, _ang_deg(neck, d), d))
+    if not ranked:
+        return neck
+    in_cone = [r for r in ranked if r[1] <= cone_deg]
+    if in_cone:
+        in_cone.sort(key=lambda x: (x[0], x[1]))
+        return in_cone[0][2]
+    ranked.sort(key=lambda x: x[0])
+    return _turn_toward(neck, ranked[0][2], cone_deg)
+
+
+def look_pose(mode, eye, neck_fwd, neck_up=None, slot=None, ball_xyz=None):
+    """(pos, fwd, up) for a HEAD_POSE mode. ``eye`` is the unpushed eye midpoint."""
+    mode = mode if mode in HEAD_POSES else HEAD_POSE
+    if mode == "FOLLOW_NECK":
+        return _basis_from_fwd(eye, neck_fwd, neck_up)
+    if mode == "ALWAYS_BALL":
+        return look_from_eye(eye, look_target(slot, ball_xyz))
+    fwd = smart_forward(eye, neck_fwd, slot, ball_xyz)
+    return _basis_from_fwd(eye, fwd)
 
 
 def look_target(slot, ball_xyz=None):

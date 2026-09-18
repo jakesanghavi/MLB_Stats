@@ -1,6 +1,6 @@
 """Export a play and serve the three.js viewer.
 
-    python3 serve.py /path/to/play_dir [--port 8765] [--fps 20]
+    python3 serve.py /path/to/play_dir [--port 8765] [--fps 20] [--head-pose SMART_VISION]
 """
 import argparse
 import shutil
@@ -10,14 +10,17 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from export_play import export_play
+from views import HEAD_POSE, HEAD_POSES
 
 VIEWER_ROOT = Path(__file__).resolve().parent
 DATA = VIEWER_ROOT / "data"
 
 
-def prepare(play_dir, fps, full):
+def prepare(play_dir, fps, full, head_pose=None):
     DATA.mkdir(parents=True, exist_ok=True)
-    payload, glb_path = export_play(play_dir, DATA / "play.json", fps=fps, full=full)
+    payload, glb_path = export_play(
+        play_dir, DATA / "play.json", fps=fps, full=full, head_pose=head_pose
+    )
     dest = DATA / "ballpark.glb"
     if glb_path and Path(glb_path).exists():
         if dest.exists() or dest.is_symlink():
@@ -50,9 +53,10 @@ def main():
     ap.add_argument("--port", type=int, default=8765)
     ap.add_argument("--fps", type=float, default=20.0)
     ap.add_argument("--full", action="store_true")
+    ap.add_argument("--head-pose", choices=list(HEAD_POSES), default=HEAD_POSE)
     ap.add_argument("--host", default="0.0.0.0")
     args = ap.parse_args()
-    prepare(args.play_dir, args.fps, args.full)
+    prepare(args.play_dir, args.fps, args.full, args.head_pose)
     httpd = ThreadingHTTPServer((args.host, args.port), Handler)
     print(f"viewer  http://127.0.0.1:{args.port}/", flush=True)
     try:
