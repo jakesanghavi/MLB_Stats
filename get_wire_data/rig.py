@@ -91,13 +91,8 @@ class RigSkeleton:
             visit(r)
         return order
 
-    def fk(self, root_pos, quats_by_name, scale=1.0):
-        """Return {node_index: world_xyz(3,)} for the posed skeleton.
-
-        root_pos: (x, y, z) world position of the Pelvis (feet).
-        quats_by_name: {bone_name: [x, y, z, w]} decoded local rotations.
-        scale: actor scale (applied at the Pelvis).
-        """
+    def fk_matrices(self, root_pos, quats_by_name, scale=1.0):
+        """Return a list of 4x4 world matrices (or None) for every node."""
         pelvis = self.name_to_idx[PELVIS]
         quats_by_idx = {}
         for name, q in quats_by_name.items():
@@ -119,8 +114,37 @@ class RigSkeleton:
                 local = self.bind_local[i]
             p = self.parent.get(i)
             world[i] = local if p is None else world[p] @ local
+        return world
 
+    def fk(self, root_pos, quats_by_name, scale=1.0):
+        """Return {node_index: world_xyz(3,)} for the posed skeleton.
+
+        root_pos: (x, y, z) world position of the Pelvis (feet).
+        quats_by_name: {bone_name: [x, y, z, w]} decoded local rotations.
+        scale: actor scale (applied at the Pelvis).
+        """
+        world = self.fk_matrices(root_pos, quats_by_name, scale)
         return {i: world[i][:3, 3] for i in range(len(self.nodes)) if world[i] is not None}
+
+    def head_pose(self, world_mats):
+        """Eye-midpoint position plus head local +Z (look) and +Y (up)."""
+        head = world_mats[self.name_to_idx["joint_Head"]]
+        if head is None:
+            return None
+        eye_l = world_mats[self.name_to_idx["joint_EyeLT"]]
+        eye_r = world_mats[self.name_to_idx["joint_EyeRT"]]
+        if eye_l is not None and eye_r is not None:
+            pos = 0.5 * (eye_l[:3, 3] + eye_r[:3, 3])
+        else:
+            pos = head[:3, 3].copy()
+            pos = pos + head[:3, 2] * 0.25
+        fwd = head[:3, 2].copy()
+        up = head[:3, 1].copy()
+        fn = float(np.linalg.norm(fwd))
+        un = float(np.linalg.norm(up))
+        if fn < 1e-8 or un < 1e-8:
+            return None
+        return pos, fwd / fn, up / un
 
     def segments(self, world_pos):
         """List of (p0, p1) world-point pairs for each joint bone edge."""

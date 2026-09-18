@@ -8,6 +8,7 @@ from pathlib import Path
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 from read_play import PlayReader, sample_ball
 from rig import RigSkeleton
 from reconstruct3d import (
@@ -15,6 +16,7 @@ from reconstruct3d import (
     _pitch_release_time, _pitcher_xz,
 )
 from stadium import find_ballpark_glb, _home_abbr, _venue_id
+from views import load_bios, names_from_boxscore, resolve_name, classify_views
 
 
 def _r(v, n=3):
@@ -49,13 +51,39 @@ def export_play(play_dir, out_json, fps=20.0, full=False):
 
     actors_out = []
     uids = sorted(pose_tracks)
+    bios = load_bios()
+    box_names = names_from_boxscore(reader.metadata)
+    classify_in = []
     for uid in uids:
+        pid = reader.actor_label(uid).get("actor")
+        name = resolve_name(pid, bios, box_names)
+        start_pose = _sample_pose(pose_tracks[uid], w0)
+        if start_pose is None:
+            for tt, p in pose_tracks[uid]:
+                if w0 <= tt <= w1:
+                    start_pose = p
+                    break
+        start = None
+        if start_pose and start_pose.get("rootPos"):
+            rp = start_pose["rootPos"]
+            start = [_r(rp["x"]), _r(rp["y"]), _r(rp["z"])]
+        classify_in.append({
+            "uid": int(uid) if str(uid).isdigit() else uid,
+            "type": reader.actor_type(uid),
+            "playerId": pid,
+            "name": name,
+            "start": start,
+        })
         actors_out.append({
             "uid": int(uid) if str(uid).isdigit() else uid,
+            "playerId": pid if isinstance(pid, int) and pid > 0 else None,
+            "name": name,
             "type": reader.actor_type(uid),
             "color": TYPE_COLORS.get(reader.actor_type(uid), TYPE_COLORS["unknown"]),
             "frames": [],
+            "head": [],
         })
+    views = classify_views(classify_in)
 
     ball_frames = []
     bat_frames = []
@@ -70,20 +98,28 @@ def export_play(play_dir, out_json, fps=20.0, full=False):
             bat_frames.append({"handle": _xyz(bh[0]), "head": _xyz(bh[1])})
         else:
             bat_frames.append(None)
-        for i, uid in enumerate(uids):
+        for ai, uid in enumerate(uids):
             pose = _sample_pose(pose_tracks[uid], t)
             if pose is None:
-                actors_out[i]["frames"].append(None)
+                actors_out[ai]["frames"].append(None)
+                actors_out[ai]["head"].append(None)
                 continue
             rp = (pose["rootPos"]["x"], pose["rootPos"]["y"], pose["rootPos"]["z"])
-            wp = rig.fk(rp, pose["jointRotations"], pose.get("scale", 1.0))
+            mats = rig.fk_matrices(rp, pose["jointRotations"], pose.get("scale", 1.0))
+            wp = {j: mats[j][:3, 3] for j in range(len(mats)) if mats[j] is not None}
             segs = []
             for p, c in rig.segments(wp):
                 segs.extend(_xyz(p))
                 segs.extend(_xyz(c))
                 amin = np.minimum(amin, p)
                 amax = np.maximum(amax, p)
-            actors_out[i]["frames"].append(segs)
+            actors_out[ai]["frames"].append(segs)
+            hp = rig.head_pose(mats)
+            if hp is None:
+                actors_out[ai]["head"].append(None)
+            else:
+                pos, fwd, up = hp
+                actors_out[ai]["head"].append([_r(v) for v in (*pos, *fwd, *up)])
 
     glb_name = None
     venue_id = _venue_id(reader)
@@ -116,10 +152,15 @@ def export_play(play_dir, out_json, fps=20.0, full=False):
         "ball": ball_frames,
         "bat": bat_frames,
         "actors": actors_out,
+        "views": views,
     }
     out_json.write_text(json.dumps(payload, separators=(",", ":")))
     dt = time.perf_counter() - t0_wall
-    print(f"exported {out_json}  {len(grid)} frames  {out_json.stat().st_size / 1e6:.2f} MB  ({dt:.2f}s)")
+    n_views = len(views["players"]) + len(views["officials"])
+    print(f"exported {out_json}  {len(grid)} frames  {out_json.stat().st_size / 1e6:.2f} MB  "
+          f"{n_views} views  ({dt:.2f}s)")
+    for v in views["players"] + views["officials"]:
+        print(f"  view  {v['label']}")
     return payload, glb_path
 
 

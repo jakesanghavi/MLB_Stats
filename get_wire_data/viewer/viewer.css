@@ -84,6 +84,54 @@ html, body {
   color: var(--accent);
 }
 
+#views {
+  position: fixed;
+  right: 12px;
+  top: 56px;
+  width: 260px;
+  max-height: calc(100% - 92px);
+  overflow-y: auto;
+  padding: 10px 10px 12px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  z-index: 2;
+}
+.view-sep {
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin: 12px 0 6px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+}
+.view-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.view-list button {
+  background: #1b2430;
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 5px 8px;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+#views-officials button {
+  background: #161820;
+  color: var(--muted);
+  font-size: 12px;
+}
+.view-list button:hover { border-color: var(--accent); color: var(--text); }
+.view-list button.active {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 #sliders {
   position: fixed;
   left: 12px;

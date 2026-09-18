@@ -32,6 +32,13 @@
     <button type="button" data-preset="follow" id="btn-follow">Follow</button>
   </div>
 
+  <aside id="views">
+    <div class="hud-title">Player view</div>
+    <div id="views-players" class="view-list"></div>
+    <div class="view-sep">Officials</div>
+    <div id="views-officials" class="view-list"></div>
+  </aside>
+
   <div id="sliders">
     <label>Azimuth <input type="range" id="s-azim" min="-180" max="180" step="0.5" /><span id="v-azim"></span></label>
     <label>Elevation <input type="range" id="s-elev" min="-10" max="89" step="0.5" /><span id="v-elev"></span></label>
@@ -48,7 +55,7 @@
     <span id="v-time">0.00s</span>
   </div>
 
-  <div id="help">drag orbit · right-drag pan · scroll zoom · space play</div>
+  <div id="help">drag orbit · right-drag pan · scroll zoom · space play · player view = POV</div>
 
   <script type="module" src="viewer.js"></script>
 </body>

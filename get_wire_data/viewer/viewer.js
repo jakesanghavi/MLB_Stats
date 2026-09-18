@@ -60,9 +60,12 @@ let playhead = 0;
 let playing = false;
 let follow = false;
 let lastPreset = "action";
+let povUid = null;
+let povLabel = null;
 let actorLines = [];
 let applyingSliders = false;
 let suppressControlEvent = false;
+const defaultNear = 0.5;
 
 function resize() {
   const w = canvasHost.clientWidth || window.innerWidth;
@@ -109,7 +112,7 @@ function hudText() {
   const hw = halfWidthAtTarget(s.dist, camera.fov);
   const time = play ? play.times[frame] : 0;
   return [
-    `preset      ${follow ? "follow" : lastPreset}`,
+    `preset      ${povLabel || (follow ? "follow" : lastPreset)}`,
     `t           ${time.toFixed(3)} s`,
     `position    ${fmtVec(p)}`,
     `look-at     ${fmtVec(t)}`,
@@ -127,6 +130,7 @@ function fmtVec(v) {
 }
 
 function markCustom() {
+  exitPov();
   follow = false;
   controls.enableDamping = true;
   lastPreset = "custom";
@@ -166,6 +170,85 @@ function copyHud() {
   setTimeout(() => { $("btn-copy").textContent = "Copy"; }, 900);
 }
 
+function actorIndex(uid) {
+  return play.actors.findIndex((a) => a.uid === uid);
+}
+
+function headAt(uid, i) {
+  const ai = actorIndex(uid);
+  if (ai < 0) return null;
+  const h = play.actors[ai].head && play.actors[ai].head[i];
+  if (!h || h.length < 9) return null;
+  return {
+    pos: new THREE.Vector3(h[0], h[1], h[2]),
+    fwd: new THREE.Vector3(h[3], h[4], h[5]).normalize(),
+    up: new THREE.Vector3(h[6], h[7], h[8]).normalize(),
+  };
+}
+
+function applyPov() {
+  if (povUid == null) return;
+  const h = headAt(povUid, frame);
+  if (!h) return;
+  suppressControlEvent = true;
+  controls.enableDamping = false;
+  camera.near = 0.12;
+  camera.updateProjectionMatrix();
+  camera.up.copy(h.up);
+  camera.position.copy(h.pos);
+  const look = h.pos.clone().add(h.fwd.clone().multiplyScalar(40));
+  camera.lookAt(look);
+  controls.target.copy(look);
+  controls.update();
+  suppressControlEvent = false;
+}
+
+function exitPov() {
+  if (povUid == null) return;
+  povUid = null;
+  povLabel = null;
+  camera.near = defaultNear;
+  camera.up.set(0, 1, 0);
+  camera.updateProjectionMatrix();
+  document.querySelectorAll("#views button").forEach((b) => b.classList.remove("active"));
+  if (play) {
+    showFrame(frame, false);
+  }
+
+function setPov(uid, label) {
+  if (povUid === uid) {
+    snap("action");
+    return;
+  }
+  follow = false;
+  document.querySelectorAll("#presets button").forEach((b) => b.classList.remove("active"));
+  lastPreset = "pov";
+  povUid = uid;
+  povLabel = label || "pov";
+  document.querySelectorAll("#views button").forEach((b) => {
+    b.classList.toggle("active", Number(b.dataset.uid) === uid);
+  });
+  applyPov();
+  refreshHud();
+}
+
+function buildViews() {
+  const views = play.views || { players: [], officials: [] };
+  const fill = (el, items) => {
+    el.innerHTML = "";
+    items.forEach((v) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.dataset.uid = String(v.uid);
+      b.textContent = v.label;
+      b.addEventListener("click", () => setPov(v.uid, v.label));
+      el.appendChild(b);
+    });
+  };
+  fill($("views-players"), views.players || []);
+  fill($("views-officials"), views.officials || []);
+}
+
 function actorBounds() {
   const b = play.bounds.actors;
   return {
@@ -178,6 +261,7 @@ function actorBounds() {
 }
 
 function snap(name) {
+  exitPov();
   follow = name === "follow";
   controls.enableDamping = !follow;
   lastPreset = name;
@@ -294,7 +378,7 @@ function showFrame(i, syncHead = true) {
     if (segs && segs.length) {
       attr.array.set(segs);
       line.geometry.setDrawRange(0, segs.length / 3);
-      line.visible = true;
+      line.visible = a.uid !== povUid;
     } else {
       line.visible = false;
     }
@@ -340,6 +424,7 @@ function showFrame(i, syncHead = true) {
   }
 
   if (follow) applyFollow(false);
+  else if (povUid != null) applyPov();
   refreshHud();
 }
 
@@ -447,9 +532,12 @@ function tick(now) {
       const i = Math.floor(playhead);
       if (i !== frame) showFrame(i, false);
       else if (follow) applyFollow(false);
+      else if (povUid != null) applyPov();
     }
   } else if (follow) {
     applyFollow(false);
+  } else if (povUid != null) {
+    applyPov();
   }
   controls.update();
   renderer.render(scene, camera);
@@ -463,6 +551,7 @@ async function main() {
   document.title = `Gameday 3D  ${play.gamePk || ""}  ${play.playId || ""}`;
   $("s-time").max = 1;
   buildActors();
+  buildViews();
   await loadPark(play.ballpark);
   bindUi();
   showFrame(0);
