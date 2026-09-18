@@ -225,7 +225,8 @@ def _behind_azim(vx, vz, fallback):
 
 def reconstruct3d(play_dir, out_path="reconstruction3d.mp4", view="action",
                   zoom=70.0, fps=20, azim=-72.0, elev=16.0, full=False,
-                  include_field=None, include_stadium=None, ballpark_glb=None):
+                  include_field=None, include_stadium=None, ballpark_glb=None,
+                  preview_t=None):
     if include_field is None:
         include_field = INCLUDE_FIELD
     if include_stadium is None:
@@ -489,7 +490,9 @@ def reconstruct3d(play_dir, out_path="reconstruction3d.mp4", view="action",
         return (coll, bat_coll, ball_coll, halo, trail_line, title, *extras)
 
     if str(out_path).lower().endswith(".png"):
-        if view == "follow" and t_release is not None:
+        if preview_t is not None:
+            fi = int(round((t0 + preview_t - w0) * fps))
+        elif view == "follow" and t_release is not None:
             fi = int(round((t_release - w0) * fps))
         else:
             fi = 40
@@ -523,10 +526,12 @@ if __name__ == "__main__":
     ap.add_argument("--stadium", action="store_true", default=None,
                     help="draw the ballpark stadium mesh (overrides INCLUDE_STADIUM)")
     ap.add_argument("--ballpark", default=None, help="path to {venueId}_{ABBR}.glb")
+    ap.add_argument("--t", type=float, default=None,
+                    help="if out is .png, preview this seconds-from-clip-start")
     args = ap.parse_args()
     include_field = INCLUDE_FIELD if args.field is None else True
     include_stadium = INCLUDE_STADIUM if args.stadium is None else True
     reconstruct3d(args.play_dir, args.out, view=args.view, zoom=args.zoom,
                   fps=args.fps, azim=args.azim, elev=args.elev, full=args.full,
                   include_field=include_field, include_stadium=include_stadium,
-                  ballpark_glb=args.ballpark)
+                  ballpark_glb=args.ballpark, preview_t=args.t)

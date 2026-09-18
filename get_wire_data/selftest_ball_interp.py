@@ -1,10 +1,9 @@
-"""Tests for sample_ball: fly-ball gaps only, no time cap."""
-import math
+"""Tests for sample_ball: fly-ball gaps only, both ends >= 25 ft, no time cap."""
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from read_play import sample_ball, BALL_INTERP_HEIGHT, BALL_DENSE_GAP
+from read_play import sample_ball, BALL_INTERP_HEIGHT
 
 
 def test_exact_sample():
@@ -31,19 +30,24 @@ def test_packed_tuple_dense():
 
 
 def test_low_abnormal_gap_skipped():
-    """Grounder / catch / throw holes must not be filled."""
     track = [(0.0, 0.0, 3.0, 0.0), (1.6, 10.0, 6.0, -8.0)]
     assert sample_ball(track, 0.8) is None
     track24 = [(0.0, 0.0, BALL_INTERP_HEIGHT - 0.1, 0.0), (2.0, 10.0, 40.0, 0.0)]
     assert sample_ball(track24, 1.0) is None
 
 
-def test_high_abnormal_gap_filled():
-    """Last seen above 25 ft → fill, including long holes."""
-    track = [(0.0, 0.0, 40.0, 0.0), (8.0, 80.0, 30.0, -40.0)]
-    got = sample_ball(track, 4.0)
+def test_both_ends_must_be_high():
+    """A high fly must not be joined to a replacement ball near the field."""
+    # last seen high, next is a second ball at 3 ft — do not interpolate
+    assert sample_ball([(0.0, -16.0, 81.0, -26.0), (4.4, -3.0, 3.4, -6.0)], 2.0) is None
+    # last seen low, next high — do not interpolate
+    assert sample_ball([(0.0, 0.0, 5.0, 0.0), (3.0, 30.0, 40.0, -20.0)], 1.5) is None
+    # both ends high — fill, even if the hole is long
+    got = sample_ball([(0.0, 0.0, 40.0, -20.0), (8.0, 80.0, 30.0, -80.0)], 4.0)
     assert got is not None
-    assert 0.0 < got[0] < 80.0
+    assert abs(got[0] - 40.0) < 1e-6
+    assert abs(got[2] - (-50.0)) < 1e-6  # field-Z is linear
+    assert got[1] > 40.0  # ballistic apex above the chord
 
 
 def test_no_extrapolation():
@@ -53,18 +57,7 @@ def test_no_extrapolation():
     assert sample_ball([], 1.0) is None
 
 
-def test_threshold_is_last_seen_height():
-    """Gate is the sample before the hole, not the one after."""
-    # last seen high, reappears low — still interpolate
-    track = [(0.0, 0.0, 40.0, 0.0), (3.0, 30.0, 5.0, -20.0)]
-    assert sample_ball(track, 1.5) is not None
-    # last seen low, reappears high — do not interpolate
-    track = [(0.0, 0.0, 5.0, 0.0), (3.0, 30.0, 40.0, -20.0)]
-    assert sample_ball(track, 1.5) is None
-
-
 def test_ballistic_fly_recovers_apex():
-    """~100 ft fly with samples stripped above 70 ft (~2.8s hole)."""
     g = 32.174
     y0, vy0 = 3.0, 80.0
     ts = [i * 0.05 for i in range(0, 120)]
@@ -75,7 +68,6 @@ def test_ballistic_fly_recovers_apex():
             break
         full.append((t, 40.0 * t, y, -10.0 * t))
     track = [p for p in full if p[2] <= 70.0]
-    assert track[-1][2] >= BALL_INTERP_HEIGHT or max(p[2] for p in track) >= BALL_INTERP_HEIGHT
     t_peak = vy0 / g
     true_y = y0 + vy0 * vy0 / (2.0 * g)
     got = sample_ball(track, t_peak)
@@ -83,20 +75,18 @@ def test_ballistic_fly_recovers_apex():
     assert abs(got[1] - true_y) < 2.0, (got[1], true_y)
 
 
-def test_long_high_fly_no_time_cap():
-    """An 8s hole still fills when the last seen sample is a high fly."""
-    g = 32.174
-    y0, vy0 = 4.0, 90.0
-    # two samples: going up through 40 ft, coming down through 30 ft, 8s apart
-    t1, t2 = 0.5, 8.5
-    y1 = y0 + vy0 * t1 - 0.5 * g * t1 * t1
-    y2 = y0 + vy0 * t2 - 0.5 * g * t2 * t2
-    assert y1 >= BALL_INTERP_HEIGHT
-    track = [(t1, 20.0, y1, -5.0), (t2, 200.0, max(y2, 5.0), -80.0)]
-    t_peak = vy0 / g
-    got = sample_ball(track, t_peak)
+def test_xz_linear_not_hermite():
+    """Field X/Z must be the chord, not a cubic overshoot."""
+    track = [
+        (0.00, 0.0, 40.0, 0.0),
+        (0.03, 1.0, 41.0, -1.0),
+        (4.03, 81.0, 35.0, -81.0),
+        (4.06, 82.0, 34.0, -82.0),
+    ]
+    got = sample_ball(track, 2.03)
     assert got is not None
-    assert got[1] > y1, "apex should be above the last seen height"
+    assert abs(got[0] - 41.0) < 0.2
+    assert abs(got[2] - (-41.0)) < 0.2
 
 
 def test_held_low_ball_not_interpolated():
@@ -109,6 +99,23 @@ def test_held_low_ball_not_interpolated():
     assert sample_ball(track, 0.83) is None
 
 
+def test_play_822849_fly_not_second_ball():
+    play = Path("/tmp/gd/play_822849_8313f274-c733-325e-8df0-beaee0ddb6e1")
+    if not play.exists():
+        return
+    from read_play import PlayReader
+    r = PlayReader(play)
+    track = r.ball_track()
+    t0 = r.frames[0]["time"]
+    fly = sample_ball(track, t0 + 23.40)
+    assert fly is not None, "4.4s fly hole (both ends ~80-90 ft) must fill"
+    assert fly[1] > 80.0, fly
+    # field-Z stays between the two high samples (~ -26 and -77)
+    assert -80.0 < fly[2] < -20.0, fly
+    # after the catch the next ball is a replacement at ~3 ft — do not fill
+    assert sample_ball(track, t0 + 27.50) is None
+
+
 def test_real_play_skips_low_dropout():
     play = Path("/tmp/gd/play_823004_a6115b75-7846-3fb7-bbe4-995d0295512b")
     if not play.exists():
@@ -117,12 +124,8 @@ def test_real_play_skips_low_dropout():
     r = PlayReader(play)
     track = r.ball_track()
     t0 = r.frames[0]["time"]
-    # 1.57s hole after the batted ball — last seen ~3 ft, must stay empty
-    t = t0 + 22.0
-    assert sample_ball(track, t) is None
-    # 6.3s between throws also low
+    assert sample_ball(track, t0 + 22.0) is None
     assert sample_ball(track, t0 + 26.0) is None
-    # dense 30 fps holes during the pitch still fill
     assert sample_ball(track, t0 + 20.05) is not None
 
 

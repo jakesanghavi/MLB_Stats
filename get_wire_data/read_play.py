@@ -30,10 +30,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from get_wires import decode_tracking_data
 
 # Short holes are just 30 fps sampling. Abnormal (longer) holes are only
-# filled when the last seen ball was at least this high — a fly ball, not a
-# grounder / catch / throw. No time cap on those; a high fly may be missing
-# for several seconds around the apex.
-BALL_INTERP_HEIGHT = 25.0  # ft
+# filled when BOTH ends of the hole are at least this high — the same fly
+# ball, not a catch connecting to a replacement ball. No time cap; a high
+# fly may be missing for several seconds around the apex.
+BALL_INTERP_HEIGHT = 25.0  # ft above the field
 BALL_DENSE_GAP = 0.2       # seconds
 _G_FT = 32.174             # ft/s^2; Y is ballistic between bracketing samples
 
@@ -53,13 +53,14 @@ def _ball_xyz(sample):
 def sample_ball(track, t, min_height=BALL_INTERP_HEIGHT, dense_gap=BALL_DENSE_GAP):
     """Best-estimate ball (x, y, z) at time ``t`` from a sorted sample track.
 
-    Always interpolates sampling-cadence holes (``dense_gap``, default 0.2s)
-    so 30 fps samples stay continuous on the animation grid.
+    Always interpolates sampling-cadence holes (``dense_gap``, default 0.2s).
 
-    Abnormal holes are filled only when the last sample *before* the gap has
-    height >= ``min_height`` (default 25 ft). Those fly-ball gaps have no
-    duration cap — the ball may be missing for a long time around the apex.
-    Uses past *and* future samples (Hermite X/Z, ballistic Y). No extrapolation.
+    Abnormal holes are filled only when *both* the last sample before the gap
+    and the next sample after it are at least ``min_height`` ft high (default
+    25). That is the whole gate: a fly missing its apex is filled with no
+    duration cap; a catch connecting to a second/replacement ball is not,
+    because that new ball is near the field. X/Z are linear in time; Y is
+    ballistic under gravity. No extrapolation.
     """
     n = len(track)
     if n == 0:
@@ -79,33 +80,11 @@ def sample_ball(track, t, min_height=BALL_INTERP_HEIGHT, dense_gap=BALL_DENSE_GA
         return None
     _, x1, y1, z1 = _ball_xyz(track[i1])
     _, x2, y2, z2 = _ball_xyz(track[i2])
-    if dt > dense_gap and y1 < min_height:
+    if dt > dense_gap and (y1 < min_height or y2 < min_height):
         return None
-    p1 = (x1, y1, z1)
-    p2 = (x2, y2, z2)
-    if i1 - 1 >= 0:
-        t0, x0, y0, z0 = _ball_xyz(track[i1 - 1])
-        span = t2 - t0
-        v1 = tuple((b - a) / span for a, b in zip((x0, y0, z0), p2)) if span > 1e-9 \
-            else tuple((b - a) / dt for a, b in zip(p1, p2))
-    else:
-        v1 = tuple((b - a) / dt for a, b in zip(p1, p2))
-    if i2 + 1 < n:
-        t3, x3, y3, z3 = _ball_xyz(track[i2 + 1])
-        span = t3 - t1
-        v2 = tuple((b - a) / span for a, b in zip(p1, (x3, y3, z3))) if span > 1e-9 \
-            else tuple((b - a) / dt for a, b in zip(p1, p2))
-    else:
-        v2 = tuple((b - a) / dt for a, b in zip(p1, p2))
     u = (t - t1) / dt
-    u2 = u * u
-    u3 = u2 * u
-    h00 = 2 * u3 - 3 * u2 + 1
-    h10 = u3 - 2 * u2 + u
-    h01 = -2 * u3 + 3 * u2
-    h11 = u3 - u2
-    x, _, z = (h00 * a + h10 * dt * va + h01 * b + h11 * dt * vb
-               for a, va, b, vb in zip(p1, v1, p2, v2))
+    x = x1 + (x2 - x1) * u
+    z = z1 + (z2 - z1) * u
     dt_local = t - t1
     vy = (y2 - y1) / dt + 0.5 * _G_FT * dt
     y = y1 + vy * dt_local - 0.5 * _G_FT * dt_local * dt_local
