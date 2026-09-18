@@ -2,11 +2,15 @@
 
 The stadium files are Draco-compressed and far too dense for matplotlib, so we
 decode with DracoPy, apply the node TRS (scale 0.01 + 90° X on current parks),
-and quadric-decimate, then scale meters→feet (Gameday ``FI = 3.28084``). Cached
-as ``*.field.npz`` / ``*.stadium.npz`` next to the .glb so later runs skip the
-heavy decode.
+then scale meters→feet (Gameday ``FI = 3.28084``).
+
+The field is a simple surface, so quadric-decimate it. The stadium is tens of
+thousands of disconnected scraps (seats, rails); quadric simplification
+destroys it. We keep the largest-area faces instead. Cached as
+``*.field.npz`` / ``*.stadium.npz`` next to the .glb.
 """
 import os
+import time
 from pathlib import Path
 
 import numpy as np
@@ -29,7 +33,9 @@ VENUE_ABBR = {
 }
 
 FIELD_FACE_TARGET = 6000
-STADIUM_FACE_TARGET = 16000
+STADIUM_FACE_TARGET = 40000
+FIELD_CACHE_METHOD = "decimate"
+STADIUM_CACHE_METHOD = "largest-area"
 # Gameday viewer: after GLTFLoader applies node TRS the mesh is in meters;
 # they then do scene.scale.set(FI, FI, FI). Tracking data is already feet.
 M_TO_FT = 3.28084
@@ -107,11 +113,26 @@ def _decimate(verts, faces, target):
     return np.asarray(simple.vertices, float), np.asarray(simple.faces, int)
 
 
+def _keep_largest_faces(verts, faces, target):
+    """Keep the ``target`` largest-area triangles; drop tiny seat/rail scraps."""
+    n = len(faces)
+    if n <= target:
+        return verts, faces
+    a = verts[faces[:, 0]]
+    b = verts[faces[:, 1]]
+    c = verts[faces[:, 2]]
+    area = 0.5 * np.linalg.norm(np.cross(b - a, c - a), axis=1)
+    keep = np.argpartition(area, -int(target))[-int(target):]
+    faces = np.ascontiguousarray(faces[keep])
+    used, inv = np.unique(faces, return_inverse=True)
+    return verts[used], inv.reshape(-1, 3)
+
+
 def _cache_path(glb_path, kind):
     return Path(glb_path).with_suffix(f".{kind}.npz")
 
 
-def _load_cached(path, target):
+def _load_cached(path, target, method=None):
     if not path.exists():
         return None
     data = np.load(path)
@@ -120,14 +141,21 @@ def _load_cached(path, target):
             return None
         if abs(float(data["m_to_ft"]) - M_TO_FT) > 1e-4:
             return None
+        if method is not None:
+            if "method" in data.files:
+                if str(data["method"]) != str(method):
+                    return None
+            elif method != FIELD_CACHE_METHOD:
+                return None  # old stadium caches have no method tag
     except (KeyError, ValueError, TypeError):
         return None  # old meter-scale cache
     return data["verts"], data["faces"]
 
 
-def _save_cached(path, verts, faces, target):
+def _save_cached(path, verts, faces, target, method):
     np.savez_compressed(path, verts=verts, faces=faces,
-                        target=np.array(target), m_to_ft=np.array(M_TO_FT))
+                        target=np.array(target), m_to_ft=np.array(M_TO_FT),
+                        method=np.array(method))
 
 
 def _pick_nodes(nodes, kind):
@@ -157,13 +185,15 @@ def load_park_meshes(glb_path, want_field=True, want_stadium=True,
     out = {}
     needed = []
     if want_field:
-        cached = _load_cached(_cache_path(glb_path, "field"), field_faces)
+        cached = _load_cached(_cache_path(glb_path, "field"), field_faces,
+                              method=FIELD_CACHE_METHOD)
         if cached is not None:
             out["field"] = cached
         else:
             needed.append("field")
     if want_stadium:
-        cached = _load_cached(_cache_path(glb_path, "stadium"), stadium_faces)
+        cached = _load_cached(_cache_path(glb_path, "stadium"), stadium_faces,
+                              method=STADIUM_CACHE_METHOD)
         if cached is not None:
             out["stadium"] = cached
         else:
@@ -171,6 +201,7 @@ def load_park_meshes(glb_path, want_field=True, want_stadium=True,
     if not needed:
         return out
 
+    t_dec = time.perf_counter()
     print(f"decoding ballpark {glb_path.name} ...")
     nodes = load_glb_nodes(glb_path)
     print("  nodes:", ", ".join(f"{k} ({len(v[1])} tris)" for k, v in nodes.items()))
@@ -179,22 +210,31 @@ def load_park_meshes(glb_path, want_field=True, want_stadium=True,
         names = _pick_nodes(nodes, "field")
         if not names:
             raise KeyError(f"no *_Field node in {glb_path} (have {list(nodes)})")
+        t = time.perf_counter()
         verts, faces = _merge(nodes, names)
+        n0 = len(faces)
         verts, faces = _decimate(verts, faces, field_faces)
         verts = verts * M_TO_FT
-        _save_cached(_cache_path(glb_path, "field"), verts, faces, field_faces)
+        _save_cached(_cache_path(glb_path, "field"), verts, faces, field_faces,
+                     FIELD_CACHE_METHOD)
         out["field"] = (verts, faces)
-        print(f"  field -> {len(faces)} tris  "
-              f"z[{verts[:, 2].min():.1f},{verts[:, 2].max():.1f}] ft")
+        print(f"  field -> {len(faces)} tris (from {n0})  "
+              f"z[{verts[:, 2].min():.1f},{verts[:, 2].max():.1f}] ft  "
+              f"({time.perf_counter() - t:.2f}s)")
     if "stadium" in needed:
         names = _pick_nodes(nodes, "stadium")
         if not names:
             raise KeyError(f"no *_Stadium node in {glb_path} (have {list(nodes)})")
+        t = time.perf_counter()
         verts, faces = _merge(nodes, names)
-        verts, faces = _decimate(verts, faces, stadium_faces)
+        n0 = len(faces)
+        verts, faces = _keep_largest_faces(verts, faces, stadium_faces)
         verts = verts * M_TO_FT
-        _save_cached(_cache_path(glb_path, "stadium"), verts, faces, stadium_faces)
+        _save_cached(_cache_path(glb_path, "stadium"), verts, faces, stadium_faces,
+                     STADIUM_CACHE_METHOD)
         out["stadium"] = (verts, faces)
-        print(f"  stadium -> {len(faces)} tris  "
-              f"z[{verts[:, 2].min():.1f},{verts[:, 2].max():.1f}] ft")
+        print(f"  stadium -> {len(faces)} tris (largest of {n0})  "
+              f"z[{verts[:, 2].min():.1f},{verts[:, 2].max():.1f}] ft  "
+              f"({time.perf_counter() - t:.2f}s)")
+    print(f"  ballpark decode done ({time.perf_counter() - t_dec:.2f}s)")
     return out

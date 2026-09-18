@@ -20,6 +20,7 @@ Usage:
     for uid, track in play.actor_tracks().items():
         ...
 """
+import bisect
 import json
 import sys
 from pathlib import Path
@@ -28,9 +29,66 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from get_wires import decode_tracking_data
 
+# Short holes are just 30 fps sampling. Abnormal (longer) holes are only
+# filled when BOTH ends of the hole are at least this high — the same fly
+# ball, not a catch connecting to a replacement ball. No time cap; a high
+# fly may be missing for several seconds around the apex.
+BALL_INTERP_HEIGHT = 25.0  # ft above the field
+BALL_DENSE_GAP = 0.2       # seconds
+_G_FT = 32.174             # ft/s^2; Y is ballistic between bracketing samples
+
 
 def _load_json(path):
     return json.loads(Path(path).read_text()) if Path(path).exists() else None
+
+
+def _ball_xyz(sample):
+    """Unpack (t, x, y, z) or (t, (x, y, z)) -> (t, x, y, z)."""
+    if len(sample) == 2:
+        t, v = sample
+        return float(t), float(v[0]), float(v[1]), float(v[2])
+    return float(sample[0]), float(sample[1]), float(sample[2]), float(sample[3])
+
+
+def sample_ball(track, t, min_height=BALL_INTERP_HEIGHT, dense_gap=BALL_DENSE_GAP):
+    """Best-estimate ball (x, y, z) at time ``t`` from a sorted sample track.
+
+    Always interpolates sampling-cadence holes (``dense_gap``, default 0.2s).
+
+    Abnormal holes are filled only when *both* the last sample before the gap
+    and the next sample after it are at least ``min_height`` ft high (default
+    25). That is the whole gate: a fly missing its apex is filled with no
+    duration cap; a catch connecting to a second/replacement ball is not,
+    because that new ball is near the field. X/Z are linear in time; Y is
+    ballistic under gravity. No extrapolation.
+    """
+    n = len(track)
+    if n == 0:
+        return None
+    times = [_ball_xyz(p)[0] for p in track]
+    j = bisect.bisect_left(times, t)
+    if j < n and abs(times[j] - t) < 1e-9:
+        _, x, y, z = _ball_xyz(track[j])
+        return (x, y, z)
+    if j <= 0 or j >= n:
+        return None
+    i1, i2 = j - 1, j
+    t1 = times[i1]
+    t2 = times[i2]
+    dt = t2 - t1
+    if dt <= 1e-9:
+        return None
+    _, x1, y1, z1 = _ball_xyz(track[i1])
+    _, x2, y2, z2 = _ball_xyz(track[i2])
+    if dt > dense_gap and (y1 < min_height or y2 < min_height):
+        return None
+    u = (t - t1) / dt
+    x = x1 + (x2 - x1) * u
+    z = z1 + (z2 - z1) * u
+    dt_local = t - t1
+    vy = (y2 - y1) / dt + 0.5 * _G_FT * dt
+    y = y1 + vy * dt_local - 0.5 * _G_FT * dt_local * dt_local
+    return (x, max(y, 0.0), z)
 
 
 class PlayReader:
@@ -76,6 +134,10 @@ class PlayReader:
             if b:
                 out.append((f["time"], b["x"], b["y"], b["z"]))
         return out
+
+    def ball_at(self, t, min_height=BALL_INTERP_HEIGHT):
+        """Interpolated ball (x, y, z) at time ``t``, or None."""
+        return sample_ball(self.ball_track(), t, min_height=min_height)
 
     def actor_tracks(self):
         """uid -> [(time, rootPos_dict)] time series of each actor's root."""

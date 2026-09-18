@@ -27,19 +27,21 @@ The field-Z axis is inverted (outfield up), matching the 2D animator.
 import argparse
 import bisect
 import math
+import subprocess
 import sys
+import time
 from pathlib import Path
 
 import numpy as np
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-from matplotlib.animation import FuncAnimation, FFMpegWriter
 from mpl_toolkits.mplot3d.art3d import Line3DCollection, Poly3DCollection
 from matplotlib.lines import Line2D
+from matplotlib.colors import to_rgba
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from read_play import PlayReader
+from read_play import PlayReader, sample_ball
 from rig import RigSkeleton
 from glb import load_glb_mesh
 
@@ -169,21 +171,6 @@ def _sample_gap(track, t, max_gap):
     return track[hi if (t - track[lo][0]) >= (track[hi][0] - t) else lo][1:]
 
 
-def _lerp_ball(track, t, max_gap=0.2):
-    times = [x[0] for x in track]
-    if not times or t < times[0] or t > times[-1]:
-        return None
-    j = bisect.bisect_left(times, t)
-    if j < len(times) and times[j] == t:
-        return track[j][1]
-    lo, hi = max(0, j - 1), min(len(times) - 1, j)
-    t1, v1 = track[lo]; t2, v2 = track[hi]
-    if t2 - t1 > max_gap:
-        return None
-    f = (t - t1) / (t2 - t1) if t2 > t1 else 0.0
-    return tuple(a + (b - a) * f for a, b in zip(v1, v2))
-
-
 def _mesh_plot_tris(verts, faces):
     """world (x, y=height, z) triangles -> plot (x, z, y) triangles."""
     pv = np.column_stack([verts[:, 0], verts[:, 2], verts[:, 1]])
@@ -238,16 +225,72 @@ def _behind_azim(vx, vz, fallback):
     return math.degrees(math.atan2(vz, vx))
 
 
+def _canvas_rgba(fig):
+    """Copy the Agg canvas as an (H, W, 4) uint8 array."""
+    fig.canvas.draw()
+    return np.array(fig.canvas.buffer_rgba())
+
+
+def _composite(bg, overlay):
+    """Alpha-blend overlay over bg (both HxWx4 uint8)."""
+    a = overlay[..., 3:4].astype(np.float32) * (1.0 / 255.0)
+    rgb = overlay[..., :3].astype(np.float32) * a + bg[..., :3].astype(np.float32) * (1.0 - a)
+    out = np.empty_like(bg)
+    out[..., :3] = np.clip(rgb, 0, 255).astype(np.uint8)
+    out[..., 3] = 255
+    return out
+
+
+def _write_mp4_rgb(frames, out_path, fps):
+    """Pipe RGB frames (H,W,3) uint8 to ffmpeg. Returns (n_frames, elapsed_s)."""
+    first = next(frames)
+    h, w = first.shape[:2]
+    w -= w % 2
+    h -= h % 2
+    cmd = [
+        "ffmpeg", "-y", "-loglevel", "error",
+        "-f", "rawvideo", "-pix_fmt", "rgb24",
+        "-s", f"{w}x{h}", "-r", str(fps),
+        "-i", "-",
+        "-an", "-c:v", "libx264", "-pix_fmt", "yuv420p",
+        "-b:v", "3200k", "-movflags", "+faststart",
+        str(out_path),
+    ]
+    t0 = time.perf_counter()
+    proc = subprocess.Popen(cmd, stdin=subprocess.PIPE)
+    n = 0
+    try:
+        proc.stdin.write(np.ascontiguousarray(first[:h, :w, :3]).tobytes())
+        n = 1
+        for frame in frames:
+            proc.stdin.write(np.ascontiguousarray(frame[:h, :w, :3]).tobytes())
+            n += 1
+    finally:
+        if proc.stdin is not None:
+            proc.stdin.close()
+        rc = proc.wait()
+    if rc != 0:
+        raise RuntimeError(f"ffmpeg exited {rc} writing {out_path}")
+    return n, time.perf_counter() - t0
+
+
 def reconstruct3d(play_dir, out_path="reconstruction3d.mp4", view="action",
                   zoom=70.0, fps=20, azim=-72.0, elev=16.0, full=False,
-                  include_field=None, include_stadium=None, ballpark_glb=None):
+                  include_field=None, include_stadium=None, ballpark_glb=None,
+                  preview_t=None):
     if include_field is None:
         include_field = INCLUDE_FIELD
     if include_stadium is None:
         include_stadium = INCLUDE_STADIUM
+    t_run = time.perf_counter()
+    def _log(msg):
+        print(f"{msg}  [{time.perf_counter() - t_run:.2f}s]")
+
+    t = time.perf_counter()
     reader = PlayReader(play_dir)
     if not reader.frames:
         raise SystemExit("no frames")
+    _log(f"play decoded  frames={len(reader.frames)} ({time.perf_counter() - t:.2f}s)")
     rig = RigSkeleton()
     bat_v, bat_f = load_glb_mesh(ASSETS / "bat.glb")
     # rbi-ball.glb is ~1100 verts — too heavy for matplotlib; a generated
@@ -260,18 +303,21 @@ def reconstruct3d(play_dir, out_path="reconstruction3d.mp4", view="action",
         view = "full"
     w0, w1 = (reader.frames[0]["time"], reader.frames[-1]["time"]) if view == "full" \
         else reader.play_window()
-    print(f"window {w0 - t0:.2f}..{w1 - t0:.2f}s ({w1 - w0:.2f}s) view={view} "
-          f"field={include_field} stadium={include_stadium}")
+    _log(f"window {w0 - t0:.2f}..{w1 - t0:.2f}s ({w1 - w0:.2f}s) view={view} "
+         f"field={include_field} stadium={include_stadium}")
 
     park = {}
     if include_field or include_stadium:
         from stadium import find_ballpark_glb, load_park_meshes
+        t = time.perf_counter()
         glb_path = find_ballpark_glb(reader, explicit=ballpark_glb)
         park = load_park_meshes(glb_path, want_field=include_field,
                                 want_stadium=include_stadium)
+        counts = {k: len(v[1]) for k, v in park.items()}
+        _log(f"  park meshes {counts} ({time.perf_counter() - t:.2f}s)")
 
     pose_tracks = _actor_pose_tracks(reader)
-    ball_track = [(t, (x, y, z)) for t, x, y, z in reader.ball_track()]
+    ball_track = list(reader.ball_track())
     bat_track = _bat_track(reader)
     t_release = _pitch_release_time(reader)
     pitch_xz = _pitcher_xz(reader, t_release if t_release is not None else w0)
@@ -284,6 +330,7 @@ def reconstruct3d(play_dir, out_path="reconstruction3d.mp4", view="action",
               f"pitcher=({pitch_xz[0]:.1f},{pitch_xz[1]:.1f})")
 
     print("running FK: %d frames x %d actors ..." % (len(grid), len(pose_tracks)))
+    t_fk = time.perf_counter()
     F_segs, F_cols, F_ball, F_bat, F_center = [], [], [], [], []
     for t in grid:
         segs, cols, roots = [], [], []
@@ -298,11 +345,12 @@ def reconstruct3d(play_dir, out_path="reconstruction3d.mp4", view="action",
             for p, c in rig.segments(wp):
                 segs.append([_to_plot(p), _to_plot(c)]); cols.append(col)
         F_segs.append(segs); F_cols.append(cols)
-        ball = _lerp_ball(ball_track, t)
+        ball = sample_ball(ball_track, t)
         F_ball.append(ball)
         bh = _sample_gap(bat_track, t, 0.3)
         F_bat.append(_bat_world_verts(bat_v, bh[0], bh[1]) if bh else None)
         F_center.append((ball[0], ball[2]) if ball is not None else None)
+    _log(f"  FK done ({time.perf_counter() - t_fk:.2f}s)")
 
     # Ground velocity (world x, world z) at each sample, for behind-the-ball azim.
     F_vel = []
@@ -345,15 +393,18 @@ def reconstruct3d(play_dir, out_path="reconstruction3d.mp4", view="action",
     ax = fig.add_subplot(111, projection="3d")
     ax.set_position([0.0, 0.0, 1.0, 1.0])
     fig.subplots_adjust(left=0, right=1, bottom=0, top=1)
+    ball_h = [b[1] for b in F_ball if b is not None]
+    ymax = max(ball_h) if ball_h else 8.0
+    z_hi = max(ymax + 25.0, 16.0)
     if include_stadium:
-        ax.set_zlim(-2, 70)
-        zspan = 72
+        z_hi = max(z_hi, 70.0)
+        z_lo = -2.0
     elif include_field:
-        ax.set_zlim(-1, 16)
-        zspan = 17
+        z_lo = -1.0
     else:
-        ax.set_zlim(0, 10)
-        zspan = 12
+        z_lo = 0.0
+    ax.set_zlim(z_lo, z_hi)
+    zspan = z_hi - z_lo
     ax.set_axis_off()
     ax.grid(False)
     # Draw in artist zorder, not matplotlib's 3D painter sort (that puts
@@ -380,24 +431,31 @@ def reconstruct3d(play_dir, out_path="reconstruction3d.mp4", view="action",
 
     apply_bounds()
 
-    def _add_park_mesh(kind, color, alpha):
-        if kind not in park:
+    def _add_park_collections():
+        """Field + stadium as one collection so faces depth-sort together.
+
+        Stadium stays slightly translucent: matplotlib has no z-buffer, so
+        opaque roof slabs would paint over the diamond. Actors stay a higher
+        zorder on top.
+        """
+        tris, cols = [], []
+        if "field" in park:
+            fv, ff = park["field"]
+            tris.append(_mesh_plot_tris(fv, ff))
+            cols.append(np.repeat([to_rgba(_FIELD_COLOR, 0.95)], len(ff), axis=0))
+        if "stadium" in park:
+            sv, sf = park["stadium"]
+            tris.append(_mesh_plot_tris(sv, sf))
+            cols.append(np.repeat([to_rgba(_STADIUM_COLOR, 0.40)], len(sf), axis=0))
+        if not tris:
             return None
-        from matplotlib.colors import to_rgba
-        verts, faces = park[kind]
-        tris = _mesh_plot_tris(verts, faces)
-        fc = np.repeat([to_rgba(color, alpha)], len(faces), axis=0)
-        pc = Poly3DCollection(tris, facecolors=fc, linewidths=0, antialiaseds=False)
+        pc = Poly3DCollection(np.concatenate(tris), facecolors=np.concatenate(cols),
+                              linewidths=0, antialiaseds=False)
+        pc.set_zorder(1)
         ax.add_collection3d(pc)
         return pc
 
-    # field < stadium < actors < bat < ball
-    field_coll = _add_park_mesh("field", _FIELD_COLOR, 0.95)
-    stadium_coll = _add_park_mesh("stadium", _STADIUM_COLOR, 0.38)
-    if field_coll is not None:
-        field_coll.set_zorder(1)
-    if stadium_coll is not None:
-        stadium_coll.set_zorder(2)
+    park_coll = _add_park_collections()
 
     coll = Line3DCollection([[(0, 0, 0), (0, 0, 0)]], linewidths=1.6)
     coll.set_zorder(3)
@@ -419,10 +477,6 @@ def reconstruct3d(play_dir, out_path="reconstruction3d.mp4", view="action",
     handles += [Line2D([0], [0], color="#8a5a2b", lw=4, label="Bat"),
                 Line2D([0], [0], marker="o", color="w", label="Ball",
                        markerfacecolor="#ffd21e", markeredgecolor="black", markersize=9)]
-    if include_field:
-        handles.append(Line2D([0], [0], color=_FIELD_COLOR, lw=6, label="Field"))
-    if include_stadium:
-        handles.append(Line2D([0], [0], color=_STADIUM_COLOR, lw=6, label="Stadium"))
     ax.legend(handles=handles, loc="upper right", fontsize=8, framealpha=0.85,
               borderpad=0.4)
 
@@ -497,26 +551,63 @@ def reconstruct3d(play_dir, out_path="reconstruction3d.mp4", view="action",
             apply_bounds(state["center"][0], state["center"][1], state["azim"])
         n = len({tuple(c) for c in F_cols[i]}) if F_cols[i] else 0
         title.set_text(f"Gameday 3D reconstruction  |  t={grid[i] - w0:5.2f}s  |  actors={n}")
-        extras = [c for c in (field_coll, stadium_coll) if c is not None]
+        extras = [c for c in (park_coll,) if c is not None]
         return (coll, bat_coll, ball_coll, halo, trail_line, title, *extras)
 
     if str(out_path).lower().endswith(".png"):
-        if view == "follow" and t_release is not None:
+        if preview_t is not None:
+            fi = int(round((t0 + preview_t - w0) * fps))
+        elif view == "follow" and t_release is not None:
             fi = int(round((t_release - w0) * fps))
         else:
             fi = 40
         fi = max(0, min(fi, len(grid) - 1))
+        t = time.perf_counter()
         # run from 0 so follow azim/center have eased to this frame
         for k in range(fi + 1):
             update(k)
         fig.savefig(out_path, dpi=130, facecolor=fig.get_facecolor())
         plt.close(fig)
-        print(f"wrote {out_path} (preview frame)")
+        _log(f"wrote {out_path} (preview frame, {time.perf_counter() - t:.2f}s)")
         return out_path
-    anim = FuncAnimation(fig, update, frames=len(grid), blit=False, interval=1000 / fps)
-    anim.save(out_path, writer=FFMpegWriter(fps=fps, bitrate=3200))
+
+    bake_park = view != "follow" and bool(park)
+    park_bg = None
+    if bake_park:
+        t = time.perf_counter()
+        coll.set_segments([])
+        bat_coll.set_verts([])
+        ball_coll.set_verts([])
+        halo._offsets3d = ([], [], [])
+        trail_line.set_data([], [])
+        trail_line.set_3d_properties([])
+        title.set_text("")
+        leg = ax.get_legend()
+        if leg is not None:
+            leg.set_visible(False)
+        park_bg = _canvas_rgba(fig)
+        if park_coll is not None:
+            park_coll.remove()
+            park_coll = None
+        if leg is not None:
+            leg.set_visible(True)
+        fig.patch.set_facecolor((1, 1, 1, 0))
+        ax.patch.set_facecolor((1, 1, 1, 0))
+        _log(f"  baked park background {park_bg.shape[1]}x{park_bg.shape[0]} "
+             f"({time.perf_counter() - t:.2f}s)")
+
+    def _frames():
+        for i in range(len(grid)):
+            update(i)
+            overlay = _canvas_rgba(fig)
+            if park_bg is not None:
+                yield _composite(park_bg, overlay)[..., :3]
+            else:
+                yield overlay[..., :3]
+
+    n, dt = _write_mp4_rgb(_frames(), out_path, fps)
     plt.close(fig)
-    print(f"wrote {out_path} ({len(grid)} frames @ {fps}fps)")
+    _log(f"wrote {out_path} ({n} frames @ {fps}fps, {dt:.2f}s, {n / dt:.1f} fps)")
     return out_path
 
 
@@ -535,10 +626,12 @@ if __name__ == "__main__":
     ap.add_argument("--stadium", action="store_true", default=None,
                     help="draw the ballpark stadium mesh (overrides INCLUDE_STADIUM)")
     ap.add_argument("--ballpark", default=None, help="path to {venueId}_{ABBR}.glb")
+    ap.add_argument("--t", type=float, default=None,
+                    help="if out is .png, preview this seconds-from-clip-start")
     args = ap.parse_args()
     include_field = INCLUDE_FIELD if args.field is None else True
     include_stadium = INCLUDE_STADIUM if args.stadium is None else True
     reconstruct3d(args.play_dir, args.out, view=args.view, zoom=args.zoom,
                   fps=args.fps, azim=args.azim, elev=args.elev, full=args.full,
                   include_field=include_field, include_stadium=include_stadium,
-                  ballpark_glb=args.ballpark)
+                  ballpark_glb=args.ballpark, preview_t=args.t)
