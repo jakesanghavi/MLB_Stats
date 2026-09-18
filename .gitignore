@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Generated MLB data (scraped from the StatsAPI at runtime)
+DataPack/
+
+# Generated analysis / tracking outputs
+*_binned_balls.csv
+*_annotated.png
+*_results.csv
+*_results.json

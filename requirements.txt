@@ -1,0 +1,24 @@
+# Core data + plotting stack (MLB data collection and pitcher dashboards)
+pandas
+numpy
+scipy
+matplotlib
+requests
+
+# Image / SVG handling for the dashboard
+Pillow
+cairosvg
+pyfonts
+Unidecode
+
+# Player-image background removal used by the dashboard header
+rembg
+onnxruntime
+
+# Computer-vision fielder-tracking experiments (file_utils.py, loc_fielders_test.py)
+opencv-python-headless
+scikit-learn
+networkx
+
+# HTML parsing (listed in README requirements)
+beautifulsoup4
