@@ -20,7 +20,9 @@ Usage:
     for uid, track in play.actor_tracks().items():
         ...
 """
+import bisect
 import json
+import math
 import sys
 from pathlib import Path
 
@@ -28,9 +30,92 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from get_wires import decode_tracking_data
 
+# Interpolate through multi-frame tracking dropouts (common on high flies),
+# but do not bridge separate ball phases (e.g. the several-second hole
+# between a throw landing and the next throw).
+BALL_INTERP_MAX_GAP = 4.0
+_G_FT = 32.174  # ft/s^2; Y is ballistic between bracketing samples
+
 
 def _load_json(path):
     return json.loads(Path(path).read_text()) if Path(path).exists() else None
+
+
+def _ball_xyz(sample):
+    """Unpack (t, x, y, z) or (t, (x, y, z)) -> (t, x, y, z)."""
+    if len(sample) == 2:
+        t, v = sample
+        return float(t), float(v[0]), float(v[1]), float(v[2])
+    return float(sample[0]), float(sample[1]), float(sample[2]), float(sample[3])
+
+
+def sample_ball(track, t, max_gap=BALL_INTERP_MAX_GAP):
+    """Best-estimate ball (x, y, z) at time ``t`` from a sorted sample track.
+
+    Uses the samples before *and* after ``t``:
+      * X/Z — cubic Hermite with Catmull-Rom tangents from extra neighbors
+        when they exist, otherwise linear.
+      * Y (height) — ballistic under gravity, so a high-fly hole missing the
+        apex is reconstructed instead of flattened to a chord.
+
+    Returns None outside the track, when a side is missing (no extrapolation),
+    or when the bracketing gap is wider than ``max_gap`` seconds.
+    """
+    n = len(track)
+    if n == 0:
+        return None
+    times = [_ball_xyz(p)[0] for p in track]
+    j = bisect.bisect_left(times, t)
+    if j < n and abs(times[j] - t) < 1e-9:
+        _, x, y, z = _ball_xyz(track[j])
+        return (x, y, z)
+    if j <= 0 or j >= n:
+        return None
+    i1, i2 = j - 1, j
+    t1 = times[i1]
+    t2 = times[i2]
+    dt = t2 - t1
+    if dt <= 1e-9 or dt > max_gap:
+        return None
+    _, x1, y1, z1 = _ball_xyz(track[i1])
+    _, x2, y2, z2 = _ball_xyz(track[i2])
+    p1 = (x1, y1, z1)
+    p2 = (x2, y2, z2)
+    if i1 - 1 >= 0:
+        t0, x0, y0, z0 = _ball_xyz(track[i1 - 1])
+        span = t2 - t0
+        v1 = tuple((b - a) / span for a, b in zip((x0, y0, z0), p2)) if span > 1e-9 \
+            else tuple((b - a) / dt for a, b in zip(p1, p2))
+    else:
+        v1 = tuple((b - a) / dt for a, b in zip(p1, p2))
+    if i2 + 1 < n:
+        t3, x3, y3, z3 = _ball_xyz(track[i2 + 1])
+        span = t3 - t1
+        v2 = tuple((b - a) / span for a, b in zip(p1, (x3, y3, z3))) if span > 1e-9 \
+            else tuple((b - a) / dt for a, b in zip(p1, p2))
+    else:
+        v2 = tuple((b - a) / dt for a, b in zip(p1, p2))
+    u = (t - t1) / dt
+    u2 = u * u
+    u3 = u2 * u
+    h00 = 2 * u3 - 3 * u2 + 1
+    h10 = u3 - 2 * u2 + u
+    h01 = -2 * u3 + 3 * u2
+    h11 = u3 - u2
+    x, _, z = (h00 * a + h10 * dt * va + h01 * b + h11 * dt * vb
+               for a, va, b, vb in zip(p1, v1, p2, v2))
+    implied = math.dist(p1, p2) / dt
+    spd1 = math.dist((x0, y0, z0), p1) / (t1 - t0) if i1 - 1 >= 0 else implied
+    spd2 = math.dist(p2, (x3, y3, z3)) / (t3 - t2) if i2 + 1 < n else implied
+    # Nearly stopped vs the flight on either side → held/caught, not airborne.
+    held = (spd1 > 15.0 and spd2 > 15.0 and implied < 0.3 * min(spd1, spd2))
+    if held:
+        y = y1 + (y2 - y1) * u
+    else:
+        dt_local = t - t1
+        vy = (y2 - y1) / dt + 0.5 * _G_FT * dt
+        y = y1 + vy * dt_local - 0.5 * _G_FT * dt_local * dt_local
+    return (x, max(y, 0.0), z)
 
 
 class PlayReader:
@@ -76,6 +161,10 @@ class PlayReader:
             if b:
                 out.append((f["time"], b["x"], b["y"], b["z"]))
         return out
+
+    def ball_at(self, t, max_gap=BALL_INTERP_MAX_GAP):
+        """Interpolated ball (x, y, z) at time ``t``, or None."""
+        return sample_ball(self.ball_track(), t, max_gap=max_gap)
 
     def actor_tracks(self):
         """uid -> [(time, rootPos_dict)] time series of each actor's root."""

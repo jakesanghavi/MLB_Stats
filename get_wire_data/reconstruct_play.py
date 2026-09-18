@@ -26,7 +26,7 @@ from matplotlib.animation import FuncAnimation, FFMpegWriter
 from matplotlib.lines import Line2D
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from read_play import PlayReader
+from read_play import PlayReader, sample_ball
 
 TYPE_COLORS = {
     "pitcher": "#d12d49", "batter": "#005A9C", "catcher": "#EB6E1F",
@@ -88,11 +88,11 @@ def reconstruct(play_dir, out_path="reconstruction.mp4", full=False, fps=30):
         w0, w1 = reader.play_window()
     print(f"window: {w0 - t0:.2f}s .. {w1 - t0:.2f}s  ({w1 - w0:.2f}s, {'full' if full else 'action'})")
 
-    # per-actor root tracks (uid -> sorted [(t,(x,z))]) and ball track [(t,(x,z,y))]
+    # per-actor root tracks (uid -> sorted [(t,(x,z))])
     raw_tracks = reader.actor_tracks()
     actor_tracks = {uid: [(t, (rp["x"], rp["z"])) for t, rp in tr]
                     for uid, tr in raw_tracks.items()}
-    ball_track = [(t, (x, z, y)) for t, x, y, z in reader.ball_track()]
+    raw_ball = list(reader.ball_track())
 
     # bounds from actors present in the window
     xs, zs = [], []
@@ -100,7 +100,7 @@ def reconstruct(play_dir, out_path="reconstruction.mp4", full=False, fps=30):
         for t, (x, z) in tr:
             if w0 <= t <= w1:
                 xs.append(x); zs.append(z)
-    for t, (x, z, _) in ball_track:
+    for t, x, y, z in raw_ball:
         if w0 <= t <= w1:
             xs.append(x); zs.append(z)
     if not xs:
@@ -151,9 +151,9 @@ def reconstruct(play_dir, out_path="reconstruction.mp4", full=False, fps=30):
         else:
             actor_scatter.set_offsets(np.empty((0, 2)))
 
-        bv = _sample(ball_track, t, max_gap=0.2)  # ball only near real samples
+        bv = sample_ball(raw_ball, t)
         if bv is not None:
-            x, z, y = bv
+            x, y, z = bv
             ball_dot.set_offsets(np.array([[x, z]]))
             ball_dot.set_sizes([40 + max(0.0, y) * 8])
             gap = state["prev_ball_t"] is not None and (t - state["prev_ball_t"]) > _BALL_GAP_BREAK
