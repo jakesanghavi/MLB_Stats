@@ -954,7 +954,7 @@ function saveVideo() {
   const watch = () => {
     if (!recording) return;
     const tNow = timeAt(playhead);
-    const overtime = performance.now() - started > (tEnd + 4) * 1000;
+    const overtime = performance.now() - started > (tEnd * 3 + 5) * 1000;
     if (!playing || tNow >= tEnd - 1e-3 || overtime) {
       playing = false;
       showFrame(play.times.length - 1, false);
