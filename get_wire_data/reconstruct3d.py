@@ -13,8 +13,9 @@ Camera / zoom options (--view):
   action  : fit the actors present in the window (default)
   full    : fit the whole clip
   infield : fixed home-plate/infield framing
-  follow  : umpire-behind-the-catcher view through the pitch; after contact
-            (or a sudden batted-ball turn) switches to ball tracking
+  follow  : start behind the pitcher looking at home; on pitch release, track
+            from behind the ball (relative to its motion). After contact the
+            camera slews smoothly to stay behind the new heading
             (--zoom = follow half-width).
 
 The field-Z axis is inverted (outfield up), matching the 2D animator.
@@ -25,6 +26,7 @@ The field-Z axis is inverted (outfield up), matching the 2D animator.
 """
 import argparse
 import bisect
+import math
 import sys
 from pathlib import Path
 
@@ -53,17 +55,12 @@ _BALL_GAP_BREAK = 0.3
 _BAT_MODEL_LEN = 2.843  # bat.glb knob->barrel extent (ft)
 ASSETS = Path(__file__).resolve().parent / "assets"
 _FIELD_COLOR = "#5b9e4a"
-_DIRT_COLOR = "#c2a36b"
 _STADIUM_COLOR = "#c4beb3"
-# Umpire-over-the-catcher view: from +Z (behind home) looking at the mound.
-# elev is steep enough to look over the mask; behind-offset keeps the camera
-# out of the umpire's torso.
-_PLATE_AZIM = 90.0
-_PLATE_ELEV = 30.0
-_PLATE_HALF_X = 11.0   # ft, batter's boxes + a slice of the infield
-_PLATE_Z_FAR = -68.0   # just past the mound
-_PLATE_H = 11.0
-_PLATE_BEHIND = 14.0   # ft behind the rearmost plate actor (umpire/catcher)
+# Behind the pitcher, looking toward home (plot Y = world Z).
+_PITCHER_AZIM = -90.0
+_FOLLOW_AZIM_RATE = 140.0   # deg/s; a 180° reverse takes ~1.3s
+_FOLLOW_CENTER_TAU = 0.12   # seconds to ease the look-at point onto the ball
+_FOLLOW_MIN_SPEED = 12.0    # ft/s; ignore heading when the ball is basically still
 
 
 # ---- geometry helpers -------------------------------------------------------
@@ -192,155 +189,51 @@ def _mesh_plot_tris(verts, faces):
     return pv[faces]
 
 
-def _face_metrics(verts, faces):
-    """Per-face longest/shortest edge, area, aspect, centroid."""
-    a, b, c = verts[faces[:, 0]], verts[faces[:, 1]], verts[faces[:, 2]]
-    e1 = np.linalg.norm(b - a, axis=1)
-    e2 = np.linalg.norm(c - b, axis=1)
-    e3 = np.linalg.norm(a - c, axis=1)
-    emax = np.maximum(np.maximum(e1, e2), e3)
-    emin = np.minimum(np.minimum(e1, e2), e3)
-    area = 0.5 * np.linalg.norm(np.cross(b - a, c - a), axis=1)
-    aspect = emax / np.maximum(emin, 1e-9)
-    cent = (a + b + c) / 3.0
-    return emax, emin, area, aspect, cent
-
-
-def _clean_field_faces(verts, faces, max_aspect=12.0, drop_wrapping=False):
-    """Drop decimation slivers. Those thin tris rasterize as white streaks;
-    the large remaining faces are the actual grass cover."""
-    _emax, _emin, _area, aspect, cent = _face_metrics(verts, faces)
-    drop = aspect > max_aspect
-    # Field node also carries a chunk of backstop net behind the plate.
-    drop |= (cent[:, 1] > 5.0) & (cent[:, 2] > 0.0)
-    drop |= _in_dirt_diamond(cent[:, 0], cent[:, 2])
-    if drop_wrapping:
-        # Huge wrapping tris run from the outfield through a plate-level camera.
-        zmin = verts[faces][:, :, 2].min(axis=1)
-        zmax = verts[faces][:, :, 2].max(axis=1)
-        drop |= (zmin < -40.0) & (zmax > 8.0)
-    return verts, faces[~drop]
-
-
-def _clean_stadium_faces(verts, faces, min_y=8.0, max_aspect=40.0,
-                         max_z_vertex=8.0, max_z_span=160.0, max_edge=180.0):
-    """Drop ground overlays, the backstop, wrapping bowl tris, and slivers."""
-    emax, _emin, _area, aspect, cent = _face_metrics(verts, faces)
-    zmin = verts[faces][:, :, 2].min(axis=1)
-    zmax = verts[faces][:, :, 2].max(axis=1)
-    keep = ((cent[:, 1] >= min_y)
-            & (aspect < max_aspect)
-            & (zmax < max_z_vertex)
-            & ((zmax - zmin) < max_z_span)
-            & (emax < max_edge))
-    return verts, faces[keep]
-
-
-_DIRT_CORNERS = np.array([
-    [0.0, 8.0],       # behind the plate
-    [78.0, -63.0],    # past 1B
-    [0.0, -142.0],    # past 2B
-    [-78.0, -63.0],   # past 3B
-], float)
-
-
-def _in_dirt_diamond(x, z):
-    """True for points inside the infield-dirt diamond (plot x, field-z)."""
-    h, b1, b2, b3 = _DIRT_CORNERS
-    p = np.column_stack([np.asarray(x).ravel(), np.asarray(z).ravel()])
-
-    def tri(a, b, c):
-        v0, v1, v2 = b - a, c - a, p - a
-        den = v0[0] * v1[1] - v1[0] * v0[1]
-        u = (v2[:, 0] * v1[1] - v1[0] * v2[:, 1]) / den
-        v = (v0[0] * v2[:, 1] - v2[:, 0] * v0[1]) / den
-        return (u >= -1e-6) & (v >= -1e-6) & (u + v <= 1 + 1e-6)
-
-    return tri(h, b1, b2) | tri(h, b2, b3)
-
-
-def _dirt_diamond_tris(y=0.04):
-    h, b1, b2, b3 = (np.array([c[0], c[1], y]) for c in _DIRT_CORNERS)
-    return [np.stack([h, b1, b2]), np.stack([h, b2, b3])]
-
-
-def _ground_surface(ax, x0, x1, z0, z1, y, color, n=8):
-    """Axis-aligned floor. Sized to the current frustum so matplotlib
-    doesn't project world-sized tris through the camera."""
-    xx, zz = np.meshgrid(np.linspace(x0, x1, n), np.linspace(z0, z1, n))
-    yy = np.full_like(xx, y)
-    return ax.plot_surface(xx, zz, yy, color=color, linewidth=0,
-                           antialiased=False, shade=False)
-
-
-def _park_collection(tris, color, alpha, clip=False):
-    from matplotlib.colors import to_rgba
-    if not tris:
-        return None
-    fc = np.repeat([to_rgba(color, alpha)], len(tris), axis=0)
-    return Poly3DCollection(tris, facecolors=fc, linewidths=0,
-                            edgecolors="none", antialiaseds=False, shade=False,
-                            axlim_clip=clip)
-
-
-def _pitch_contact_times(reader, ball_track):
-    """Pitch time and first contact / odd-turn time (absolute seconds)."""
-    t_pitch = t_hit = t_play1 = None
+def _pitch_release_time(reader):
+    """playEvent action 0 (pitch released), absolute seconds."""
     for t, dt, data in reader.events():
-        data = data or {}
-        if dt == 7:
-            if data.get("action") == 0 and t_pitch is None:
-                t_pitch = t
-            elif data.get("action") == 1 and t_play1 is None:
-                t_play1 = t
-    for f in reader.frames:
-        if t_hit is not None:
-            break
-        for p in f.get("ballPolynomials") or []:
-            if p.get("dataType") == 2:  # BallHitData
-                t_hit = f["time"]
-                break
-    t_flip = None
-    if t_pitch is not None:
-        prev, saw_in = None, False
-        for t, x, y, z in ball_track:
-            if t < t_pitch - 0.05:
-                prev = (t, x, y, z)
-                continue
-            if prev is None:
-                prev = (t, x, y, z)
-                continue
-            dt = t - prev[0]
-            if dt > 1e-4:
-                vz = (z - prev[3]) / dt
-                vx = (x - prev[1]) / dt
-                if vz > 40:
-                    saw_in = True
-                if saw_in and (vz < -25 or abs(vx) > 80):
-                    t_flip = t
-                    break
-            prev = (t, x, y, z)
-    t_contact = t_hit or t_flip or t_play1
-    return t_pitch, t_contact
+        if dt == 7 and (data or {}).get("action") == 0:
+            return t
+    return None
 
 
-def _plate_near_z(reader, t_pitch):
-    """Field-Z of a camera plane behind the umpire/catcher (not inside them)."""
-    z_back = 8.0
-    if t_pitch is None:
-        return z_back + _PLATE_BEHIND
+def _pitcher_xz(reader, t_ref):
+    """Pitcher root (x, field-z) near t_ref, else the rubber."""
+    if t_ref is None:
+        t_ref = reader.frames[0]["time"]
     for f in reader.frames:
-        if abs(f["time"] - t_pitch) > 0.2:
+        if abs(f["time"] - t_ref) > 0.3:
             continue
         for a in f.get("actorPoses") or []:
             rp = a.get("rootPos")
-            if not rp:
-                continue
-            typ = reader.actor_type(a["uid"])
-            if typ in ("plate-umpire", "catcher") or (typ == "umpire" and rp["z"] > 0):
-                z_back = max(z_back, rp["z"])
+            if rp and reader.actor_type(a["uid"]) == "pitcher":
+                return (float(rp["x"]), float(rp["z"]))
         break
-    return z_back + _PLATE_BEHIND
+    return (0.0, -60.5)
+
+
+def _angle_diff(cur, target):
+    """Shortest signed delta from cur to target, in (-180, 180]."""
+    return (target - cur + 180.0) % 360.0 - 180.0
+
+
+def _slew_azim(cur, target, dt, rate=_FOLLOW_AZIM_RATE, vx=0.0):
+    """Move azim toward target, capped at `rate` deg/s. A 180° reverse
+    prefers the 1B side if vx >= 0, 3B otherwise."""
+    d = _angle_diff(cur, target)
+    if abs(abs(d) - 180.0) < 0.5:
+        d = 180.0 if vx >= 0.0 else -180.0
+    step = rate * dt
+    if abs(d) <= step:
+        return target
+    return cur + math.copysign(step, d)
+
+
+def _behind_azim(vx, vz, fallback):
+    """Azimuth sitting opposite the ball's ground velocity, looking at it."""
+    if math.hypot(vx, vz) < _FOLLOW_MIN_SPEED:
+        return fallback
+    return math.degrees(math.atan2(-vz, -vx))
 
 
 def reconstruct3d(play_dir, out_path="reconstruction3d.mp4", view="action",
@@ -376,17 +269,17 @@ def reconstruct3d(play_dir, out_path="reconstruction3d.mp4", view="action",
                                 want_stadium=include_stadium)
 
     pose_tracks = _actor_pose_tracks(reader)
-    raw_ball = reader.ball_track()
-    ball_track = [(t, (x, y, z)) for t, x, y, z in raw_ball]
+    ball_track = [(t, (x, y, z)) for t, x, y, z in reader.ball_track()]
     bat_track = _bat_track(reader)
-    t_pitch, t_contact = _pitch_contact_times(reader, raw_ball)
-    z_near = _plate_near_z(reader, t_pitch)
+    t_release = _pitch_release_time(reader)
+    pitch_xz = _pitcher_xz(reader, t_release if t_release is not None else w0)
+    # Look-at a few feet in front of the pitcher so home stays in frame.
+    pitcher_look = (pitch_xz[0], pitch_xz[1] + 18.0)
     grid = np.arange(w0, w1, 1.0 / fps)
     if view == "follow":
-        print(f"  follow: plate-cam until contact "
-              f"t_pitch={None if t_pitch is None else t_pitch - t0:.2f}s "
-              f"t_contact={None if t_contact is None else t_contact - t0:.2f}s "
-              f"z_near={z_near:.1f}ft")
+        print(f"  follow: pitcher-cam until release "
+              f"t_release={None if t_release is None else t_release - t0:.2f}s "
+              f"pitcher=({pitch_xz[0]:.1f},{pitch_xz[1]:.1f})")
 
     print("running FK: %d frames x %d actors ..." % (len(grid), len(pose_tracks)))
     F_segs, F_cols, F_ball, F_bat, F_center = [], [], [], [], []
@@ -407,9 +300,34 @@ def reconstruct3d(play_dir, out_path="reconstruction3d.mp4", view="action",
         F_ball.append(ball)
         bh = _sample_gap(bat_track, t, 0.3)
         F_bat.append(_bat_world_verts(bat_v, bh[0], bh[1]) if bh else None)
-        # follow target: the ball only (held through gaps below), so the camera
-        # locks on the action instead of being pulled around by deep fielders.
         F_center.append((ball[0], ball[2]) if ball is not None else None)
+
+    # Ground velocity (world x, world z) at each sample, for behind-the-ball azim.
+    F_vel = []
+    nball = len(F_ball)
+    for i, b in enumerate(F_ball):
+        if b is None:
+            F_vel.append(None)
+            continue
+        lo = i - 1
+        while lo >= 0 and F_ball[lo] is None:
+            lo -= 1
+        hi = i + 1
+        while hi < nball and F_ball[hi] is None:
+            hi += 1
+        a = F_ball[lo] if lo >= 0 else None
+        c = F_ball[hi] if hi < nball else None
+        if a is not None and c is not None and grid[hi] - grid[lo] > 1e-4:
+            dt = grid[hi] - grid[lo]
+            F_vel.append(((c[0] - a[0]) / dt, (c[2] - a[2]) / dt))
+        elif a is not None and grid[i] - grid[lo] > 1e-4:
+            dt = grid[i] - grid[lo]
+            F_vel.append(((b[0] - a[0]) / dt, (b[2] - a[2]) / dt))
+        elif c is not None and grid[hi] - grid[i] > 1e-4:
+            dt = grid[hi] - grid[i]
+            F_vel.append(((c[0] - b[0]) / dt, (c[2] - b[2]) / dt))
+        else:
+            F_vel.append((0.0, 0.0))
 
     # static bounds — frame the play, not the whole park (park is a backdrop)
     allpts = np.array([pt for segs in F_segs for seg in segs for pt in seg])
@@ -436,106 +354,50 @@ def reconstruct3d(play_dir, out_path="reconstruction3d.mp4", view="action",
         zspan = 12
     ax.set_axis_off()
     ax.grid(False)
-    ax.computed_zorder = False
     ax.xaxis.pane.fill = False
     ax.yaxis.pane.fill = False
     ax.zaxis.pane.fill = False
     ax.xaxis.pane.set_edgecolor((1, 1, 1, 0))
     ax.yaxis.pane.set_edgecolor((1, 1, 1, 0))
     ax.zaxis.pane.set_edgecolor((1, 1, 1, 0))
-    ax.view_init(elev=_PLATE_ELEV if view == "follow" else elev,
-                 azim=_PLATE_AZIM if view == "follow" else azim)
+    ax.view_init(elev=elev, azim=_PITCHER_AZIM if view == "follow" else azim)
 
-    def _set_plate_park(plate):
-        # Decimated field/stadium tris pass through the near plane and fill
-        # the umpire camera; plate view uses a frustum-sized floor instead.
-        if stadium_coll is not None:
-            stadium_coll.set_visible(not plate)
-        if field_coll is not None:
-            field_coll.set_visible(not plate)
-        if park_floor is not None:
-            park_floor.set_visible(not plate)
-        if park_dirt is not None:
-            park_dirt.set_visible(not plate)
-        if plate_floor is not None:
-            plate_floor.set_visible(plate)
-        if plate_dirt is not None:
-            plate_dirt.set_visible(plate)
-
-    def apply_plate():
-        _set_plate_park(True)
-        ax.set_xlim(-_PLATE_HALF_X, _PLATE_HALF_X)
-        ax.set_ylim(_PLATE_Z_FAR, z_near)  # look from behind home toward mound
-        ax.set_zlim(-0.3, _PLATE_H)
-        ax.set_box_aspect((2 * _PLATE_HALF_X, z_near - _PLATE_Z_FAR, _PLATE_H), zoom=2.05)
-        ax.view_init(elev=_PLATE_ELEV, azim=_PLATE_AZIM)
-
-    def apply_bounds(cx=None, cz=None):
-        _set_plate_park(False)
+    def apply_bounds(cx=None, cz=None, cam_azim=None):
         if view == "follow" and cx is not None:
             ax.set_xlim(cx - zoom, cx + zoom)
             ax.set_ylim(cz + zoom, cz - zoom)  # inverted (outfield up)
-            ax.set_zlim(-2, 70) if include_stadium else ax.set_zlim(-1, 16) if include_field else ax.set_zlim(0, 10)
             ax.set_box_aspect((2 * zoom, 2 * zoom, zspan), zoom=1.6)
-            ax.view_init(elev=elev, azim=azim)
+            ax.view_init(elev=elev, azim=_PITCHER_AZIM if cam_azim is None else cam_azim)
         else:
             ax.set_xlim(xlo, xhi)
             ax.set_ylim(zhi, zlo)  # inverted
             ax.set_box_aspect(((xhi - xlo), (zhi - zlo), zspan), zoom=1.6)
 
+    apply_bounds()
+
     def _add_park_mesh(kind, color, alpha):
         if kind not in park:
             return None
+        from matplotlib.colors import to_rgba
         verts, faces = park[kind]
-        if kind == "field":
-            verts, faces = _clean_field_faces(verts, faces, drop_wrapping=(view == "follow"))
-        elif kind == "stadium":
-            verts, faces = _clean_stadium_faces(verts, faces)
-        if len(faces) == 0:
-            return None
-        pc = _park_collection(list(_mesh_plot_tris(verts, faces)), color, alpha,
-                              clip=(kind == "stadium"))
-        if pc is not None:
-            ax.add_collection3d(pc)
+        tris = _mesh_plot_tris(verts, faces)
+        fc = np.repeat([to_rgba(color, alpha)], len(faces), axis=0)
+        pc = Poly3DCollection(tris, facecolors=fc, linewidths=0, antialiaseds=False)
+        ax.add_collection3d(pc)
         return pc
 
-    plate_floor = plate_dirt = park_floor = park_dirt = None
-    if include_field:
-        park_floor = _ground_surface(ax, -120, 120, -400, 20, 0.0, _FIELD_COLOR, n=12)
-        park_dirt = _park_collection(_dirt_diamond_tris(), _DIRT_COLOR, 1.0)
-        park_floor.set_zorder(1)
-        if park_dirt is not None:
-            park_dirt.set_zorder(2)
-            ax.add_collection3d(park_dirt)
-        if view == "follow":
-            plate_floor = _ground_surface(ax, -_PLATE_HALF_X, _PLATE_HALF_X,
-                                          _PLATE_Z_FAR, 8.0, 0.0, _FIELD_COLOR, n=8)
-            plate_dirt = _ground_surface(ax, -9.0, 9.0, -62.0, 6.0, 0.05,
-                                         _DIRT_COLOR, n=6)
-            plate_floor.set_zorder(1)
-            plate_dirt.set_zorder(2)
-            plate_floor.set_visible(False)
-            plate_dirt.set_visible(False)
+    # static park under the actors (matplotlib z-order is approximate)
     field_coll = _add_park_mesh("field", _FIELD_COLOR, 0.95)
     stadium_coll = _add_park_mesh("stadium", _STADIUM_COLOR, 0.38)
-    if field_coll is not None:
-        field_coll.set_zorder(3)
-    if stadium_coll is not None:
-        stadium_coll.set_zorder(4)
 
     coll = Line3DCollection([[(0, 0, 0), (0, 0, 0)]], linewidths=1.6)
-    coll.set_zorder(10)
     ax.add_collection3d(coll)
     bat_coll = Poly3DCollection([], facecolor="#8a5a2b", edgecolor="#5c3a17", linewidths=0.3)
-    bat_coll.set_zorder(11)
     ax.add_collection3d(bat_coll)
     ball_coll = Poly3DCollection([], facecolor="#f7f7f7", edgecolor="#cccccc", linewidths=0.2)
-    ball_coll.set_zorder(12)
     ax.add_collection3d(ball_coll)
     halo = ax.scatter([], [], [], s=140, c="#ffd21e", alpha=0.35, edgecolors="none", depthshade=False)
-    halo.set_zorder(13)
     trail_line, = ax.plot([], [], [], "-", color="#ff9e00", lw=1.7, alpha=0.85)
-    trail_line.set_zorder(9)
     title = ax.set_title("")
 
     legend_types = ["pitcher", "batter", "catcher", "fielder", "umpire", "coach"]
@@ -550,14 +412,16 @@ def reconstruct3d(play_dir, out_path="reconstruction3d.mp4", view="action",
     ax.legend(handles=handles, loc="upper right", fontsize=8, framealpha=0.85,
               borderpad=0.4)
 
-    # initial follow center: first tracked ball, else infield
-    first_c = next((c for c in F_center if c is not None), (0.0, -60.0))
     trail_pts = []
-    state = {"prev_t": None, "center": first_c, "mode": "plate"}
+    dt_frame = 1.0 / fps
+    state = {
+        "prev_t": None,
+        "center": pitcher_look,
+        "azim": _PITCHER_AZIM,
+        "tracking": False,
+    }
     if view == "follow":
-        apply_plate()
-    else:
-        apply_bounds()
+        apply_bounds(state["center"][0], state["center"][1], state["azim"])
 
     def ball_polys(center):
         cx, cy, cz = center  # world x,y,z
@@ -567,7 +431,11 @@ def reconstruct3d(play_dir, out_path="reconstruction3d.mp4", view="action",
 
     def update(i):
         if i == 0:
-            trail_pts.clear(); state["prev_t"] = None
+            trail_pts.clear()
+            state["prev_t"] = None
+            state["center"] = pitcher_look
+            state["azim"] = _PITCHER_AZIM
+            state["tracking"] = False
         coll.set_segments(F_segs[i]); coll.set_color(F_cols[i])
 
         bv = F_bat[i]
@@ -594,27 +462,39 @@ def reconstruct3d(play_dir, out_path="reconstruction3d.mp4", view="action",
             trail_line.set_data(arr[:, 0], arr[:, 1]); trail_line.set_3d_properties(arr[:, 2])
 
         if view == "follow":
-            tracking = t_contact is not None and grid[i] >= t_contact
-            if tracking:
-                if F_center[i] is not None:
-                    state["center"] = F_center[i]
-                apply_bounds(state["center"][0], state["center"][1])
-                state["mode"] = "ball"
+            released = t_release is None or grid[i] >= t_release
+            if released:
+                state["tracking"] = True
+            if state["tracking"] and F_center[i] is not None:
+                target = F_center[i]
             else:
-                apply_plate()
-                state["mode"] = "plate"
+                target = pitcher_look
+            k = 1.0 - math.exp(-dt_frame / _FOLLOW_CENTER_TAU)
+            cx, cz = state["center"]
+            state["center"] = (cx + (target[0] - cx) * k, cz + (target[1] - cz) * k)
+
+            vx = vz = 0.0
+            if state["tracking"] and F_vel[i] is not None:
+                vx, vz = F_vel[i]
+                target_az = _behind_azim(vx, vz, state["azim"])
+            else:
+                target_az = _PITCHER_AZIM
+            state["azim"] = _slew_azim(state["azim"], target_az, dt_frame, vx=vx)
+            apply_bounds(state["center"][0], state["center"][1], state["azim"])
         n = len({tuple(c) for c in F_cols[i]}) if F_cols[i] else 0
         title.set_text(f"Gameday 3D reconstruction  |  t={grid[i] - w0:5.2f}s  |  actors={n}")
         extras = [c for c in (field_coll, stadium_coll) if c is not None]
         return (coll, bat_coll, ball_coll, halo, trail_line, title, *extras)
 
     if str(out_path).lower().endswith(".png"):
-        if view == "follow" and t_pitch is not None:
-            fi = int(round((t_pitch - w0) * fps))
+        if view == "follow" and t_release is not None:
+            fi = int(round((t_release - w0) * fps))
         else:
             fi = 40
         fi = max(0, min(fi, len(grid) - 1))
-        update(fi)
+        # run from 0 so follow azim/center have eased to this frame
+        for k in range(fi + 1):
+            update(k)
         fig.savefig(out_path, dpi=130, facecolor=fig.get_facecolor())
         plt.close(fig)
         print(f"wrote {out_path} (preview frame)")
