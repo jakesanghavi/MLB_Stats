@@ -910,9 +910,24 @@ function saveVideo() {
   rec.ondataavailable = (e) => {
     if (e.data && e.data.size) chunks.push(e.data);
   };
+  rec.onerror = (e) => {
+    console.warn("MediaRecorder error", e);
+    recording = false;
+    playing = false;
+    $("btn-save").disabled = false;
+    $("btn-save").textContent = "Save failed";
+    setTimeout(() => { $("btn-save").textContent = "Save video"; }, 1800);
+  };
   rec.onstop = () => {
     stream.getTracks().forEach((tr) => tr.stop());
     const blob = new Blob(chunks, { type: rec.mimeType || "video/webm" });
+    if (blob.size < 64) {
+      $("btn-save").disabled = false;
+      $("btn-save").textContent = "Empty video";
+      recording = false;
+      setTimeout(() => { $("btn-save").textContent = "Save video"; }, 1800);
+      return;
+    }
     const a = document.createElement("a");
     const id = (play.playId || "play").toString().slice(0, 8);
     a.href = URL.createObjectURL(blob);
@@ -931,12 +946,19 @@ function saveVideo() {
   playing = true;
   $("btn-play").textContent = "Pause";
   rec.start(250);
+  const tEnd = play.times[play.times.length - 1];
+  const started = performance.now();
   const finish = () => {
     if (rec.state !== "inactive") rec.stop();
   };
   const watch = () => {
     if (!recording) return;
-    if (!playing) {
+    const tNow = timeAt(playhead);
+    const overtime = performance.now() - started > (tEnd + 4) * 1000;
+    if (!playing || tNow >= tEnd - 1e-3 || overtime) {
+      playing = false;
+      showFrame(play.times.length - 1, false);
+      renderer.render(scene, camera);
       finish();
       return;
     }
