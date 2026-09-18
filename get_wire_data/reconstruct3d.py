@@ -18,7 +18,7 @@ Camera / zoom options (--view):
 
 The field-Z axis is inverted (outfield up), matching the 2D animator.
 
-    python reconstruct3d.py <play_dir> [out.mp4] [--view follow] [--zoom 45]
+    python reconstruct3d.py <play_dir> [out.mp4] [--view follow] [--zoom 70]
                             [--fps 20] [--azim -72] [--elev 16] [--full]
                             [--field] [--stadium]
 """
