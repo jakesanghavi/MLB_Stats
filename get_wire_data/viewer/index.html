@@ -64,6 +64,10 @@
 
   <div id="help">drag orbit · right-drag pan · scroll zoom · space play · player view = eye height</div>
 
-  <script type="module" src="viewer.js"></script>
+  <script type="module" src="viewer.js?v=play-cache"></script>
+  <script>
+    // bfcache can restore the last play's JS heap after a server restart
+    addEventListener("pageshow", (e) => { if (e.persisted) location.reload(); });
+  </script>
 </body>
 </html>

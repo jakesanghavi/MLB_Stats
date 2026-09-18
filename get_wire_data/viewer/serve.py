@@ -43,7 +43,11 @@ class Handler(SimpleHTTPRequestHandler):
         sys.stderr.write("%s - %s\n" % (self.address_string(), fmt % args))
 
     def end_headers(self):
-        self.send_header("Cache-Control", "no-store")
+        # play.json / the glb change every serve; Chrome will keep the last
+        # 20MB JSON across restarts if we allow a disk cache.
+        self.send_header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
+        self.send_header("Pragma", "no-cache")
+        self.send_header("Expires", "0")
         super().end_headers()
 
 
@@ -59,6 +63,7 @@ def main():
     prepare(args.play_dir, args.fps, args.full, args.head_pose)
     httpd = ThreadingHTTPServer((args.host, args.port), Handler)
     print(f"viewer  http://127.0.0.1:{args.port}/", flush=True)
+    print("reload that tab after each play — the page does not hot-swap play.json", flush=True)
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:

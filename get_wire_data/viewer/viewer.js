@@ -114,6 +114,7 @@ function hudText() {
   const hw = halfWidthAtTarget(s.dist, camera.fov);
   const time = play ? play.times[frame] : 0;
   return [
+    `play        ${play ? (play.gamePk || "") : ""}  ${play ? shortPlayId(play.playId) : ""}`,
     `preset      ${povLabel || (follow ? "follow" : lastPreset)}`,
     `head        ${headPose}`,
     `t           ${time.toFixed(3)} s`,
@@ -130,6 +131,12 @@ function hudText() {
 function fmtVec(v) {
   const n = (x) => x.toFixed(2).padStart(8);
   return `x${n(v.x)}  y${n(v.y)}  z${n(v.z)}`;
+}
+
+function shortPlayId(id) {
+  if (!id) return "";
+  const s = String(id);
+  return s.length > 18 ? `${s.slice(0, 8)}…` : s;
 }
 
 function markCustom() {
@@ -590,7 +597,7 @@ async function loadPark(info) {
   const loader = new GLTFLoader();
   loader.setDRACOLoader(draco);
   try {
-    const gltf = await loader.loadAsync("data/ballpark.glb");
+    const gltf = await loader.loadAsync(`data/ballpark.glb?v=${Date.now()}`);
     const root = gltf.scene;
     root.scale.setScalar(info.mToFt || 3.28084);
     root.traverse((obj) => {
@@ -694,7 +701,7 @@ function tick(now) {
 }
 
 async function main() {
-  play = await fetch("data/play.json").then((r) => {
+  play = await fetch(`data/play.json?v=${Date.now()}`, { cache: "no-store" }).then((r) => {
     if (!r.ok) throw new Error("data/play.json missing — run serve.py <play_dir>");
     return r.json();
   });
