@@ -111,8 +111,8 @@ function hudText() {
   return [
     `preset      ${follow ? "follow" : lastPreset}`,
     `t           ${time.toFixed(3)} s`,
-    `position    x ${p.x.toFixed(2)}   y ${p.y.toFixed(2)}   z ${p.z.toFixed(2)}`,
-    `look-at     x ${t.x.toFixed(2)}   y ${t.y.toFixed(2)}   z ${t.z.toFixed(2)}`,
+    `position    ${fmtVec(p)}`,
+    `look-at     ${fmtVec(t)}`,
     `azimuth     ${s.azim.toFixed(2)} deg`,
     `elevation   ${s.elev.toFixed(2)} deg`,
     `distance    ${s.dist.toFixed(2)} ft`,
@@ -121,8 +121,12 @@ function hudText() {
   ].join("\n");
 }
 
-function dropFollow() {
-  if (!follow) return;
+function fmtVec(v) {
+  const n = (x) => x.toFixed(2).padStart(8);
+  return `x${n(v.x)}  y${n(v.y)}  z${n(v.z)}`;
+}
+
+function markCustom() {
   follow = false;
   controls.enableDamping = true;
   lastPreset = "custom";
@@ -195,9 +199,10 @@ function snap(name) {
     );
     setSpherical(-72, 16, dist, target);
   } else if (name === "infield") {
-    setSpherical(-20, 18, 210, new THREE.Vector3(0, 4, -40));
+    // Stay inside the bowl (roofed parks clip a behind-home camera).
+    setSpherical(-48, 22, 165, new THREE.Vector3(0, 4, -45));
   } else if (name === "full") {
-    setSpherical(-90, 22, 520, new THREE.Vector3(0, 20, -80));
+    setSpherical(-72, 18, 330, new THREE.Vector3(0, 8, -85));
   } else if (name === "pitcher") {
     const look = new THREE.Vector3(...play.pitcherLook);
     setSpherical(180, 12, 90, look);
@@ -334,6 +339,7 @@ function showFrame(i, syncHead = true) {
   }
 
   if (follow) applyFollow(false);
+  refreshHud();
 }
 
 async function loadPark(info) {
@@ -389,8 +395,7 @@ function bindUi() {
   });
   const applySliderCam = () => {
     applyingSliders = true;
-    dropFollow();
-    lastPreset = "custom";
+    markCustom();
     setSpherical(
       Number($("s-azim").value),
       Number($("s-elev").value),
@@ -409,9 +414,9 @@ function bindUi() {
   ["s-azim", "s-elev", "s-dist", "s-fov", "s-tx", "s-ty", "s-tz"].forEach((id) => {
     $(id).addEventListener("input", applySliderCam);
   });
-  controls.addEventListener("change", () => {
-    if (!suppressControlEvent && !applyingSliders) dropFollow();
-    refreshHud();
+  controls.addEventListener("change", refreshHud);
+  controls.addEventListener("start", () => {
+    if (!suppressControlEvent && !applyingSliders) markCustom();
   });
   window.addEventListener("keydown", (e) => {
     if (e.code === "Space") {
