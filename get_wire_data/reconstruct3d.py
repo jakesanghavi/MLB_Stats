@@ -56,8 +56,9 @@ _BAT_MODEL_LEN = 2.843  # bat.glb knob->barrel extent (ft)
 ASSETS = Path(__file__).resolve().parent / "assets"
 _FIELD_COLOR = "#5b9e4a"
 _STADIUM_COLOR = "#c4beb3"
-# Behind the pitcher, looking toward home (plot Y = world Z).
-_PITCHER_AZIM = -90.0
+# Behind the pitcher, looking toward home. matplotlib's eye is opposite
+# sin(azim) on an inverted field-Z axis, so +90 is the outfield/mound side.
+_PITCHER_AZIM = 90.0
 _FOLLOW_AZIM_RATE = 140.0   # deg/s; a 180° reverse takes ~1.3s
 _FOLLOW_CENTER_TAU = 0.12   # seconds to ease the look-at point onto the ball
 _FOLLOW_MIN_SPEED = 12.0    # ft/s; ignore heading when the ball is basically still
@@ -233,7 +234,8 @@ def _behind_azim(vx, vz, fallback):
     """Azimuth sitting opposite the ball's ground velocity, looking at it."""
     if math.hypot(vx, vz) < _FOLLOW_MIN_SPEED:
         return fallback
-    return math.degrees(math.atan2(-vz, -vx))
+    # R ∥ velocity so the eye (center - dist*R) sits behind the ball.
+    return math.degrees(math.atan2(vz, vx))
 
 
 def reconstruct3d(play_dir, out_path="reconstruction3d.mp4", view="action",
@@ -273,8 +275,8 @@ def reconstruct3d(play_dir, out_path="reconstruction3d.mp4", view="action",
     bat_track = _bat_track(reader)
     t_release = _pitch_release_time(reader)
     pitch_xz = _pitcher_xz(reader, t_release if t_release is not None else w0)
-    # Look-at a few feet in front of the pitcher so home stays in frame.
-    pitcher_look = (pitch_xz[0], pitch_xz[1] + 18.0)
+    # Look at the pitcher so the pre-release shot is from behind him toward home.
+    pitcher_look = pitch_xz
     grid = np.arange(w0, w1, 1.0 / fps)
     if view == "follow":
         print(f"  follow: pitcher-cam until release "
