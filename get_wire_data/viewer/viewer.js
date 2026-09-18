@@ -190,16 +190,17 @@ function applyPov() {
   if (povUid == null) return;
   const h = headAt(povUid, frame);
   if (!h) return;
-  suppressControlEvent = true;
-  controls.enableDamping = false;
   camera.near = 0.12;
+  if (camera.fov < 60) {
+    camera.fov = 70;
+  }
   camera.updateProjectionMatrix();
   camera.up.copy(h.up);
   camera.position.copy(h.pos);
   const look = h.pos.clone().add(h.fwd.clone().multiplyScalar(40));
   camera.lookAt(look);
+  suppressControlEvent = true;
   controls.target.copy(look);
-  controls.update();
   suppressControlEvent = false;
 }
 
@@ -540,7 +541,7 @@ function tick(now) {
   } else if (povUid != null) {
     applyPov();
   }
-  controls.update();
+  if (povUid == null) controls.update();
   renderer.render(scene, camera);
 }
 

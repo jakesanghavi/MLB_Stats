@@ -137,14 +137,17 @@ class RigSkeleton:
             pos = 0.5 * (eye_l[:3, 3] + eye_r[:3, 3])
         else:
             pos = head[:3, 3].copy()
-            pos = pos + head[:3, 2] * 0.25
-        fwd = head[:3, 2].copy()
+        # Eyes sit on local −X of joint_Head; that axis is face-forward.
+        fwd = -head[:3, 0]
         up = head[:3, 1].copy()
         fn = float(np.linalg.norm(fwd))
         un = float(np.linalg.norm(up))
         if fn < 1e-8 or un < 1e-8:
             return None
-        return pos, fwd / fn, up / un
+        fwd = fwd / fn
+        up = up / un
+        pos = pos + fwd * 0.35
+        return pos, fwd, up
 
     def segments(self, world_pos):
         """List of (p0, p1) world-point pairs for each joint bone edge."""
