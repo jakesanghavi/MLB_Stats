@@ -39,7 +39,7 @@ from mpl_toolkits.mplot3d.art3d import Line3DCollection, Poly3DCollection
 from matplotlib.lines import Line2D
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from read_play import PlayReader
+from read_play import PlayReader, sample_ball
 from rig import RigSkeleton
 from glb import load_glb_mesh
 
@@ -169,21 +169,6 @@ def _sample_gap(track, t, max_gap):
     return track[hi if (t - track[lo][0]) >= (track[hi][0] - t) else lo][1:]
 
 
-def _lerp_ball(track, t, max_gap=0.2):
-    times = [x[0] for x in track]
-    if not times or t < times[0] or t > times[-1]:
-        return None
-    j = bisect.bisect_left(times, t)
-    if j < len(times) and times[j] == t:
-        return track[j][1]
-    lo, hi = max(0, j - 1), min(len(times) - 1, j)
-    t1, v1 = track[lo]; t2, v2 = track[hi]
-    if t2 - t1 > max_gap:
-        return None
-    f = (t - t1) / (t2 - t1) if t2 > t1 else 0.0
-    return tuple(a + (b - a) * f for a, b in zip(v1, v2))
-
-
 def _mesh_plot_tris(verts, faces):
     """world (x, y=height, z) triangles -> plot (x, z, y) triangles."""
     pv = np.column_stack([verts[:, 0], verts[:, 2], verts[:, 1]])
@@ -271,7 +256,7 @@ def reconstruct3d(play_dir, out_path="reconstruction3d.mp4", view="action",
                                 want_stadium=include_stadium)
 
     pose_tracks = _actor_pose_tracks(reader)
-    ball_track = [(t, (x, y, z)) for t, x, y, z in reader.ball_track()]
+    ball_track = list(reader.ball_track())
     bat_track = _bat_track(reader)
     t_release = _pitch_release_time(reader)
     pitch_xz = _pitcher_xz(reader, t_release if t_release is not None else w0)
@@ -298,7 +283,7 @@ def reconstruct3d(play_dir, out_path="reconstruction3d.mp4", view="action",
             for p, c in rig.segments(wp):
                 segs.append([_to_plot(p), _to_plot(c)]); cols.append(col)
         F_segs.append(segs); F_cols.append(cols)
-        ball = _lerp_ball(ball_track, t)
+        ball = sample_ball(ball_track, t)
         F_ball.append(ball)
         bh = _sample_gap(bat_track, t, 0.3)
         F_bat.append(_bat_world_verts(bat_v, bh[0], bh[1]) if bh else None)
@@ -345,15 +330,18 @@ def reconstruct3d(play_dir, out_path="reconstruction3d.mp4", view="action",
     ax = fig.add_subplot(111, projection="3d")
     ax.set_position([0.0, 0.0, 1.0, 1.0])
     fig.subplots_adjust(left=0, right=1, bottom=0, top=1)
+    ball_h = [b[1] for b in F_ball if b is not None]
+    ymax = max(ball_h) if ball_h else 8.0
+    z_hi = max(ymax + 25.0, 16.0)
     if include_stadium:
-        ax.set_zlim(-2, 70)
-        zspan = 72
+        z_hi = max(z_hi, 70.0)
+        z_lo = -2.0
     elif include_field:
-        ax.set_zlim(-1, 16)
-        zspan = 17
+        z_lo = -1.0
     else:
-        ax.set_zlim(0, 10)
-        zspan = 12
+        z_lo = 0.0
+    ax.set_zlim(z_lo, z_hi)
+    zspan = z_hi - z_lo
     ax.set_axis_off()
     ax.grid(False)
     # Draw in artist zorder, not matplotlib's 3D painter sort (that puts
