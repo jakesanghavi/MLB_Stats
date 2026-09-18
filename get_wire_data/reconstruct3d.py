@@ -6,6 +6,7 @@ decoded root positions + joint quaternions, and draws:
   - each actor's skeleton (colored bone segments by role),
   - the bat mesh (bat.glb) placed from the tracked handle/head positions,
   - the ball (small sphere) with a yellow halo and a persistent path trail,
+  - optionally the ballpark field / stadium (INCLUDE_FIELD / INCLUDE_STADIUM),
 over the action window.
 
 Camera / zoom options (--view):
@@ -19,6 +20,7 @@ The field-Z axis is inverted (outfield up), matching the 2D animator.
 
     python reconstruct3d.py <play_dir> [out.mp4] [--view follow] [--zoom 45]
                             [--fps 20] [--azim -72] [--elev 16] [--full]
+                            [--field] [--stadium]
 """
 import argparse
 import bisect
@@ -44,9 +46,13 @@ TYPE_COLORS = {
     "coach": "#000000", "runner": "#775eef", "unknown": "#bbbbbb",
 }
 TRACK_ALL_TRAILS = True
+INCLUDE_FIELD = False      # dirt/grass plane from the ballpark glb
+INCLUDE_STADIUM = False    # bowl / stands from the ballpark glb
 _BALL_GAP_BREAK = 0.3
 _BAT_MODEL_LEN = 2.843  # bat.glb knob->barrel extent (ft)
 ASSETS = Path(__file__).resolve().parent / "assets"
+_FIELD_COLOR = "#5b9e4a"
+_STADIUM_COLOR = "#c4beb3"
 
 
 # ---- geometry helpers -------------------------------------------------------
@@ -169,8 +175,19 @@ def _lerp_ball(track, t, max_gap=0.2):
     return tuple(a + (b - a) * f for a, b in zip(v1, v2))
 
 
+def _mesh_plot_tris(verts, faces):
+    """world (x, y=height, z) triangles -> plot (x, z, y) triangles."""
+    pv = np.column_stack([verts[:, 0], verts[:, 2], verts[:, 1]])
+    return pv[faces]
+
+
 def reconstruct3d(play_dir, out_path="reconstruction3d.mp4", view="action",
-                  zoom=45.0, fps=20, azim=-72.0, elev=16.0, full=False):
+                  zoom=45.0, fps=20, azim=-72.0, elev=16.0, full=False,
+                  include_field=None, include_stadium=None, ballpark_glb=None):
+    if include_field is None:
+        include_field = INCLUDE_FIELD
+    if include_stadium is None:
+        include_stadium = INCLUDE_STADIUM
     reader = PlayReader(play_dir)
     if not reader.frames:
         raise SystemExit("no frames")
@@ -186,7 +203,15 @@ def reconstruct3d(play_dir, out_path="reconstruction3d.mp4", view="action",
         view = "full"
     w0, w1 = (reader.frames[0]["time"], reader.frames[-1]["time"]) if view == "full" \
         else reader.play_window()
-    print(f"window {w0 - t0:.2f}..{w1 - t0:.2f}s ({w1 - w0:.2f}s) view={view}")
+    print(f"window {w0 - t0:.2f}..{w1 - t0:.2f}s ({w1 - w0:.2f}s) view={view} "
+          f"field={include_field} stadium={include_stadium}")
+
+    park = {}
+    if include_field or include_stadium:
+        from stadium import find_ballpark_glb, load_park_meshes
+        glb_path = find_ballpark_glb(reader, explicit=ballpark_glb)
+        park = load_park_meshes(glb_path, want_field=include_field,
+                                want_stadium=include_stadium)
 
     pose_tracks = _actor_pose_tracks(reader)
     ball_track = [(t, (x, y, z)) for t, x, y, z in reader.ball_track()]
@@ -225,10 +250,24 @@ def reconstruct3d(play_dir, out_path="reconstruction3d.mp4", view="action",
         zlo, zhi = np.percentile(allpts[:, 1], [1, 99])
         px = (xhi - xlo) * 0.08 + 5; pz = (zhi - zlo) * 0.08 + 5
         xlo, xhi, zlo, zhi = xlo - px, xhi + px, zlo - pz, zhi + pz
+        if park:
+            park_pts = np.vstack([v for v, _f in park.values()])
+            xlo = min(xlo, float(np.percentile(park_pts[:, 0], 1)))
+            xhi = max(xhi, float(np.percentile(park_pts[:, 0], 99)))
+            zlo = min(zlo, float(np.percentile(park_pts[:, 2], 1)))
+            zhi = max(zhi, float(np.percentile(park_pts[:, 2], 99)))
 
     fig = plt.figure(figsize=(11, 8))
     ax = fig.add_subplot(111, projection="3d")
-    ax.set_zlim(0, 10)
+    if include_stadium:
+        ax.set_zlim(-1, 40)
+        zspan = 41
+    elif include_field:
+        ax.set_zlim(-0.5, 12)
+        zspan = 12.5
+    else:
+        ax.set_zlim(0, 10)
+        zspan = 12
     ax.set_xlabel("field X (ft)"); ax.set_ylabel("field Z (ft, inverted)")
     ax.set_zlabel("height (ft)")
     ax.view_init(elev=elev, azim=azim)
@@ -237,13 +276,27 @@ def reconstruct3d(play_dir, out_path="reconstruction3d.mp4", view="action",
         if view == "follow" and cx is not None:
             ax.set_xlim(cx - zoom, cx + zoom)
             ax.set_ylim(cz + zoom, cz - zoom)  # inverted (outfield up)
-            ax.set_box_aspect((2 * zoom, 2 * zoom, 10))
+            ax.set_box_aspect((2 * zoom, 2 * zoom, zspan))
         else:
             ax.set_xlim(xlo, xhi)
             ax.set_ylim(zhi, zlo)  # inverted
-            ax.set_box_aspect(((xhi - xlo), (zhi - zlo), 12))
+            ax.set_box_aspect(((xhi - xlo), (zhi - zlo), zspan))
 
     apply_bounds()
+
+    def _add_park_mesh(kind, color, alpha):
+        if kind not in park:
+            return None
+        verts, faces = park[kind]
+        tris = _mesh_plot_tris(verts, faces)
+        pc = Poly3DCollection(tris, facecolors=color, edgecolors="none",
+                              linewidths=0, alpha=alpha, shade=True)
+        ax.add_collection3d(pc)
+        return pc
+
+    # static park under the actors (matplotlib z-order is approximate)
+    field_coll = _add_park_mesh("field", _FIELD_COLOR, 0.92)
+    stadium_coll = _add_park_mesh("stadium", _STADIUM_COLOR, 0.28)
 
     coll = Line3DCollection([[(0, 0, 0), (0, 0, 0)]], linewidths=1.6)
     ax.add_collection3d(coll)
@@ -260,6 +313,10 @@ def reconstruct3d(play_dir, out_path="reconstruction3d.mp4", view="action",
     handles += [Line2D([0], [0], color="#8a5a2b", lw=4, label="Bat"),
                 Line2D([0], [0], marker="o", color="w", label="Ball",
                        markerfacecolor="#ffd21e", markeredgecolor="black", markersize=9)]
+    if include_field:
+        handles.append(Line2D([0], [0], color=_FIELD_COLOR, lw=6, label="Field"))
+    if include_stadium:
+        handles.append(Line2D([0], [0], color=_STADIUM_COLOR, lw=6, label="Stadium"))
     ax.legend(handles=handles, loc="upper right", fontsize=8)
 
     # initial follow center: first tracked ball, else infield
@@ -309,9 +366,16 @@ def reconstruct3d(play_dir, out_path="reconstruction3d.mp4", view="action",
             apply_bounds(state["center"][0], state["center"][1])
         n = len({tuple(c) for c in F_cols[i]}) if F_cols[i] else 0
         title.set_text(f"Gameday 3D reconstruction  |  t={grid[i] - w0:5.2f}s  |  actors={n}")
-        return coll, bat_coll, ball_coll, halo, trail_line, title
+        extras = [c for c in (field_coll, stadium_coll) if c is not None]
+        return (coll, bat_coll, ball_coll, halo, trail_line, title, *extras)
 
     anim = FuncAnimation(fig, update, frames=len(grid), blit=False, interval=1000 / fps)
+    if str(out_path).lower().endswith(".png"):
+        update(min(40, len(grid) - 1))
+        fig.savefig(out_path, dpi=130, bbox_inches="tight")
+        plt.close(fig)
+        print(f"wrote {out_path} (preview frame)")
+        return out_path
     anim.save(out_path, writer=FFMpegWriter(fps=fps, bitrate=3200))
     plt.close(fig)
     print(f"wrote {out_path} ({len(grid)} frames @ {fps}fps)")
@@ -328,6 +392,15 @@ if __name__ == "__main__":
     ap.add_argument("--azim", type=float, default=-72.0)
     ap.add_argument("--elev", type=float, default=16.0)
     ap.add_argument("--full", action="store_true")
+    ap.add_argument("--field", action="store_true", default=None,
+                    help="draw the ballpark field mesh (overrides INCLUDE_FIELD)")
+    ap.add_argument("--stadium", action="store_true", default=None,
+                    help="draw the ballpark stadium mesh (overrides INCLUDE_STADIUM)")
+    ap.add_argument("--ballpark", default=None, help="path to {venueId}_{ABBR}.glb")
     args = ap.parse_args()
+    include_field = INCLUDE_FIELD if args.field is None else True
+    include_stadium = INCLUDE_STADIUM if args.stadium is None else True
     reconstruct3d(args.play_dir, args.out, view=args.view, zoom=args.zoom,
-                  fps=args.fps, azim=args.azim, elev=args.elev, full=args.full)
+                  fps=args.fps, azim=args.azim, elev=args.elev, full=args.full,
+                  include_field=include_field, include_stadium=include_stadium,
+                  ballpark_glb=args.ballpark)
