@@ -55,12 +55,15 @@ ASSETS = Path(__file__).resolve().parent / "assets"
 _FIELD_COLOR = "#5b9e4a"
 _DIRT_COLOR = "#c2a36b"
 _STADIUM_COLOR = "#c4beb3"
-_PLATE_AZIM = 90.0     # look from +Z (behind home) toward the mound
-_PLATE_ELEV = 26.0     # high enough to clear the umpire's head
-_PLATE_HALF_X = 20.0   # ft, 1B/3B boxes in view
-_PLATE_Z_FAR = -72.0   # past the mound
-_PLATE_H = 12.0
-_PLATE_BEHIND = 8.0    # ft behind the rearmost plate actor (umpire/catcher)
+# Umpire-over-the-catcher view: from +Z (behind home) looking at the mound.
+# azim 84 is a hair toward 1B so we look over the umpire's shoulder, not
+# through his torso. elev is steep enough to clear the mask.
+_PLATE_AZIM = 84.0
+_PLATE_ELEV = 34.0
+_PLATE_HALF_X = 15.0   # ft, batter's boxes + a slice of the infield
+_PLATE_Z_FAR = -75.0   # past the mound
+_PLATE_H = 14.0
+_PLATE_BEHIND = 14.0   # ft behind the rearmost plate actor (umpire/catcher)
 
 
 # ---- geometry helpers -------------------------------------------------------
@@ -189,33 +192,80 @@ def _mesh_plot_tris(verts, faces):
     return pv[faces]
 
 
-def _face_edge_max(verts, faces):
+def _face_metrics(verts, faces):
+    """Per-face longest/shortest edge, area, aspect, centroid."""
     a, b, c = verts[faces[:, 0]], verts[faces[:, 1]], verts[faces[:, 2]]
-    return np.maximum(np.maximum(np.linalg.norm(b - a, axis=1),
-                                 np.linalg.norm(c - b, axis=1)),
-                      np.linalg.norm(a - c, axis=1))
+    e1 = np.linalg.norm(b - a, axis=1)
+    e2 = np.linalg.norm(c - b, axis=1)
+    e3 = np.linalg.norm(a - c, axis=1)
+    emax = np.maximum(np.maximum(e1, e2), e3)
+    emin = np.minimum(np.minimum(e1, e2), e3)
+    area = 0.5 * np.linalg.norm(np.cross(b - a, c - a), axis=1)
+    aspect = emax / np.maximum(emin, 1e-9)
+    cent = (a + b + c) / 3.0
+    return emax, emin, area, aspect, cent
 
 
-def _clean_field_faces(verts, faces, max_edge=35.0):
-    """Drop decimation slivers (long edges show up as white cracks on the grass)."""
-    keep = _face_edge_max(verts, faces) < max_edge
+def _clean_field_faces(verts, faces, max_aspect=10.0, max_sliver_area=50.0):
+    """Drop decimation slivers. Those thin tris rasterize as white streaks;
+    the large remaining faces are the actual grass cover."""
+    _emax, _emin, area, aspect, cent = _face_metrics(verts, faces)
+    sliver = (aspect > max_aspect) & (area < max_sliver_area)
+    # Field node also carries a chunk of backstop net behind the plate.
+    backstop = (cent[:, 1] > 5.0) & (cent[:, 2] > 0.0)
+    return verts, faces[~(sliver | backstop)]
+
+
+def _clean_stadium_faces(verts, faces, min_y=8.0, max_aspect=25.0,
+                         max_z_vertex=8.0, max_z_span=120.0, max_edge=150.0):
+    """Drop ground overlays, the backstop, wrapping bowl tris, and slivers."""
+    emax, _emin, _area, aspect, cent = _face_metrics(verts, faces)
+    zmin = verts[faces][:, :, 2].min(axis=1)
+    zmax = verts[faces][:, :, 2].max(axis=1)
+    keep = ((cent[:, 1] >= min_y)
+            & (aspect < max_aspect)
+            & (zmax < max_z_vertex)
+            & ((zmax - zmin) < max_z_span)
+            & (emax < max_edge))
     return verts, faces[keep]
 
 
-def _clean_stadium_faces(verts, faces, min_y=8.0, max_edge=150.0):
-    """Drop ground-level stadium tris that overlay the field as white lines."""
-    cy = verts[faces].mean(axis=1)[:, 1]
-    keep = (cy >= min_y) & (_face_edge_max(verts, faces) < max_edge)
-    return verts, faces[keep]
+def _quad_tiles(x0, x1, z0, z1, y, step=30.0):
+    """Small ground quads. One huge polygon loses matplotlib's painter sort
+    and shows up as white holes; local tiles composite correctly."""
+    xs = np.arange(min(x0, x1), max(x0, x1), step)
+    zs = np.arange(min(z0, z1), max(z0, z1), step)
+    tris = []
+    for x in xs:
+        for z in zs:
+            p = np.array([[x, z, y],
+                          [x + step, z, y],
+                          [x + step, z + step, y],
+                          [x, z + step, y]], float)
+            tris.append(p[[0, 1, 2]])
+            tris.append(p[[0, 2, 3]])
+    return tris
 
 
-def _dirt_underlay():
-    """Tan ground under the grass so infield-dirt holes aren't white paper."""
-    xs = np.array([-130.0, 130.0, 130.0, -130.0])
-    zs = np.array([30.0, 30.0, -410.0, -410.0])
-    ys = np.full(4, -0.15)
-    pv = np.column_stack([xs, zs, ys])
-    return [pv[[0, 1, 2]], pv[[0, 2, 3]]]
+def _infield_dirt():
+    """Tan infield skin (diamond a bit larger than the 90-ft square)."""
+    y = 0.04  # sit just above the grass tiles
+    pts = np.array([
+        [0.0, 8.0, y],       # slightly behind the plate
+        [78.0, -63.0, y],    # past 1B
+        [0.0, -142.0, y],    # past 2B
+        [-78.0, -63.0, y],   # past 3B
+    ], float)
+    return [pts[[0, 1, 2]], pts[[0, 2, 3]]]
+
+
+def _park_collection(tris, color, alpha):
+    from matplotlib.colors import to_rgba
+    if not tris:
+        return None
+    fc = np.repeat([to_rgba(color, alpha)], len(tris), axis=0)
+    return Poly3DCollection(tris, facecolors=fc, linewidths=0,
+                            edgecolors="none", antialiaseds=False, shade=False)
 
 
 def _pitch_contact_times(reader, ball_track):
@@ -311,9 +361,10 @@ def reconstruct3d(play_dir, out_path="reconstruction3d.mp4", view="action",
                                 want_stadium=include_stadium)
 
     pose_tracks = _actor_pose_tracks(reader)
-    ball_track = [(t, (x, y, z)) for t, x, y, z in reader.ball_track()]
+    raw_ball = reader.ball_track()
+    ball_track = [(t, (x, y, z)) for t, x, y, z in raw_ball]
     bat_track = _bat_track(reader)
-    t_pitch, t_contact = _pitch_contact_times(reader, ball_track)
+    t_pitch, t_contact = _pitch_contact_times(reader, raw_ball)
     z_near = _plate_near_z(reader, t_pitch)
     grid = np.arange(w0, w1, 1.0 / fps)
     if view == "follow":
@@ -379,7 +430,14 @@ def reconstruct3d(play_dir, out_path="reconstruction3d.mp4", view="action",
     ax.view_init(elev=_PLATE_ELEV if view == "follow" else elev,
                  azim=_PLATE_AZIM if view == "follow" else azim)
 
+    def _set_stadium_visible(on):
+        if stadium_coll is not None:
+            stadium_coll.set_visible(on)
+
     def apply_plate():
+        # Hide the bowl: matplotlib will otherwise paint backstop tris
+        # across the near plane and fill the umpire camera with beige.
+        _set_stadium_visible(False)
         ax.set_xlim(-_PLATE_HALF_X, _PLATE_HALF_X)
         ax.set_ylim(_PLATE_Z_FAR, z_near)  # look from behind home toward mound
         ax.set_zlim(0, _PLATE_H)
@@ -387,6 +445,7 @@ def reconstruct3d(play_dir, out_path="reconstruction3d.mp4", view="action",
         ax.view_init(elev=_PLATE_ELEV, azim=_PLATE_AZIM)
 
     def apply_bounds(cx=None, cz=None):
+        _set_stadium_visible(True)
         if view == "follow" and cx is not None:
             ax.set_xlim(cx - zoom, cx + zoom)
             ax.set_ylim(cz + zoom, cz - zoom)  # inverted (outfield up)
@@ -401,7 +460,6 @@ def reconstruct3d(play_dir, out_path="reconstruction3d.mp4", view="action",
     def _add_park_mesh(kind, color, alpha):
         if kind not in park:
             return None
-        from matplotlib.colors import to_rgba
         verts, faces = park[kind]
         if kind == "field":
             verts, faces = _clean_field_faces(verts, faces)
@@ -409,17 +467,20 @@ def reconstruct3d(play_dir, out_path="reconstruction3d.mp4", view="action",
             verts, faces = _clean_stadium_faces(verts, faces)
         if len(faces) == 0:
             return None
-        tris = _mesh_plot_tris(verts, faces)
-        fc = np.repeat([to_rgba(color, alpha)], len(faces), axis=0)
-        pc = Poly3DCollection(tris, facecolors=fc, linewidths=0, antialiaseds=False)
-        ax.add_collection3d(pc)
+        pc = _park_collection(list(_mesh_plot_tris(verts, faces)), color, alpha)
+        if pc is not None:
+            ax.add_collection3d(pc)
         return pc
 
-    # dirt underlay, then grass, then stadium (matplotlib z-order is approximate)
+    # grass tiles + infield dirt first so mesh holes aren't white paper
     if include_field:
-        dirt = Poly3DCollection(_dirt_underlay(), facecolors=_DIRT_COLOR,
-                                linewidths=0, antialiaseds=False)
-        ax.add_collection3d(dirt)
+        grass = _park_collection(_quad_tiles(-150, 150, -400, 20, y=-0.2, step=30.0),
+                                 _FIELD_COLOR, 1.0)
+        if grass is not None:
+            ax.add_collection3d(grass)
+        dirt = _park_collection(_infield_dirt(), _DIRT_COLOR, 1.0)
+        if dirt is not None:
+            ax.add_collection3d(dirt)
     field_coll = _add_park_mesh("field", _FIELD_COLOR, 0.95)
     stadium_coll = _add_park_mesh("stadium", _STADIUM_COLOR, 0.38)
 
@@ -504,7 +565,12 @@ def reconstruct3d(play_dir, out_path="reconstruction3d.mp4", view="action",
         return (coll, bat_coll, ball_coll, halo, trail_line, title, *extras)
 
     if str(out_path).lower().endswith(".png"):
-        update(min(40, len(grid) - 1))
+        if view == "follow" and t_pitch is not None:
+            fi = int(round((t_pitch - w0) * fps))
+        else:
+            fi = 40
+        fi = max(0, min(fi, len(grid) - 1))
+        update(fi)
         fig.savefig(out_path, dpi=130, facecolor=fig.get_facecolor())
         plt.close(fig)
         print(f"wrote {out_path} (preview frame)")
