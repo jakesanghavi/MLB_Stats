@@ -356,6 +356,9 @@ def reconstruct3d(play_dir, out_path="reconstruction3d.mp4", view="action",
         zspan = 12
     ax.set_axis_off()
     ax.grid(False)
+    # Draw in artist zorder, not matplotlib's 3D painter sort (that puts
+    # large field tris on top of skeletons).
+    ax.computed_zorder = False
     ax.xaxis.pane.fill = False
     ax.yaxis.pane.fill = False
     ax.zaxis.pane.fill = False
@@ -388,18 +391,27 @@ def reconstruct3d(play_dir, out_path="reconstruction3d.mp4", view="action",
         ax.add_collection3d(pc)
         return pc
 
-    # static park under the actors (matplotlib z-order is approximate)
+    # field < stadium < actors < bat < ball
     field_coll = _add_park_mesh("field", _FIELD_COLOR, 0.95)
     stadium_coll = _add_park_mesh("stadium", _STADIUM_COLOR, 0.38)
+    if field_coll is not None:
+        field_coll.set_zorder(1)
+    if stadium_coll is not None:
+        stadium_coll.set_zorder(2)
 
     coll = Line3DCollection([[(0, 0, 0), (0, 0, 0)]], linewidths=1.6)
+    coll.set_zorder(3)
     ax.add_collection3d(coll)
     bat_coll = Poly3DCollection([], facecolor="#8a5a2b", edgecolor="#5c3a17", linewidths=0.3)
+    bat_coll.set_zorder(4)
     ax.add_collection3d(bat_coll)
     ball_coll = Poly3DCollection([], facecolor="#f7f7f7", edgecolor="#cccccc", linewidths=0.2)
+    ball_coll.set_zorder(6)
     ax.add_collection3d(ball_coll)
     halo = ax.scatter([], [], [], s=140, c="#ffd21e", alpha=0.35, edgecolors="none", depthshade=False)
+    halo.set_zorder(7)
     trail_line, = ax.plot([], [], [], "-", color="#ff9e00", lw=1.7, alpha=0.85)
+    trail_line.set_zorder(5)
     title = ax.set_title("")
 
     legend_types = ["pitcher", "batter", "catcher", "fielder", "umpire", "coach"]
