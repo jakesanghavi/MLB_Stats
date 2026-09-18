@@ -214,6 +214,7 @@ function exitPov() {
   if (play) {
     showFrame(frame, false);
   }
+}
 
 function setPov(uid, label) {
   if (povUid === uid) {
