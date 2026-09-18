@@ -2,5 +2,10 @@ __pycache__/
 *.py[cod]
 assets/ballparks/*.glb
 assets/ballparks/*.npz
+get_wire_data/viewer/data/
 play_**
 **.mp4
+**.csv
+**.gz
+**.npz
+**.glb

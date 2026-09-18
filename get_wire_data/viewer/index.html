@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Gameday 3D viewer</title>
+  <link rel="stylesheet" href="viewer.css" />
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <div id="viewport"></div>
+
+  <aside id="hud">
+    <div class="hud-title">Camera</div>
+    <pre id="hud-values">loading…</pre>
+    <button type="button" id="btn-copy">Copy</button>
+  </aside>
+
+  <div id="presets">
+    <span class="label">Snap</span>
+    <button type="button" data-preset="action">Action</button>
+    <button type="button" data-preset="infield">Infield</button>
+    <button type="button" data-preset="full">Full</button>
+    <button type="button" data-preset="pitcher">Pitcher</button>
+    <button type="button" data-preset="follow" id="btn-follow">Follow</button>
+  </div>
+
+  <aside id="views">
+    <div class="hud-title">Player view</div>
+    <div id="views-players" class="view-list"></div>
+    <div class="view-sep">Officials</div>
+    <div id="views-officials" class="view-list"></div>
+  </aside>
+
+  <div id="sliders">
+    <label>Azimuth <input type="range" id="s-azim" min="-180" max="180" step="0.5" /><span id="v-azim"></span></label>
+    <label>Elevation <input type="range" id="s-elev" min="-10" max="89" step="0.5" /><span id="v-elev"></span></label>
+    <label>Distance <input type="range" id="s-dist" min="20" max="800" step="1" /><span id="v-dist"></span></label>
+    <label>FOV <input type="range" id="s-fov" min="20" max="90" step="1" /><span id="v-fov"></span></label>
+    <label>Look X <input type="range" id="s-tx" min="-200" max="200" step="0.5" /><span id="v-tx"></span></label>
+    <label>Look Y <input type="range" id="s-ty" min="0" max="120" step="0.5" /><span id="v-ty"></span></label>
+    <label>Look Z <input type="range" id="s-tz" min="-450" max="80" step="0.5" /><span id="v-tz"></span></label>
+  </div>
+
+  <div id="playback">
+    <button type="button" id="btn-play">Play</button>
+    <input type="range" id="s-time" min="0" max="1" step="0.001" value="0" />
+    <span id="v-time">0.00s</span>
+  </div>
+
+  <div id="help">drag orbit · right-drag pan · scroll zoom · space play · player view = eye height</div>
+
+  <script type="module" src="viewer.js?v=play-cache"></script>
+  <script>
+    // bfcache can restore the last play's JS heap after a server restart
+    addEventListener("pageshow", (e) => { if (e.persisted) location.reload(); });
+  </script>
+</body>
+</html>
