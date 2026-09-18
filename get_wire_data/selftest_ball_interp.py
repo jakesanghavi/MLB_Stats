@@ -109,11 +109,14 @@ def test_play_822849_fly_not_second_ball():
     t0 = r.frames[0]["time"]
     fly = sample_ball(track, t0 + 23.40)
     assert fly is not None, "4.4s fly hole (both ends ~80-90 ft) must fill"
-    assert fly[1] > 80.0, fly
-    # field-Z stays between the two high samples (~ -26 and -77)
+    # ballistic Y recovers the Statcast apex (~164.6 ft); linear field X/Z
+    # stay on the chord between the last/next high samples
+    assert 160.0 < fly[1] < 170.0, fly
+    assert -110.0 < fly[0] < -15.0, fly
     assert -80.0 < fly[2] < -20.0, fly
     # after the catch the next ball is a replacement at ~3 ft — do not fill
-    assert sample_ball(track, t0 + 27.50) is None
+    for rel in (26.80, 27.20, 27.50, 28.00, 28.40):
+        assert sample_ball(track, t0 + rel) is None, rel
 
 
 def test_real_play_skips_low_dropout():
