@@ -287,16 +287,17 @@ def reconstruct3d(play_dir, out_path="reconstruction3d.mp4", view="action",
     def _add_park_mesh(kind, color, alpha):
         if kind not in park:
             return None
+        from matplotlib.colors import to_rgba
         verts, faces = park[kind]
         tris = _mesh_plot_tris(verts, faces)
-        pc = Poly3DCollection(tris, facecolors=color, edgecolors="none",
-                              linewidths=0, alpha=alpha, shade=True)
+        fc = np.repeat([to_rgba(color, alpha)], len(faces), axis=0)
+        pc = Poly3DCollection(tris, facecolors=fc, linewidths=0, shade=True)
         ax.add_collection3d(pc)
         return pc
 
     # static park under the actors (matplotlib z-order is approximate)
-    field_coll = _add_park_mesh("field", _FIELD_COLOR, 0.92)
-    stadium_coll = _add_park_mesh("stadium", _STADIUM_COLOR, 0.28)
+    field_coll = _add_park_mesh("field", _FIELD_COLOR, 0.95)
+    stadium_coll = _add_park_mesh("stadium", _STADIUM_COLOR, 0.38)
 
     coll = Line3DCollection([[(0, 0, 0), (0, 0, 0)]], linewidths=1.6)
     ax.add_collection3d(coll)
@@ -369,14 +370,13 @@ def reconstruct3d(play_dir, out_path="reconstruction3d.mp4", view="action",
         extras = [c for c in (field_coll, stadium_coll) if c is not None]
         return (coll, bat_coll, ball_coll, halo, trail_line, title, *extras)
 
-    anim = FuncAnimation(fig, update, frames=len(grid), blit=False, interval=1000 / fps)
     if str(out_path).lower().endswith(".png"):
         update(min(40, len(grid) - 1))
         fig.savefig(out_path, dpi=130, bbox_inches="tight")
         plt.close(fig)
         print(f"wrote {out_path} (preview frame)")
         return out_path
-    anim.save(out_path, writer=FFMpegWriter(fps=fps, bitrate=3200))
+    anim = FuncAnimation(fig, update, frames=len(grid), blit=False, interval=1000 / fps)
     plt.close(fig)
     print(f"wrote {out_path} ({len(grid)} frames @ {fps}fps)")
     return out_path
