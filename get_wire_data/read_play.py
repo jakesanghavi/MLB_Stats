@@ -22,7 +22,6 @@ Usage:
 """
 import bisect
 import json
-import math
 import sys
 from pathlib import Path
 
@@ -30,11 +29,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from get_wires import decode_tracking_data
 
-# Interpolate through multi-frame tracking dropouts (common on high flies),
-# but do not bridge separate ball phases (e.g. the several-second hole
-# between a throw landing and the next throw).
-BALL_INTERP_MAX_GAP = 4.0
-_G_FT = 32.174  # ft/s^2; Y is ballistic between bracketing samples
+# Short holes are just 30 fps sampling. Abnormal (longer) holes are only
+# filled when the last seen ball was at least this high — a fly ball, not a
+# grounder / catch / throw. No time cap on those; a high fly may be missing
+# for several seconds around the apex.
+BALL_INTERP_HEIGHT = 25.0  # ft
+BALL_DENSE_GAP = 0.2       # seconds
+_G_FT = 32.174             # ft/s^2; Y is ballistic between bracketing samples
 
 
 def _load_json(path):
@@ -49,17 +50,16 @@ def _ball_xyz(sample):
     return float(sample[0]), float(sample[1]), float(sample[2]), float(sample[3])
 
 
-def sample_ball(track, t, max_gap=BALL_INTERP_MAX_GAP):
+def sample_ball(track, t, min_height=BALL_INTERP_HEIGHT, dense_gap=BALL_DENSE_GAP):
     """Best-estimate ball (x, y, z) at time ``t`` from a sorted sample track.
 
-    Uses the samples before *and* after ``t``:
-      * X/Z — cubic Hermite with Catmull-Rom tangents from extra neighbors
-        when they exist, otherwise linear.
-      * Y (height) — ballistic under gravity, so a high-fly hole missing the
-        apex is reconstructed instead of flattened to a chord.
+    Always interpolates sampling-cadence holes (``dense_gap``, default 0.2s)
+    so 30 fps samples stay continuous on the animation grid.
 
-    Returns None outside the track, when a side is missing (no extrapolation),
-    or when the bracketing gap is wider than ``max_gap`` seconds.
+    Abnormal holes are filled only when the last sample *before* the gap has
+    height >= ``min_height`` (default 25 ft). Those fly-ball gaps have no
+    duration cap — the ball may be missing for a long time around the apex.
+    Uses past *and* future samples (Hermite X/Z, ballistic Y). No extrapolation.
     """
     n = len(track)
     if n == 0:
@@ -75,10 +75,12 @@ def sample_ball(track, t, max_gap=BALL_INTERP_MAX_GAP):
     t1 = times[i1]
     t2 = times[i2]
     dt = t2 - t1
-    if dt <= 1e-9 or dt > max_gap:
+    if dt <= 1e-9:
         return None
     _, x1, y1, z1 = _ball_xyz(track[i1])
     _, x2, y2, z2 = _ball_xyz(track[i2])
+    if dt > dense_gap and y1 < min_height:
+        return None
     p1 = (x1, y1, z1)
     p2 = (x2, y2, z2)
     if i1 - 1 >= 0:
@@ -104,17 +106,9 @@ def sample_ball(track, t, max_gap=BALL_INTERP_MAX_GAP):
     h11 = u3 - u2
     x, _, z = (h00 * a + h10 * dt * va + h01 * b + h11 * dt * vb
                for a, va, b, vb in zip(p1, v1, p2, v2))
-    implied = math.dist(p1, p2) / dt
-    spd1 = math.dist((x0, y0, z0), p1) / (t1 - t0) if i1 - 1 >= 0 else implied
-    spd2 = math.dist(p2, (x3, y3, z3)) / (t3 - t2) if i2 + 1 < n else implied
-    # Nearly stopped vs the flight on either side → held/caught, not airborne.
-    held = (spd1 > 15.0 and spd2 > 15.0 and implied < 0.3 * min(spd1, spd2))
-    if held:
-        y = y1 + (y2 - y1) * u
-    else:
-        dt_local = t - t1
-        vy = (y2 - y1) / dt + 0.5 * _G_FT * dt
-        y = y1 + vy * dt_local - 0.5 * _G_FT * dt_local * dt_local
+    dt_local = t - t1
+    vy = (y2 - y1) / dt + 0.5 * _G_FT * dt
+    y = y1 + vy * dt_local - 0.5 * _G_FT * dt_local * dt_local
     return (x, max(y, 0.0), z)
 
 
@@ -162,9 +156,9 @@ class PlayReader:
                 out.append((f["time"], b["x"], b["y"], b["z"]))
         return out
 
-    def ball_at(self, t, max_gap=BALL_INTERP_MAX_GAP):
+    def ball_at(self, t, min_height=BALL_INTERP_HEIGHT):
         """Interpolated ball (x, y, z) at time ``t``, or None."""
-        return sample_ball(self.ball_track(), t, max_gap=max_gap)
+        return sample_ball(self.ball_track(), t, min_height=min_height)
 
     def actor_tracks(self):
         """uid -> [(time, rootPos_dict)] time series of each actor's root."""
