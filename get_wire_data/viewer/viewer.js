@@ -115,6 +115,7 @@ function hudText() {
   const time = play ? play.times[frame] : 0;
   return [
     `play        ${play ? (play.gamePk || "") : ""}  ${play ? shortPlayId(play.playId) : ""}`,
+    `pitcher     ${playPitcher()}`,
     `preset      ${povLabel || (follow ? "follow" : lastPreset)}`,
     `head        ${headPose}`,
     `t           ${time.toFixed(3)} s`,
@@ -137,6 +138,13 @@ function shortPlayId(id) {
   if (!id) return "";
   const s = String(id);
   return s.length > 18 ? `${s.slice(0, 8)}…` : s;
+}
+
+function playPitcher() {
+  const views = (play && play.views && play.views.players) || [];
+  const p = views.find((v) => v.slot === "P");
+  if (p) return p.label || p.name || "";
+  return (window.PLAY_META && window.PLAY_META.pitcher) || "";
 }
 
 function markCustom() {
@@ -701,11 +709,19 @@ function tick(now) {
 }
 
 async function main() {
-  play = await fetch(`data/play.json?v=${Date.now()}`, { cache: "no-store" }).then((r) => {
-    if (!r.ok) throw new Error("data/play.json missing — run serve.py <play_dir>");
+  const playUrl = (window.PLAY_META && window.PLAY_META.playId)
+    ? `/api/play?id=${encodeURIComponent(window.PLAY_META.playId)}`
+    : `/api/play?v=${Date.now()}`;
+  play = await fetch(playUrl, { cache: "no-store" }).then((r) => {
+    if (!r.ok) throw new Error("play JSON missing — run serve.py <play_dir>");
     return r.json();
   });
   document.title = `Gameday 3D  ${play.gamePk || ""}  ${play.playId || ""}`;
+  const banner = document.getElementById("play-banner");
+  if (banner) {
+    const pit = playPitcher();
+    banner.textContent = `${play.gamePk || ""}  ${play.playId || ""}  ${pit}`.trim();
+  }
   $("s-time").max = 1;
   buildActors();
   buildViews();
