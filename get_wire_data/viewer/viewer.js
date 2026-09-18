@@ -2,6 +2,18 @@ import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { DRACOLoader } from "three/addons/loaders/DRACOLoader.js";
+import { Line2 } from "three/addons/lines/Line2.js";
+import { LineGeometry } from "three/addons/lines/LineGeometry.js";
+import { LineMaterial } from "three/addons/lines/LineMaterial.js";
+
+// Code-only draw knobs (not in the GUI). Bump these, restart serve.py / hard-reload.
+const LIMB_THICKEN = 2.8;     // bone cylinder radius vs BONE_RADIUS_FT
+const TRAIL_THICKEN = 2.5;    // ball-path line width vs TRAIL_WIDTH_PX
+const BALL_THICKEN = 1.5;     // ball sphere radius vs BALL_RADIUS_FT
+const BONE_RADIUS_FT = 0.06;
+const TRAIL_WIDTH_PX = 2;
+const BALL_RADIUS_FT = 0.4;
+const BAT_MODEL_LEN_FT = 2.843; // bat.glb knob -> barrel
 
 const canvasHost = document.getElementById("viewport");
 const hudEl = document.getElementById("hud-values");
@@ -31,28 +43,40 @@ scene.add(sun);
 
 const skeletonGroup = new THREE.Group();
 scene.add(skeletonGroup);
-const trailGeom = new THREE.BufferGeometry();
-const trailLine = new THREE.Line(
-  trailGeom,
-  new THREE.LineBasicMaterial({ color: 0xff9e00, transparent: true, opacity: 0.9 })
-);
+const boneGeom = new THREE.CylinderGeometry(1, 1, 1, 6);
+const boneDummy = new THREE.Object3D();
+
+const trailMat = new LineMaterial({
+  color: 0xff9e00,
+  linewidth: TRAIL_WIDTH_PX * TRAIL_THICKEN,
+  transparent: true,
+  opacity: 0.9,
+});
+const trailLine = new Line2(new LineGeometry(), trailMat);
+trailLine.visible = false;
 scene.add(trailLine);
 
 const ballMesh = new THREE.Mesh(
-  new THREE.SphereGeometry(0.55, 16, 12),
+  new THREE.SphereGeometry(BALL_RADIUS_FT * BALL_THICKEN, 16, 12),
   new THREE.MeshStandardMaterial({ color: 0xffd21e, roughness: 0.4, metalness: 0.1 })
 );
 ballMesh.visible = false;
 scene.add(ballMesh);
 
-const batGeom = new THREE.CylinderGeometry(0.12, 0.18, 1, 8);
-batGeom.translate(0, 0.5, 0);
-const batMesh = new THREE.Mesh(
-  batGeom,
-  new THREE.MeshStandardMaterial({ color: 0x8a5a2b, roughness: 0.7 })
+const batHolder = new THREE.Group();
+batHolder.visible = false;
+scene.add(batHolder);
+const batFallbackGeom = new THREE.CylinderGeometry(0.045, 0.11, 1, 12);
+batFallbackGeom.translate(0, 0.5, 0);
+const batFallback = new THREE.Mesh(
+  batFallbackGeom,
+  new THREE.MeshStandardMaterial({ color: 0x8a5a2b, roughness: 0.65 })
 );
-batMesh.visible = false;
-scene.add(batMesh);
+batHolder.add(batFallback);
+let batModelLen = 1;
+let batIsMesh = false;
+
+const HEAD_POSES = new Set(["FOLLOW_NECK", "ALWAYS_BALL", "SMART_VISION", "EASY_VISION"]);
 
 let play = null;
 let frame = 0;
@@ -62,9 +86,8 @@ let follow = false;
 let lastPreset = "action";
 let povUid = null;
 let povLabel = null;
-let headPose = "SMART_VISION";
-let actorLines = [];
-let headMarkers = [];
+let headPose = "EASY_VISION";
+let actorBones = [];
 let applyingSliders = false;
 let suppressControlEvent = false;
 const defaultNear = 0.5;
@@ -75,6 +98,7 @@ function resize() {
   camera.aspect = w / Math.max(h, 1);
   camera.updateProjectionMatrix();
   renderer.setSize(w, h, false);
+  trailMat.resolution.set(w, h);
 }
 window.addEventListener("resize", resize);
 resize();
@@ -112,7 +136,7 @@ function hudText() {
   const p = camera.position;
   const t = controls.target;
   const hw = halfWidthAtTarget(s.dist, camera.fov);
-  const time = play ? play.times[frame] : 0;
+  const time = play ? timeAt(playing ? playhead : frame) : 0;
   return [
     `play        ${play ? (play.gamePk || "") : ""}  ${play ? shortPlayId(play.playId) : ""}`,
     `pitcher     ${playPitcher()}`,
@@ -269,16 +293,93 @@ function smartFwd(eye, neck, slot, ball) {
   return turnToward(neck, scored[0].d, cone);
 }
 
-function resolveLook(neckSample, uid, i) {
+function timeAt(t) {
+  const n = play.times.length;
+  const x = Math.max(0, Math.min(n - 1, t));
+  const i0 = Math.floor(x);
+  const i1 = Math.min(n - 1, i0 + 1);
+  const f = x - i0;
+  return play.times[i0] * (1 - f) + play.times[i1] * f;
+}
+
+function mix3(a, b, f) {
+  return [
+    a[0] + (b[0] - a[0]) * f,
+    a[1] + (b[1] - a[1]) * f,
+    a[2] + (b[2] - a[2]) * f,
+  ];
+}
+
+function catmull3(p0, p1, p2, p3, f) {
+  const t2 = f * f;
+  const t3 = t2 * f;
+  const out = [0, 0, 0];
+  for (let i = 0; i < 3; i++) {
+    out[i] = 0.5 * (
+      (2 * p1[i])
+      + (-p0[i] + p2[i]) * f
+      + (2 * p0[i] - 5 * p1[i] + 4 * p2[i] - p3[i]) * t2
+      + (-p0[i] + 3 * p1[i] - 3 * p2[i] + p3[i]) * t3
+    );
+  }
+  return out;
+}
+
+function lerpXyz(arr, t, spline = false) {
+  if (!arr || !arr.length) return null;
+  const x = Math.max(0, Math.min(arr.length - 1, t));
+  const i0 = Math.floor(x);
+  const i1 = Math.min(arr.length - 1, i0 + 1);
+  const a = arr[i0];
+  const b = arr[i1];
+  if (!a) return b ? b.slice() : null;
+  if (!b || i0 === i1) return a.slice();
+  const f = x - i0;
+  if (!spline) return mix3(a, b, f);
+  const p0 = i0 > 0 && arr[i0 - 1] ? arr[i0 - 1] : a;
+  const p3 = i1 + 1 < arr.length && arr[i1 + 1] ? arr[i1 + 1] : b;
+  if ((i0 > 0 && !arr[i0 - 1]) || (i1 + 1 < arr.length && !arr[i1 + 1])) {
+    return mix3(a, b, f);
+  }
+  return catmull3(p0, a, b, p3, f);
+}
+
+function lerpBat(t) {
+  const arr = play.bat;
+  if (!arr || !arr.length) return null;
+  const x = Math.max(0, Math.min(arr.length - 1, t));
+  const i0 = Math.floor(x);
+  const i1 = Math.min(arr.length - 1, i0 + 1);
+  const a = arr[i0];
+  const b = arr[i1];
+  if (!a) return b || null;
+  if (!b || i0 === i1) return a;
+  const f = x - i0;
+  return { handle: mix3(a.handle, b.handle, f), head: mix3(a.head, b.head, f) };
+}
+
+function lerpSegs(a, b, f) {
+  if (!a) return b;
+  if (!b || a.length !== b.length) return a;
+  const out = new Float32Array(a.length);
+  for (let i = 0; i < a.length; i++) out[i] = a[i] + (b[i] - a[i]) * f;
+  return out;
+}
+
+function resolveLook(neckSample, uid, t) {
   const eye = neckSample.pos;
   const neck = neckSample.fwd;
   const neckUp = neckSample.up;
-  if (headPose === "FOLLOW_NECK") {
+  const contacted = play.tContact != null && timeAt(t) >= play.tContact;
+  let mode = headPose;
+  if (mode === "EASY_VISION") mode = contacted ? "FOLLOW_NECK" : "ALWAYS_BALL";
+  if (mode === "FOLLOW_NECK") {
     return basisFromFwd(eye, neck, neckUp);
   }
-  const ball = ballAt(i);
+  const xyz = lerpXyz(play.ball, t, true);
+  const ball = xyz ? new THREE.Vector3(...xyz) : null;
   const slot = slotFor(uid);
-  if (headPose === "ALWAYS_BALL") {
+  if (mode === "ALWAYS_BALL") {
     const tgt = ball || roleFallback(slot);
     return basisFromFwd(eye, tgt.clone().sub(eye), null);
   }
@@ -306,15 +407,15 @@ function headAtF(uid, t) {
   const i1 = Math.min(n - 1, i0 + 1);
   const a = headAt(uid, i0);
   const b = headAt(uid, i1);
-  if (!a) return b ? resolveLook(b, uid, i1) : null;
-  if (!b || i0 === i1) return resolveLook(a, uid, i0);
+  if (!a) return b ? resolveLook(b, uid, x) : null;
+  if (!b || i0 === i1) return resolveLook(a, uid, x);
   const f = x - i0;
   const neck = {
     pos: a.pos.clone().lerp(b.pos, f),
     fwd: a.fwd.clone().lerp(b.fwd, f).normalize(),
     up: a.up.clone().lerp(b.up, f).normalize(),
   };
-  return resolveLook(neck, uid, f < 0.5 ? i0 : i1);
+  return resolveLook(neck, uid, x);
 }
 
 function applyPov() {
@@ -364,15 +465,6 @@ function setPov(uid, label) {
     b.classList.toggle("active", Number(b.dataset.uid) === uid);
   });
   applyPov();
-  refreshHud();
-}
-
-function setHeadPose(mode) {
-  headPose = mode || "SMART_VISION";
-  document.querySelectorAll("#head-pose button").forEach((b) => {
-    b.classList.toggle("active", b.dataset.head === headPose);
-  });
-  if (povUid != null) applyPov();
   refreshHud();
 }
 
@@ -441,29 +533,25 @@ function snap(name) {
   refreshHud();
 }
 
-function ballVel(i) {
-  const b = play.ball;
-  let lo = i - 1;
-  while (lo >= 0 && !b[lo]) lo -= 1;
-  let hi = i + 1;
-  while (hi < b.length && !b[hi]) hi += 1;
-  const a = lo >= 0 ? b[lo] : null;
-  const c = hi < b.length ? b[hi] : null;
-  const cur = b[i];
-  if (a && c && play.times[hi] - play.times[lo] > 1e-4) {
-    const dt = play.times[hi] - play.times[lo];
-    return [(c[0] - a[0]) / dt, (c[2] - a[2]) / dt];
-  }
-  if (cur && a && play.times[i] - play.times[lo] > 1e-4) {
-    const dt = play.times[i] - play.times[lo];
-    return [(cur[0] - a[0]) / dt, (cur[2] - a[2]) / dt];
+function playheadNow() {
+  if (!play) return 0;
+  return playing ? playhead : frame;
+}
+
+function ballVelAt(t) {
+  const a = lerpXyz(play.ball, t - 1, true);
+  const c = lerpXyz(play.ball, t + 1, true);
+  if (a && c) {
+    const dt = timeAt(t + 1) - timeAt(t - 1);
+    if (dt > 1e-4) return [(c[0] - a[0]) / dt, (c[2] - a[2]) / dt];
   }
   return [0, 0];
 }
 
 function applyFollow(snapNow) {
-  const b = play.ball[frame];
-  const tRel = play.times[frame];
+  const t = playheadNow();
+  const b = lerpXyz(play.ball, t, true);
+  const tRel = timeAt(t);
   const released = play.tRelease == null || tRel >= play.tRelease;
   let target;
   if (released && b) target = new THREE.Vector3(b[0], b[1], b[2]);
@@ -472,7 +560,7 @@ function applyFollow(snapNow) {
   const elev = 16;
   let azim = 180;
   if (released && b) {
-    const v = ballVel(frame);
+    const v = ballVelAt(t);
     if (Math.hypot(v[0], v[1]) >= 12) {
       azim = THREE.MathUtils.radToDeg(Math.atan2(-v[0], -v[1]));
     }
@@ -490,64 +578,105 @@ function applyFollow(snapNow) {
 }
 
 function buildActors() {
-  actorLines.forEach((l) => skeletonGroup.remove(l));
-  headMarkers.forEach((m) => skeletonGroup.remove(m));
-  actorLines = play.actors.map((a) => {
-    const geom = new THREE.BufferGeometry();
+  actorBones.forEach((b) => {
+    skeletonGroup.remove(b.mesh);
+    b.mesh.material.dispose();
+  });
+  const radius = BONE_RADIUS_FT * LIMB_THICKEN;
+  actorBones = play.actors.map((a) => {
     const maxSegs = Math.max(
       ...a.frames.map((f) => (f ? f.length / 6 : 0)),
       1
     );
-    geom.setAttribute("position", new THREE.BufferAttribute(new Float32Array(maxSegs * 6), 3));
-    const line = new THREE.LineSegments(
-      geom,
-      new THREE.LineBasicMaterial({ color: a.color, linewidth: 2 })
-    );
-    skeletonGroup.add(line);
-    return line;
-  });
-  headMarkers = play.actors.map((a) => {
-    const mesh = new THREE.Mesh(
-      new THREE.SphereGeometry(0.28, 10, 8),
-      new THREE.MeshStandardMaterial({ color: a.color, roughness: 0.6 })
-    );
-    mesh.visible = false;
+    const mat = new THREE.MeshStandardMaterial({
+      color: a.color,
+      roughness: 0.55,
+      metalness: 0.05,
+    });
+    const mesh = new THREE.InstancedMesh(boneGeom, mat, maxSegs);
+    mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    mesh.frustumCulled = false;
     skeletonGroup.add(mesh);
-    return mesh;
+    return { mesh, maxSegs, radius };
   });
+}
+
+function poseBat(bat) {
+  if (!bat) {
+    batHolder.visible = false;
+    return;
+  }
+  const h = new THREE.Vector3(...bat.handle);
+  const hd = new THREE.Vector3(...bat.head);
+  const dir = hd.sub(h);
+  const len = dir.length();
+  if (len < 1e-3) {
+    batHolder.visible = false;
+    return;
+  }
+  batHolder.position.copy(h);
+  batHolder.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.normalize());
+  if (batIsMesh) {
+    const s = len / batModelLen;
+    batHolder.scale.set(s, s, s);
+  } else {
+    batHolder.scale.set(1, len, 1);
+  }
+  batHolder.visible = true;
+}
+
+function poseBones(entry, segs, hide) {
+  const mesh = entry.mesh;
+  if (hide || !segs || !segs.length) {
+    mesh.visible = false;
+    return;
+  }
+  mesh.visible = true;
+  const n = Math.min(entry.maxSegs, Math.floor(segs.length / 6));
+  const yAxis = new THREE.Vector3(0, 1, 0);
+  const dir = new THREE.Vector3();
+  for (let i = 0; i < n; i++) {
+    const o = i * 6;
+    const x0 = segs[o], y0 = segs[o + 1], z0 = segs[o + 2];
+    const x1 = segs[o + 3], y1 = segs[o + 4], z1 = segs[o + 5];
+    dir.set(x1 - x0, y1 - y0, z1 - z0);
+    const len = dir.length();
+    if (len < 1e-4) {
+      boneDummy.scale.set(0, 0, 0);
+    } else {
+      boneDummy.position.set((x0 + x1) * 0.5, (y0 + y1) * 0.5, (z0 + z1) * 0.5);
+      boneDummy.scale.set(entry.radius, len, entry.radius);
+      boneDummy.quaternion.setFromUnitVectors(yAxis, dir.multiplyScalar(1 / len));
+    }
+    boneDummy.updateMatrix();
+    mesh.setMatrixAt(i, boneDummy.matrix);
+  }
+  for (let i = n; i < entry.maxSegs; i++) {
+    boneDummy.scale.set(0, 0, 0);
+    boneDummy.updateMatrix();
+    mesh.setMatrixAt(i, boneDummy.matrix);
+  }
+  mesh.instanceMatrix.needsUpdate = true;
+  mesh.count = n;
 }
 
 function showFrame(i, syncHead = true) {
   if (!play) return;
-  frame = Math.max(0, Math.min(play.times.length - 1, i));
-  if (syncHead) playhead = frame;
-  $("s-time").value = play.times.length <= 1 ? 0 : frame / (play.times.length - 1);
-  $("v-time").textContent = `${play.times[frame].toFixed(2)}s`;
+  const n = play.times.length;
+  const t = Math.max(0, Math.min(n - 1, i));
+  frame = Math.floor(t);
+  if (syncHead) playhead = t;
+  $("s-time").value = n <= 1 ? 0 : t / (n - 1);
+  $("v-time").textContent = `${timeAt(t).toFixed(2)}s`;
 
+  const frac = t - frame;
+  const i1 = Math.min(n - 1, frame + 1);
   play.actors.forEach((a, ai) => {
-    const line = actorLines[ai];
-    const segs = a.frames[frame];
-    const attr = line.geometry.getAttribute("position");
-    attr.array.fill(0);
-    if (segs && segs.length) {
-      attr.array.set(segs);
-      line.geometry.setDrawRange(0, segs.length / 3);
-      line.visible = a.uid !== povUid;
-    } else {
-      line.visible = false;
-    }
-    attr.needsUpdate = true;
-    const marker = headMarkers[ai];
-    const h = a.head && a.head[frame];
-    if (marker && h && h.length >= 3 && a.uid !== povUid) {
-      marker.position.set(h[0], h[1], h[2]);
-      marker.visible = true;
-    } else if (marker) {
-      marker.visible = false;
-    }
+    const segs = lerpSegs(a.frames[frame], a.frames[i1], frac);
+    poseBones(actorBones[ai], segs, a.uid === povUid);
   });
 
-  const ball = play.ball[frame];
+  const ball = lerpXyz(play.ball, t, true);
   if (ball) {
     ballMesh.position.set(ball[0], ball[1], ball[2]);
     ballMesh.visible = true;
@@ -558,32 +687,24 @@ function showFrame(i, syncHead = true) {
   const trail = [];
   for (let k = 0; k <= frame; k++) {
     const p = play.ball[k];
-    if (!p) {
-      if (trail.length) trail.push(trail[trail.length - 1]);
-      continue;
-    }
-    trail.push(new THREE.Vector3(p[0], p[1], p[2]));
+    if (!p) continue;
+    trail.push(p[0], p[1], p[2]);
   }
-  if (trail.length > 1) {
-    trailGeom.setFromPoints(trail);
+  if (ball && (trail.length < 3 || frame < t)) {
+    trail.push(ball[0], ball[1], ball[2]);
+  }
+  if (trail.length >= 6) {
+    const old = trailLine.geometry;
+    trailLine.geometry = new LineGeometry();
+    trailLine.geometry.setPositions(trail);
+    trailLine.computeLineDistances();
     trailLine.visible = true;
+    if (old && old.dispose) old.dispose();
   } else {
     trailLine.visible = false;
   }
 
-  const bat = play.bat[frame];
-  if (bat) {
-    const h = new THREE.Vector3(...bat.handle);
-    const hd = new THREE.Vector3(...bat.head);
-    const dir = hd.clone().sub(h);
-    const len = dir.length();
-    batMesh.scale.set(1, len, 1);
-    batMesh.position.copy(h);
-    batMesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.clone().normalize());
-    batMesh.visible = true;
-  } else {
-    batMesh.visible = false;
-  }
+  poseBat(lerpBat(t));
 
   if (follow) applyFollow(false);
   else if (povUid != null) applyPov();
@@ -635,14 +756,11 @@ function bindUi() {
   document.querySelectorAll("#presets [data-preset]").forEach((btn) => {
     btn.addEventListener("click", () => snap(btn.dataset.preset));
   });
-  document.querySelectorAll("#head-pose [data-head]").forEach((btn) => {
-    btn.addEventListener("click", () => setHeadPose(btn.dataset.head));
-  });
   $("btn-copy").addEventListener("click", copyHud);
   $("btn-play").addEventListener("click", togglePlay);
   $("s-time").addEventListener("input", () => {
     const u = Number($("s-time").value);
-    showFrame(Math.round(u * (play.times.length - 1)));
+    showFrame(u * (play.times.length - 1));
   });
   const applySliderCam = () => {
     applyingSliders = true;
@@ -694,10 +812,7 @@ function tick(now) {
       playing = false;
       $("btn-play").textContent = "Play";
     } else {
-      const i = Math.floor(playhead);
-      if (i !== frame) showFrame(i, false);
-      else if (follow) applyFollow(false);
-      else if (povUid != null) applyPov();
+      showFrame(playhead, false);
     }
   } else if (follow) {
     applyFollow(false);
@@ -706,6 +821,28 @@ function tick(now) {
   }
   if (povUid == null) controls.update();
   renderer.render(scene, camera);
+}
+
+async function loadBat() {
+  try {
+    const loader = new GLTFLoader();
+    const gltf = await loader.loadAsync(`data/bat.glb?v=${Date.now()}`);
+    batHolder.remove(batFallback);
+    batFallback.geometry.dispose();
+    batFallback.material.dispose();
+    gltf.scene.traverse((obj) => {
+      if (obj.isMesh) {
+        obj.castShadow = false;
+        obj.receiveShadow = false;
+      }
+    });
+    batHolder.add(gltf.scene);
+    batModelLen = BAT_MODEL_LEN_FT;
+    batIsMesh = true;
+    batHolder.visible = false;
+  } catch (err) {
+    console.warn("bat.glb failed, using cylinder", err);
+  }
 }
 
 async function main() {
@@ -726,8 +863,9 @@ async function main() {
   buildActors();
   buildViews();
   await loadPark(play.ballpark);
+  await loadBat();
   bindUi();
-  setHeadPose(play.headPose || "SMART_VISION");
+  headPose = HEAD_POSES.has(play.headPose) ? play.headPose : "EASY_VISION";
   showFrame(0);
   snap("action");
   requestAnimationFrame(tick);

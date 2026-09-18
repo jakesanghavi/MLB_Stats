@@ -142,12 +142,13 @@ BAG_LOOK = {
 }
 OFFENSE_LOOK = {"Batter", "C", "1B runner", "2B runner", "3B runner"}
 
-# FOLLOW_NECK   bind-pose face on the tracked neck (old POV)
+# Code-only look mode (not in the GUI). Change HEAD_POSE here or pass --head-pose.
+# FOLLOW_NECK   bind-pose face on the tracked neck
 # ALWAYS_BALL   eyes look at the ball, else mound/plate
-# SMART_VISION  look at the ball/role target if it sits in the neck cone;
-#               otherwise turn toward it only as far as a head can (not gaze)
-HEAD_POSES = ("FOLLOW_NECK", "ALWAYS_BALL", "SMART_VISION")
-HEAD_POSE = "SMART_VISION"
+# SMART_VISION  ball/role target if it sits in the neck cone, else clamp
+# EASY_VISION   ALWAYS_BALL until contact, then FOLLOW_NECK
+HEAD_POSES = ("FOLLOW_NECK", "ALWAYS_BALL", "SMART_VISION", "EASY_VISION")
+HEAD_POSE = "EASY_VISION"
 SMART_CONE_DEG = 80.0
 EYE_PUSH = 0.35
 
@@ -250,13 +251,17 @@ def smart_forward(eye, neck_fwd, slot, ball_xyz=None, cone_deg=SMART_CONE_DEG):
     return _turn_toward(neck, ranked[0][2], cone_deg)
 
 
-def look_pose(mode, eye, neck_fwd, neck_up=None, slot=None, ball_xyz=None):
+def look_pose(mode, eye, neck_fwd, neck_up=None, slot=None, ball_xyz=None,
+              contacted=False):
     """(pos, fwd, up) for a HEAD_POSE mode. ``eye`` is the unpushed eye midpoint."""
     mode = mode if mode in HEAD_POSES else HEAD_POSE
+    if mode == "EASY_VISION":
+        mode = "FOLLOW_NECK" if contacted else "ALWAYS_BALL"
     if mode == "FOLLOW_NECK":
         return _basis_from_fwd(eye, neck_fwd, neck_up)
     if mode == "ALWAYS_BALL":
         return look_from_eye(eye, look_target(slot, ball_xyz))
+    # SMART_VISION
     fwd = smart_forward(eye, neck_fwd, slot, ball_xyz)
     return _basis_from_fwd(eye, fwd)
 

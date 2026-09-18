@@ -12,8 +12,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from read_play import PlayReader, sample_ball
 from rig import RigSkeleton
 from reconstruct3d import (
-    TYPE_COLORS, _actor_pose_tracks, _sample_pose, _bat_track, _sample_gap,
-    _pitch_release_time, _pitcher_xz,
+    TYPE_COLORS, _actor_pose_tracks, _sample_pose, _bat_track, _sample_bat,
+    _pitch_release_time, _contact_time, _pitcher_xz,
 )
 from stadium import find_ballpark_glb, _home_abbr, _venue_id
 from views import (
@@ -26,8 +26,8 @@ def _r(v, n=3):
     return None if v is None else round(float(v), n)
 
 
-def _xyz(p):
-    return [_r(p[0]), _r(p[1]), _r(p[2])]
+def _xyz(p, n=3):
+    return [_r(p[0], n), _r(p[1], n), _r(p[2], n)]
 
 
 def export_play(play_dir, out_json, fps=20.0, full=False, head_pose=None):
@@ -50,6 +50,7 @@ def export_play(play_dir, out_json, fps=20.0, full=False, head_pose=None):
     ball_track = list(reader.ball_track())
     bat_track = _bat_track(reader)
     t_release = _pitch_release_time(reader)
+    t_contact = _contact_time(reader)
     pitch_xz = _pitcher_xz(reader, t_release if t_release is not None else w0)
 
     actors_out = []
@@ -99,10 +100,10 @@ def export_play(play_dir, out_json, fps=20.0, full=False, head_pose=None):
 
     for t in grid:
         b = sample_ball(ball_track, t)
-        ball_frames.append(_xyz(b) if b is not None else None)
-        bh = _sample_gap(bat_track, t, 0.3)
+        ball_frames.append(_xyz(b, 5) if b is not None else None)
+        bh = _sample_bat(bat_track, t)
         if bh:
-            bat_frames.append({"handle": _xyz(bh[0]), "head": _xyz(bh[1])})
+            bat_frames.append({"handle": _xyz(bh[0], 5), "head": _xyz(bh[1], 5)})
         else:
             bat_frames.append(None)
         for ai, uid in enumerate(uids):
@@ -154,6 +155,7 @@ def export_play(play_dir, out_json, fps=20.0, full=False, head_pose=None):
         "window": [_r(w0 - clip0, 4), _r(w1 - clip0, 4)],
         "duration": _r(w1 - w0, 4),
         "tRelease": None if t_release is None else _r(t_release - w0, 4),
+        "tContact": None if t_contact is None else _r(t_contact - w0, 4),
         "pitcherLook": [_r(pitch_xz[0]), 5.0, _r(pitch_xz[1])],
         "bounds": {
             "actors": {"min": [_r(x) for x in amin], "max": [_r(x) for x in amax]},

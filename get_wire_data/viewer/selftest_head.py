@@ -7,9 +7,10 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from reconstruct3d import _slerp_quat, _sample_pose
+from reconstruct3d import _slerp_quat, _sample_pose, _sample_bat
 from views import (
-    look_from_eye, look_target, look_pose, smart_forward, smooth_head_series,
+    HEAD_POSE, HEAD_POSES, look_from_eye, look_target, look_pose, smart_forward,
+    smooth_head_series,
 )
 
 
@@ -95,6 +96,35 @@ def test_head_pose_modes():
     print("ok head_pose modes")
 
 
+def test_easy_vision_flips_at_contact():
+    assert HEAD_POSE == "EASY_VISION"
+    assert "EASY_VISION" in HEAD_POSES
+    eye = np.array([0.0, 6.0, -60.0])
+    neck = np.array([0.0, 0.0, 1.0])
+    ball = (0.0, 8.0, -20.0)
+    before = look_pose("EASY_VISION", eye, neck, (0, 1, 0), "P", ball, contacted=False)
+    to_ball = np.array(ball) - eye
+    to_ball = to_ball / np.linalg.norm(to_ball)
+    assert abs(np.dot(before[1], to_ball)) > 0.99, before[1]
+    after = look_pose("EASY_VISION", eye, neck, (0, 1, 0), "P", ball, contacted=True)
+    assert after[1][2] > 0.95, after[1]
+    print("ok easy_vision contact flip")
+
+
+def test_sample_bat_lerps():
+    track = [
+        (0.0, (0.0, 1.0, 0.0), (0.0, 3.0, 0.0)),
+        (0.2, (2.0, 1.0, 0.0), (2.0, 3.0, 0.0)),
+    ]
+    handle, head = _sample_bat(track, 0.1)
+    assert abs(handle[0] - 1.0) < 1e-9, handle
+    assert abs(head[0] - 1.0) < 1e-9, head
+    assert _sample_bat(track, 2.0) is None
+    # nearest-neighbor would have snapped to an endpoint
+    assert abs(handle[0] - 0.0) > 0.4
+    print("ok sample_bat lerp")
+
+
 def test_wire_has_no_head(play_dir=None):
     d = Path(play_dir or "/tmp/gd/play_822849_8313f274-c733-325e-8df0-beaee0ddb6e1")
     if not d.exists():
@@ -123,5 +153,7 @@ if __name__ == "__main__":
     test_look_target()
     test_smooth_kills_spike()
     test_head_pose_modes()
+    test_easy_vision_flips_at_contact()
+    test_sample_bat_lerps()
     test_wire_has_no_head()
     print("ok")

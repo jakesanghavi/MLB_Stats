@@ -209,6 +209,46 @@ def _sample_gap(track, t, max_gap):
     return track[hi if (t - track[lo][0]) >= (track[hi][0] - t) else lo][1:]
 
 
+def _lerp3(a, b, f):
+    return (
+        a[0] + (b[0] - a[0]) * f,
+        a[1] + (b[1] - a[1]) * f,
+        a[2] + (b[2] - a[2]) * f,
+    )
+
+
+def _sample_bat(track, t, max_gap=0.35):
+    """Lerp inferred-bat handle/head. Nearest-neighbor made the barrel pop."""
+    times = [x[0] for x in track]
+    if not times or t < times[0] or t > times[-1]:
+        return None
+    j = bisect.bisect_left(times, t)
+    if j < len(times) and times[j] == t:
+        return track[j][1], track[j][2]
+    lo, hi = max(0, j - 1), min(len(times) - 1, j)
+    t1, h1, d1 = track[lo]
+    t2, h2, d2 = track[hi]
+    if t2 - t1 > max_gap:
+        return None
+    f = (t - t1) / (t2 - t1) if t2 > t1 else 0.0
+    return _lerp3(h1, h2, f), _lerp3(d1, d2, f)
+
+
+def _contact_time(reader):
+    """First bat-meeting-ball time: BatImpact event, else BallHit polynomial."""
+    for t, dt, _data in reader.events():
+        if dt == 12:
+            return t
+    best = None
+    for f in reader.frames:
+        for bp in f.get("ballPolynomials") or []:
+            if bp.get("dataType") in (2, 3, 4):
+                tt = f.get("time")
+                if tt is not None and (best is None or tt < best):
+                    best = tt
+    return best
+
+
 def _mesh_plot_tris(verts, faces):
     """world (x, y=height, z) triangles -> plot (x, z, y) triangles."""
     pv = np.column_stack([verts[:, 0], verts[:, 2], verts[:, 1]])
@@ -385,7 +425,7 @@ def reconstruct3d(play_dir, out_path="reconstruction3d.mp4", view="action",
         F_segs.append(segs); F_cols.append(cols)
         ball = sample_ball(ball_track, t)
         F_ball.append(ball)
-        bh = _sample_gap(bat_track, t, 0.3)
+        bh = _sample_bat(bat_track, t)
         F_bat.append(_bat_world_verts(bat_v, bh[0], bh[1]) if bh else None)
         F_center.append((ball[0], ball[2]) if ball is not None else None)
     _log(f"  FK done ({time.perf_counter() - t_fk:.2f}s)")

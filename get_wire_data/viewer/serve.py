@@ -1,6 +1,6 @@
 """Export a play and serve the three.js viewer.
 
-    python3 serve.py /path/to/play_dir [--port 8765] [--fps 20] [--head-pose SMART_VISION]
+    python3 serve.py /path/to/play_dir [--port 8765] [--fps 20] [--head-pose EASY_VISION]
 
 The process keeps the exported play in memory and will not bind a port that
 is already in use (HTTPServer's default SO_REUSEADDR lets a second serve.py
@@ -84,6 +84,18 @@ def prepare(play_dir, fps, full, head_pose=None):
         print(f"ballpark -> {dest} ({Path(glb_path).name})", flush=True)
     else:
         print("no ballpark glb (field/stadium will be a flat plane)", flush=True)
+    bat_src = Path(__file__).resolve().parent.parent / "assets" / "bat.glb"
+    bat_dest = DATA / "bat.glb"
+    if bat_src.exists():
+        if bat_dest.exists() or bat_dest.is_symlink():
+            bat_dest.unlink()
+        try:
+            bat_dest.symlink_to(bat_src.resolve())
+        except OSError:
+            shutil.copy2(bat_src, bat_dest)
+        print(f"bat -> {bat_dest}", flush=True)
+    else:
+        print("no bat.glb (viewer will use a cylinder)", flush=True)
     meta = _meta(payload, play_dir)
     body = json.dumps(payload, separators=(",", ":")).encode("utf-8")
     CURRENT["json"] = body
