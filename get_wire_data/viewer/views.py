@@ -283,7 +283,7 @@ def _blend_basis(a, b, w):
 
 def look_pose(mode, eye, neck_fwd, neck_up=None, slot=None, ball_xyz=None,
               contacted=False, t=None, t_release=None, t_contact=None,
-              ball_xyz_prerelease=None):
+              ball_xyz_prerelease=None, ball_xyz_precontact=None):
     """(pos, fwd, up) for a HEAD_POSE mode. ``eye`` is the unpushed eye midpoint.
 
     EASY_VISION eases only at ``t_release`` and ``t_contact``. Far from those
@@ -299,7 +299,10 @@ def look_pose(mode, eye, neck_fwd, neck_up=None, slot=None, ball_xyz=None,
         if w_c >= 1.0:
             return neck_look
         if w_c > 0.0:
-            return _blend_basis(ball_look, neck_look, w_c)
+            # Freeze the pre-contact ball look so the batted ball does not yank the ease.
+            pre_ball = ball_xyz_precontact if ball_xyz_precontact is not None else ball_xyz
+            pre = look_from_eye(eye, look_target(slot, pre_ball))
+            return _blend_basis(pre, neck_look, w_c)
         w_r = easy_event_weight(t, t_release)
         if w_r is not None and 0.0 < w_r < 1.0:
             pre = look_from_eye(eye, look_target(slot, ball_xyz_prerelease))

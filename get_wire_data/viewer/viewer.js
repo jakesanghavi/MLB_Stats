@@ -428,7 +428,11 @@ function resolveLook(neckSample, uid, t) {
       return tSec >= (play.tContact ?? Infinity) ? neckLook : ballLook;
     }
     if (wC >= 1) return neckLook;
-    if (wC > 0) return blendBasis(ballLook, neckLook, wC);
+    if (wC > 0) {
+      const preT = playheadAtTime(play.tContact - 1e-3);
+      const preLook = lookAlwaysBall(neckSample, uid, preT);
+      return blendBasis(preLook, neckLook, wC);
+    }
     const wR = eventWeight(tSec, play.tRelease);
     if (wR != null && wR > 0 && wR < 1) {
       const preT = playheadAtTime(play.tRelease - 1e-3);
