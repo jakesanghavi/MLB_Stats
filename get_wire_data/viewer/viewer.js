@@ -202,7 +202,8 @@ function snap(name) {
     // Stay inside the bowl (roofed parks clip a behind-home camera).
     setSpherical(-48, 22, 165, new THREE.Vector3(0, 4, -45));
   } else if (name === "full") {
-    setSpherical(-72, 18, 330, new THREE.Vector3(0, 8, -85));
+    // From CF looking in — pulling back on the 1B action azim hits the stands.
+    setSpherical(170, 18, 210, new THREE.Vector3(0, 6, -55));
   } else if (name === "pitcher") {
     const look = new THREE.Vector3(...play.pitcherLook);
     setSpherical(180, 12, 90, look);
