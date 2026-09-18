@@ -45,12 +45,12 @@ from glb import load_glb_mesh
 
 TYPE_COLORS = {
     "pitcher": "#d12d49", "batter": "#005A9C", "catcher": "#EB6E1F",
-    "fielder": "#1fbe3a", "umpire": "#888888", "plate-umpire": "#555555",
-    "coach": "#000000", "runner": "#775eef", "unknown": "#bbbbbb",
+    "fielder": "#000000", "umpire": "#888888", "plate-umpire": "#555555",
+    "coach": "#bbbbbb", "runner": "#775eef", "unknown": "#bbbbbb",
 }
 TRACK_ALL_TRAILS = True
-INCLUDE_FIELD = False      # dirt/grass plane from the ballpark glb
-INCLUDE_STADIUM = False    # bowl / stands from the ballpark glb
+INCLUDE_FIELD = True      # dirt/grass plane from the ballpark glb
+INCLUDE_STADIUM = True    # bowl / stands from the ballpark glb
 _BALL_GAP_BREAK = 0.3
 _BAT_MODEL_LEN = 2.843  # bat.glb knob->barrel extent (ft)
 ASSETS = Path(__file__).resolve().parent / "assets"

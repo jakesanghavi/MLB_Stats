@@ -2,3 +2,5 @@ __pycache__/
 *.py[cod]
 assets/ballparks/*.glb
 assets/ballparks/*.npz
+play_**
+**.mp4
