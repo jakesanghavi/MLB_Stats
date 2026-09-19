@@ -71,6 +71,7 @@ def _fill_missing_sides(actors_out):
         if a.get("side"):
             continue
         if a.get("type") in ("umpire", "plate-umpire"):
+            a["side"] = "umpire"
             continue
         if a.get("type") in ("batter", "coach"):
             a["side"] = batting

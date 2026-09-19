@@ -36,7 +36,7 @@ def test_fill_missing_sides():
     _fill_missing_sides(actors)
     assert actors[1]["side"] == "away"
     assert actors[2]["side"] == "home"
-    assert actors[3]["side"] is None
+    assert actors[3]["side"] == "umpire"
     assert actors[4]["side"] == "away"
     print("ok fill missing sides")
 

@@ -125,6 +125,26 @@ Those JPEGs are 512×512 atlases (head + hands on `Skin`, shoe/glove islands
 on `Shoes`/`Gear`, logo + cap bill on the team jersey). They are not
 separate head/hat/glove models.
 
+## Helmets, gloves, umpire gear (mask tints)
+
+Jersey logos come from `variants.json`. Helmets, batting gloves, catcher
+pads, and shoes are **not** extra JPEGs — Gameday fetches a per-team
+material template and tints a shared mask:
+
+```
+{assetBase}/skins/materials/{teamId}_{ABBR}_{HOME|AWAY}.json
+{assetBase}/skins/materials/0_umpire.json
+```
+
+Example `140_TEX_HOME.json`: `Gear` (helmet + batting gloves) has
+`legacy/Gear_Mask.png` and tints `[navy, white, red, navy]`. `CatcherGear`
+and `Shoes` work the same way. Umpires use `UMP_Home_Jersey_Albedo.jpg`
+(black). `ensure_player_assets` bakes those mixes to
+`data/skins/baked/{side}_{slot}.jpg`.
+
+If the material JSON 404s: umpire gear is black, fielder gloves stay brown,
+helmets use team C1, other gear uses C2 with C1/C3 as accents.
+
 ## Viewer flag
 
 `SHOW_PLAYER_MESH` in `viewer/viewer.js` (code-only, default `true`).
