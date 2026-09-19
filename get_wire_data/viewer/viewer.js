@@ -10,7 +10,8 @@ import { LineMaterial } from "three/addons/lines/LineMaterial.js";
 // Code-only draw knobs (not in the GUI). Bump these, restart serve.py / hard-reload.
 const LIMB_THICKEN = 2.8;     // bone cylinder radius vs BONE_RADIUS_FT
 const TRAIL_THICKEN = 2.5;    // ball-path line width vs TRAIL_WIDTH_PX
-const BALL_THICKEN = 1.5;     // ball sphere radius vs BALL_RADIUS_FT
+const BALL_THICKEN = 1.5;     // baseline radius vs BALL_RADIUS_FT
+const BALL_SIZE_FACTOR = 1;   // 1 = current on-screen size; bump to enlarge the ball
 const SHOW_BALL_TRAIL = true; // false hides the yellow ball-history line
 const SHOW_PLAYER_MESH = true; // false = stick figures, no jersey/head/hat/glove assets
 const SAVE_VIDEO_FPS = 30;
@@ -63,12 +64,26 @@ const trailLine = new Line2(new LineGeometry(), trailMat);
 trailLine.visible = false;
 scene.add(trailLine);
 
-const ballMesh = new THREE.Mesh(
-  new THREE.SphereGeometry(BALL_RADIUS_FT * BALL_THICKEN, 16, 12),
+const ballHolder = new THREE.Group();
+ballHolder.visible = false;
+scene.add(ballHolder);
+const ballFallback = new THREE.Mesh(
+  new THREE.SphereGeometry(1, 16, 12),
   new THREE.MeshStandardMaterial({ color: 0xffd21e, roughness: 0.4, metalness: 0.1 })
 );
-ballMesh.visible = false;
-scene.add(ballMesh);
+ballHolder.add(ballFallback);
+let ballNativeRadius = 1;
+
+function ballDisplayRadius() {
+  return BALL_RADIUS_FT * BALL_THICKEN * BALL_SIZE_FACTOR;
+}
+
+function applyBallScale() {
+  const native = ballNativeRadius || 1;
+  ballHolder.scale.setScalar(ballDisplayRadius() / native);
+}
+
+applyBallScale();
 
 const batHolder = new THREE.Group();
 batHolder.visible = false;
@@ -892,10 +907,10 @@ function showFrame(i, syncHead = true) {
 
   const ball = lerpXyz(play.ball, t, true);
   if (ball) {
-    ballMesh.position.set(ball[0], ball[1], ball[2]);
-    ballMesh.visible = true;
+    ballHolder.position.set(ball[0], ball[1], ball[2]);
+    ballHolder.visible = true;
   } else {
-    ballMesh.visible = false;
+    ballHolder.visible = false;
   }
 
   const trail = [];
@@ -1150,6 +1165,31 @@ async function loadPlayerMesh(skins) {
   }
 }
 
+async function loadBall() {
+  try {
+    const loader = new GLTFLoader();
+    const gltf = await loader.loadAsync(`data/rbi-ball.glb?v=${Date.now()}`);
+    const box = new THREE.Box3().setFromObject(gltf.scene);
+    const size = box.getSize(new THREE.Vector3());
+    const center = box.getCenter(new THREE.Vector3());
+    gltf.scene.position.sub(center);
+    gltf.scene.traverse((obj) => {
+      if (obj.isMesh) {
+        obj.castShadow = false;
+        obj.receiveShadow = false;
+      }
+    });
+    ballHolder.remove(ballFallback);
+    ballFallback.geometry.dispose();
+    ballFallback.material.dispose();
+    ballHolder.add(gltf.scene);
+    ballNativeRadius = Math.max(size.x, size.y, size.z) * 0.5 || 1;
+    applyBallScale();
+  } catch (err) {
+    console.warn("rbi-ball.glb failed, using sphere", err);
+  }
+}
+
 async function loadBat() {
   try {
     const loader = new GLTFLoader();
@@ -1191,6 +1231,7 @@ async function main() {
   buildActors();
   buildViews();
   await loadPark(play.ballpark);
+  await loadBall();
   await loadBat();
   bindUi();
   headPose = HEAD_POSES.has(play.headPose) ? play.headPose : "EASY_VISION";

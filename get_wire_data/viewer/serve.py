@@ -10,13 +10,41 @@ import argparse
 import json
 import shutil
 import sys
+import urllib.request
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 from pathlib import Path
 from urllib.parse import unquote, urlparse
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from export_play import export_play
+from stadium import ASSET_BASE
 from views import HEAD_POSE, HEAD_POSES
+
+_ASSET_UA = "Mozilla/5.0 (compatible; gameday3d-player-assets/1.0)"
+
+
+def _install_glb(name, dest, cdn_rel):
+    """Copy assets/{name} into dest, or download it from the FieldVision CDN."""
+    src = Path(__file__).resolve().parent.parent / "assets" / name
+    dest = Path(dest)
+    if dest.exists() or dest.is_symlink():
+        dest.unlink()
+    if not src.exists() or src.stat().st_size <= 0:
+        src.parent.mkdir(parents=True, exist_ok=True)
+        url = f"{ASSET_BASE.rstrip('/')}/{cdn_rel}"
+        print(f"downloading {name}  {url}", flush=True)
+        req = urllib.request.Request(url, headers={"User-Agent": _ASSET_UA})
+        with urllib.request.urlopen(req, timeout=60) as r:
+            src.write_bytes(r.read())
+    if not src.exists() or src.stat().st_size <= 0:
+        return False
+    try:
+        dest.symlink_to(src.resolve())
+    except OSError:
+        shutil.copy2(src, dest)
+    print(f"{name} -> {dest}", flush=True)
+    return True
 
 VIEWER_ROOT = Path(__file__).resolve().parent
 DATA = VIEWER_ROOT / "data"
@@ -84,18 +112,10 @@ def prepare(play_dir, fps, full, head_pose=None):
         print(f"ballpark -> {dest} ({Path(glb_path).name})", flush=True)
     else:
         print("no ballpark glb (field/stadium will be a flat plane)", flush=True)
-    bat_src = Path(__file__).resolve().parent.parent / "assets" / "bat.glb"
-    bat_dest = DATA / "bat.glb"
-    if bat_src.exists():
-        if bat_dest.exists() or bat_dest.is_symlink():
-            bat_dest.unlink()
-        try:
-            bat_dest.symlink_to(bat_src.resolve())
-        except OSError:
-            shutil.copy2(bat_src, bat_dest)
-        print(f"bat -> {bat_dest}", flush=True)
-    else:
+    if not _install_glb("bat.glb", DATA / "bat.glb", "models/bat.glb"):
         print("no bat.glb (viewer will use a cylinder)", flush=True)
+    if not _install_glb("rbi-ball.glb", DATA / "rbi-ball.glb", "models/rbi-ball.glb"):
+        print("no rbi-ball.glb (viewer will use a yellow sphere)", flush=True)
     meta = _meta(payload, play_dir)
     body = json.dumps(payload, separators=(",", ":")).encode("utf-8")
     CURRENT["json"] = body
