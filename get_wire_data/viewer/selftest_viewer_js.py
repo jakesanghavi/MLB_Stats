@@ -55,7 +55,7 @@ def test_bat_mesh():
 
 def test_player_mesh_flag():
     assert "const SHOW_PLAYER_MESH = true" in JS
-    assert "SkeletonUtils" in JS
+    assert 'import * as SkeletonUtils from "three/addons/utils/SkeletonUtils.js"' in JS
     assert "loadPlayerMesh" in JS
     assert "poseSkin" in JS
     assert "player mesh failed, using stick figures" in JS
