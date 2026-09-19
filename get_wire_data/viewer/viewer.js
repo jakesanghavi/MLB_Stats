@@ -393,7 +393,6 @@ function lerpPose(a, b, f, nBones) {
     }
     qa.set(a[o], a[o + 1], a[o + 2], a[o + 3]);
     qb.set(b[o], b[o + 1], b[o + 2], b[o + 3]);
-    if (qa.dot(qb) < 0) qb.multiplyScalar(-1);
     qm.slerpQuaternions(qa, qb, f);
     out[o] = qm.x; out[o + 1] = qm.y; out[o + 2] = qm.z; out[o + 3] = qm.w;
   }
