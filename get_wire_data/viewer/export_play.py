@@ -16,6 +16,7 @@ from reconstruct3d import (
     _pitch_release_time, _contact_time, _pitcher_xz,
 )
 from stadium import find_ballpark_glb, _home_abbr, _venue_id
+from player_assets import actor_side, ensure_player_assets, outfit_role, player_sides
 from views import (
     HEAD_POSE, HEAD_POSES, load_bios, names_from_boxscore, resolve_name,
     classify_views, smooth_head_series,
@@ -28,6 +29,53 @@ def _r(v, n=3):
 
 def _xyz(p, n=3):
     return [_r(p[0], n), _r(p[1], n), _r(p[2], n)]
+
+
+def _bone_order(pose_tracks):
+    names = set()
+    for track in pose_tracks.values():
+        for _t, pose in track:
+            names.update(pose.get("jointRotations") or {})
+    names.discard("joint_Pelvis")
+    return ["joint_Pelvis"] + sorted(names)
+
+
+def _pack_pose(pose, bones):
+    rp = pose["rootPos"]
+    out = [_r(rp["x"], 4), _r(rp["y"], 4), _r(rp["z"], 4),
+           _r(pose.get("scale", 1.0), 4)]
+    joints = pose.get("jointRotations") or {}
+    for name in bones:
+        q = joints.get(name)
+        if not q or len(q) < 4:
+            out.extend([0.0, 0.0, 0.0, 0.0])
+        else:
+            out.extend([_r(q[0], 5), _r(q[1], 5), _r(q[2], 5), _r(q[3], 5)])
+    return out
+
+
+def _fill_missing_sides(actors_out):
+    """Batters/coaches without a roster id inherit the batting-side majority."""
+    known = [a["side"] for a in actors_out if a.get("side")]
+    batting = None
+    batters = [a["side"] for a in actors_out
+               if a.get("type") == "batter" and a.get("side")]
+    if batters:
+        batting = max(set(batters), key=batters.count)
+    elif known:
+        # fielders are the other side
+        fielding = max(set(known), key=known.count)
+        batting = "away" if fielding == "home" else "home"
+    fielding = "away" if batting == "home" else "home" if batting else None
+    for a in actors_out:
+        if a.get("side"):
+            continue
+        if a.get("type") in ("umpire", "plate-umpire"):
+            continue
+        if a.get("type") in ("batter", "coach"):
+            a["side"] = batting
+        else:
+            a["side"] = fielding
 
 
 def export_play(play_dir, out_json, fps=20.0, full=False, head_pose=None):
@@ -57,6 +105,8 @@ def export_play(play_dir, out_json, fps=20.0, full=False, head_pose=None):
     uids = sorted(pose_tracks)
     bios = load_bios()
     box_names = names_from_boxscore(reader.metadata)
+    sides = player_sides(reader.metadata)
+    bones = _bone_order(pose_tracks)
     classify_in = []
     for uid in uids:
         pid = reader.actor_label(uid).get("actor")
@@ -71,9 +121,10 @@ def export_play(play_dir, out_json, fps=20.0, full=False, head_pose=None):
         if start_pose and start_pose.get("rootPos"):
             rp = start_pose["rootPos"]
             start = [_r(rp["x"]), _r(rp["y"]), _r(rp["z"])]
+        atype = reader.actor_type(uid)
         classify_in.append({
             "uid": int(uid) if str(uid).isdigit() else uid,
-            "type": reader.actor_type(uid),
+            "type": atype,
             "playerId": pid,
             "name": name,
             "start": start,
@@ -82,11 +133,15 @@ def export_play(play_dir, out_json, fps=20.0, full=False, head_pose=None):
             "uid": int(uid) if str(uid).isdigit() else uid,
             "playerId": pid if isinstance(pid, int) and pid > 0 else None,
             "name": name,
-            "type": reader.actor_type(uid),
-            "color": TYPE_COLORS.get(reader.actor_type(uid), TYPE_COLORS["unknown"]),
+            "type": atype,
+            "outfit": outfit_role(atype),
+            "side": actor_side(atype, pid, sides),
+            "color": TYPE_COLORS.get(atype, TYPE_COLORS["unknown"]),
             "frames": [],
+            "pose": [],
             "head": [],
         })
+    _fill_missing_sides(actors_out)
     views = classify_views(classify_in)
     uid_slot = {v["uid"]: v.get("slot") for v in views["players"] + views["officials"]}
     mode = head_pose if head_pose in HEAD_POSES else HEAD_POSE
@@ -110,8 +165,10 @@ def export_play(play_dir, out_json, fps=20.0, full=False, head_pose=None):
             pose = _sample_pose(pose_tracks[uid], t)
             if pose is None:
                 actors_out[ai]["frames"].append(None)
+                actors_out[ai]["pose"].append(None)
                 actors_out[ai]["head"].append(None)
                 continue
+            actors_out[ai]["pose"].append(_pack_pose(pose, bones))
             rp = (pose["rootPos"]["x"], pose["rootPos"]["y"], pose["rootPos"]["z"])
             mats = rig.fk_matrices(rp, pose["jointRotations"], pose.get("scale", 1.0))
             wp = {j: mats[j][:3, 3] for j in range(len(mats)) if mats[j] is not None}
@@ -169,6 +226,8 @@ def export_play(play_dir, out_json, fps=20.0, full=False, head_pose=None):
         "times": [_r(t - w0, 4) for t in grid],
         "ball": ball_frames,
         "bat": bat_frames,
+        "bones": bones,
+        "skins": ensure_player_assets(out_json.parent, play_dir),
         "actors": actors_out,
         "views": views,
         "headPose": mode,

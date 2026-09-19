@@ -53,6 +53,16 @@ def test_bat_mesh():
     print("ok bat.glb")
 
 
+def test_player_mesh_flag():
+    assert "const SHOW_PLAYER_MESH = true" in JS
+    assert "SkeletonUtils" in JS
+    assert "loadPlayerMesh" in JS
+    assert "poseSkin" in JS
+    assert "player mesh failed, using stick figures" in JS
+    assert "false = stick figures, no jersey/head/hat/glove assets" in JS
+    print("ok player mesh flag")
+
+
 if __name__ == "__main__":
     test_code_only_head_pose()
     test_no_head_spheres()
@@ -60,4 +70,5 @@ if __name__ == "__main__":
     test_trail_flag_and_save_video()
     test_smooth_playhead()
     test_bat_mesh()
+    test_player_mesh_flag()
     print("ok")

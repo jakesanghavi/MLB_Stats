@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { DRACOLoader } from "three/addons/loaders/DRACOLoader.js";
+import { SkeletonUtils } from "three/addons/utils/SkeletonUtils.js";
 import { Line2 } from "three/addons/lines/Line2.js";
 import { LineGeometry } from "three/addons/lines/LineGeometry.js";
 import { LineMaterial } from "three/addons/lines/LineMaterial.js";
@@ -11,6 +12,7 @@ const LIMB_THICKEN = 2.8;     // bone cylinder radius vs BONE_RADIUS_FT
 const TRAIL_THICKEN = 2.5;    // ball-path line width vs TRAIL_WIDTH_PX
 const BALL_THICKEN = 1.5;     // ball sphere radius vs BALL_RADIUS_FT
 const SHOW_BALL_TRAIL = true; // false hides the yellow ball-history line
+const SHOW_PLAYER_MESH = true; // false = stick figures, no jersey/head/hat/glove assets
 const SAVE_VIDEO_FPS = 30;
 const SAVE_VIDEO_BITRATE = 16_000_000; // 16 Mbps — sharp 1080p-class 3D, still real-time
 const BONE_RADIUS_FT = 0.06;
@@ -93,6 +95,9 @@ let povUid = null;
 let povLabel = null;
 let headPose = "EASY_VISION";
 let actorBones = [];
+let playerTemplate = null;
+let playerTexLoader = null;
+const playerTexCache = new Map();
 let applyingSliders = false;
 let suppressControlEvent = false;
 const defaultNear = 0.5;
@@ -147,6 +152,7 @@ function hudText() {
     `pitcher     ${playPitcher()}`,
     `preset      ${povLabel || (follow ? "follow" : lastPreset)}`,
     `head        ${headPose}`,
+    `players     ${SHOW_PLAYER_MESH && playerTemplate ? "mesh" : "sticks"}`,
     `t           ${time.toFixed(3)} s`,
     `position    ${fmtVec(p)}`,
     `look-at     ${fmtVec(t)}`,
@@ -361,6 +367,37 @@ function lerpBat(t) {
   if (!b || i0 === i1) return a;
   const f = x - i0;
   return { handle: mix3(a.handle, b.handle, f), head: mix3(a.head, b.head, f) };
+}
+
+function lerpPose(a, b, f, nBones) {
+  if (!a && !b) return null;
+  if (!a) return b;
+  if (!b) return a;
+  const out = a.slice();
+  for (let i = 0; i < 4; i++) out[i] = a[i] + (b[i] - a[i]) * f;
+  const qa = new THREE.Quaternion();
+  const qb = new THREE.Quaternion();
+  const qm = new THREE.Quaternion();
+  for (let i = 0; i < nBones; i++) {
+    const o = 4 + i * 4;
+    const aLen = Math.hypot(a[o], a[o + 1], a[o + 2], a[o + 3]);
+    const bLen = Math.hypot(b[o], b[o + 1], b[o + 2], b[o + 3]);
+    if (aLen < 1e-6 && bLen < 1e-6) continue;
+    if (aLen < 1e-6) {
+      out[o] = b[o]; out[o + 1] = b[o + 1]; out[o + 2] = b[o + 2]; out[o + 3] = b[o + 3];
+      continue;
+    }
+    if (bLen < 1e-6) {
+      out[o] = a[o]; out[o + 1] = a[o + 1]; out[o + 2] = a[o + 2]; out[o + 3] = a[o + 3];
+      continue;
+    }
+    qa.set(a[o], a[o + 1], a[o + 2], a[o + 3]);
+    qb.set(b[o], b[o + 1], b[o + 2], b[o + 3]);
+    if (qa.dot(qb) < 0) qb.multiplyScalar(-1);
+    qm.slerpQuaternions(qa, qb, f);
+    out[o] = qm.x; out[o + 1] = qm.y; out[o + 2] = qm.z; out[o + 3] = qm.w;
+  }
+  return out;
 }
 
 function lerpSegs(a, b, f) {
@@ -647,12 +684,74 @@ function applyFollow(snapNow) {
   setSpherical(azMix, elev, dist, tMix);
 }
 
+function outfitMatches(piece, items) {
+  if (!items || !items.length) return true;
+  if (items.includes(piece)) return true;
+  for (const item of items) {
+    if (!item.includes("*")) continue;
+    const re = new RegExp(`^${item.replace(/\*/g, "(Left|Right)")}$`);
+    if (re.test(piece)) return true;
+  }
+  return false;
+}
+
+function applyOutfit(root, items, lod) {
+  root.traverse((obj) => {
+    if (!obj.isMesh) return;
+    const raw = (obj.name || "").split("___")[0];
+    const lodMatch = raw.match(/^(.*)_LOD(\d+)$/);
+    const piece = lodMatch ? lodMatch[1] : raw;
+    const meshLod = lodMatch ? Number(lodMatch[2]) : 0;
+    obj.visible = meshLod === lod && outfitMatches(piece, items);
+  });
+}
+
+function texAt(url) {
+  if (!url) return null;
+  if (playerTexCache.has(url)) return playerTexCache.get(url);
+  if (!playerTexLoader) playerTexLoader = new THREE.TextureLoader();
+  const tex = playerTexLoader.load(url);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.flipY = false;
+  playerTexCache.set(url, tex);
+  return tex;
+}
+
+function applySideMaps(root, maps) {
+  if (!maps) return;
+  root.traverse((obj) => {
+    if (!obj.isMesh || !obj.material) return;
+    const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
+    const next = mats.map((mat) => {
+      const url = maps[mat.name];
+      if (!url) return mat;
+      const clone = mat.clone();
+      const tex = texAt(url);
+      if (tex) clone.map = tex;
+      clone.needsUpdate = true;
+      return clone;
+    });
+    obj.material = Array.isArray(obj.material) ? next : next[0];
+  });
+}
+
+function collectBones(root) {
+  const bones = {};
+  root.traverse((obj) => {
+    if (obj.isBone) bones[obj.name] = obj;
+  });
+  return bones;
+}
+
 function buildActors() {
   actorBones.forEach((b) => {
     skeletonGroup.remove(b.mesh);
     b.mesh.material.dispose();
+    if (b.skin) skeletonGroup.remove(b.skin);
   });
   const radius = BONE_RADIUS_FT * LIMB_THICKEN;
+  const skins = play.skins || {};
+  const lod = skins.lod == null ? 0 : skins.lod;
   actorBones = play.actors.map((a) => {
     const maxSegs = Math.max(
       ...a.frames.map((f) => (f ? f.length / 6 : 0)),
@@ -666,8 +765,20 @@ function buildActors() {
     const mesh = new THREE.InstancedMesh(boneGeom, mat, maxSegs);
     mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     mesh.frustumCulled = false;
+    const useMesh = SHOW_PLAYER_MESH && playerTemplate;
+    mesh.visible = !useMesh;
     skeletonGroup.add(mesh);
-    return { mesh, maxSegs, radius };
+    let skin = null;
+    let bones = null;
+    if (useMesh) {
+      skin = SkeletonUtils.clone(playerTemplate);
+      applyOutfit(skin, (skins.outfits || {})[a.outfit || "fielder"], lod);
+      applySideMaps(skin, (skins.sides || {})[a.side]);
+      skin.visible = true;
+      skeletonGroup.add(skin);
+      bones = collectBones(skin);
+    }
+    return { mesh, maxSegs, radius, skin, bones };
   });
 }
 
@@ -693,6 +804,32 @@ function poseBat(bat) {
     batHolder.scale.set(1, len, 1);
   }
   batHolder.visible = true;
+}
+
+function poseSkin(entry, packed, boneNames, hide) {
+  if (!entry.skin) return false;
+  if (hide || !packed) {
+    entry.skin.visible = false;
+    return true;
+  }
+  entry.skin.visible = true;
+  const pelvis = entry.bones.joint_Pelvis;
+  if (pelvis) {
+    pelvis.position.set(packed[0], packed[1], packed[2]);
+    const s = packed[3] || 1;
+    pelvis.scale.set(s, s, s);
+  }
+  for (let i = 0; i < boneNames.length; i++) {
+    const bone = entry.bones[boneNames[i]];
+    if (!bone) continue;
+    const o = 4 + i * 4;
+    if (Math.hypot(packed[o], packed[o + 1], packed[o + 2], packed[o + 3]) < 1e-6) {
+      continue;
+    }
+    bone.quaternion.set(packed[o], packed[o + 1], packed[o + 2], packed[o + 3]);
+  }
+  entry.skin.updateMatrixWorld(true);
+  return true;
 }
 
 function poseBones(entry, segs, hide) {
@@ -741,9 +878,17 @@ function showFrame(i, syncHead = true) {
 
   const frac = t - frame;
   const i1 = Math.min(n - 1, frame + 1);
+  const boneNames = play.bones || [];
   play.actors.forEach((a, ai) => {
+    const hide = a.uid === povUid;
+    const entry = actorBones[ai];
+    const packed = lerpPose(a.pose && a.pose[frame], a.pose && a.pose[i1], frac, boneNames.length);
+    if (SHOW_PLAYER_MESH && entry.skin && poseSkin(entry, packed, boneNames, hide)) {
+      entry.mesh.visible = false;
+      return;
+    }
     const segs = lerpSegs(a.frames[frame], a.frames[i1], frac);
-    poseBones(actorBones[ai], segs, a.uid === povUid);
+    poseBones(entry, segs, hide);
   });
 
   const ball = lerpXyz(play.ball, t, true);
@@ -992,6 +1137,20 @@ function tick(now) {
   renderer.render(scene, camera);
 }
 
+async function loadPlayerMesh(skins) {
+  playerTemplate = null;
+  if (!SHOW_PLAYER_MESH || !skins || !skins.model) return;
+  try {
+    const loader = new GLTFLoader();
+    const gltf = await loader.loadAsync(`${skins.model}?v=${Date.now()}`);
+    playerTemplate = gltf.scene;
+    playerTemplate.updateMatrixWorld(true);
+  } catch (err) {
+    console.warn("player mesh failed, using stick figures", err);
+    playerTemplate = null;
+  }
+}
+
 async function loadBat() {
   try {
     const loader = new GLTFLoader();
@@ -1029,6 +1188,7 @@ async function main() {
     banner.textContent = `${play.gamePk || ""}  ${play.playId || ""}  ${pit}`.trim();
   }
   $("s-time").max = 1;
+  await loadPlayerMesh(play.skins);
   buildActors();
   buildViews();
   await loadPark(play.ballpark);

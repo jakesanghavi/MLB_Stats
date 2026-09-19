@@ -5,9 +5,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from player_assets import (
-    KIND_TO_SLOT, OUTFIT_ROLES, catalog, codes_from_uniforms,
-    generic_bin_url, generic_gltf_url, outfit_url, resolve_play_textures,
-    team_texture_url, variants_url,
+    KIND_TO_SLOT, OUTFIT_ROLES, actor_side, catalog, codes_from_uniforms,
+    generic_bin_url, generic_gltf_url, outfit_role, outfit_url, player_sides,
+    resolve_play_textures, team_texture_url, variants_url,
 )
 
 
@@ -63,6 +63,23 @@ def test_catalog_lists_legacy():
     print("ok catalog")
 
 
+def test_outfit_role_and_side():
+    assert outfit_role("pitcher") == "pitcher"
+    assert outfit_role("plate-umpire") == "plate-umpire"
+    assert outfit_role("unknown") == "fielder"
+    assert outfit_role("runner") == "fielder"
+    sides = {676477: "away", 670032: "home"}
+    assert actor_side("pitcher", 676477, sides) == "away"
+    assert actor_side("batter", 670032, sides) == "home"
+    assert actor_side("umpire", 1, sides) is None
+    meta = {"boxscore": {"teams": {
+        "home": {"players": {"ID1": {"person": {"id": 10}}}},
+        "away": {"players": {"ID2": {"person": {"id": 20}}}},
+    }}}
+    assert player_sides(meta) == {10: "home", 20: "away"}
+    print("ok outfit role and side")
+
+
 def test_real_822845_uniforms_if_present():
     d = Path("/tmp/gd/play_822845_9b398372-272c-3787-bb1a-aebacf8eedab")
     if not d.exists():
@@ -80,5 +97,6 @@ if __name__ == "__main__":
     test_cdn_paths()
     test_uniforms_to_urls()
     test_catalog_lists_legacy()
+    test_outfit_role_and_side()
     test_real_822845_uniforms_if_present()
     print("ok")

@@ -12,10 +12,10 @@ buffer, outfit pieces, and team textures were never loaded.
 |---|---|---|
 | `actorPoses` root + packed quats | yes, in the `.bin` tracking chunks | FK → bone segments |
 | `generic-lod.gltf` joint hierarchy | yes, `assets/generic-lod.gltf` | `RigSkeleton` only |
-| `generic-lod.bin` (~6.4 MB skinned mesh) | **no** (gltf points at it; we never fetch it) | unused |
-| Per-role outfit JSON (which pieces are on) | **no** | unused |
-| `uniforms.json` (jersey / pants / cap codes) | yes, downloaded with the play | unused |
-| Team + skin JPEG atlases | **no** | unused |
+| `generic-lod.bin` (~6.4 MB skinned mesh) | yes, `ensure_player_assets` | cloned onto each actor when `SHOW_PLAYER_MESH` |
+| Per-role outfit JSON (which pieces are on) | yes | show/hide jersey, cap, gloves, pads |
+| `uniforms.json` (jersey / pants / cap codes) | yes, downloaded with the play | resolved through `variants.json` |
+| Team + skin JPEG atlases | yes | `Jersey_Top` / `Jersey_Bottom` / `Cap` maps |
 
 `rig.py` says this explicitly: *“the external .bin mesh buffer is not needed.”*
 That is why the viewer looks like a stick figure with thick limbs: the
@@ -125,13 +125,16 @@ Those JPEGs are 512×512 atlases (head + hands on `Skin`, shoe/glove islands
 on `Shoes`/`Gear`, logo + cap bill on the team jersey). They are not
 separate head/hat/glove models.
 
-## What it would take to look like Gameday
+## Viewer flag
 
-In the three.js viewer: `GLTFLoader` on `generic-lod.gltf` (with `.bin` +
-legacy textures), clone per actor, bind the existing pose quats to the
-`SkinnedMesh` skeleton, apply `skins/outfits/{role}.json`, then replace
-`Jersey_Top` / `Jersey_Bottom` / `Cap` maps from `variants.json` +
-`uniforms.json`. No new mannequin endpoints. The tracking we already
-pull is the pose; the “built up” look is this CDN character.
+`SHOW_PLAYER_MESH` in `viewer/viewer.js` (code-only, default `true`).
 
-`player_assets.py` builds those URLs from a play’s `uniforms.json`.
+- `true`: wrap each actor in a clone of `generic-lod` (outfit + team maps),
+  posed with the exported joint quats.
+- `false`: the previous stick-figure cylinders. No glTF load.
+
+If the mesh fails to load, the viewer falls back to sticks.
+
+`export_play` always writes `bones` / `pose` / `skins` so flipping the flag
+only needs a hard-reload of `viewer.js`. `ensure_player_assets` caches the
+CDN files under `viewer/data/` (gitignored).
