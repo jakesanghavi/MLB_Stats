@@ -15,6 +15,10 @@ assetBase = https://fv-assets.mlb.com/v/<hash>
             (current: 58242e42c28513752c1cb5776bdf0da7f0679d5e)
 
 Player rig   : {assetBase}/models/generic/generic-lod.gltf   (+ generic-lod.bin)
+               (skinned human — head/jersey/hat/gloves/shoes. See PLAYER_MESH_NOTES.md)
+Outfits      : {assetBase}/skins/outfits/{role}.json
+Team textures: {assetBase}/skins/materials/variants.json
+               + {assetBase}/skins/textures/{year}/{ABBR}/...
 Bat          : {assetBase}/models/bat.glb                     (plain glTF)
 Ball         : {assetBase}/models/rbi-ball.glb                (plain glTF)
 Stadium      : {assetBase}/models/ballparks/{venueId}_{ABBR}.glb
