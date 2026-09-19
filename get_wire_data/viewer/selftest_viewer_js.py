@@ -59,6 +59,8 @@ def test_player_mesh_flag():
     assert "loadPlayerMesh" in JS
     assert "poseSkin" in JS
     assert "player mesh failed, using stick figures" in JS
+    assert "slerpQuaternions" in JS
+    assert "multiplyScalar(-1)" not in JS
     assert "false = stick figures, no jersey/head/hat/glove assets" in JS
     print("ok player mesh flag")
 
