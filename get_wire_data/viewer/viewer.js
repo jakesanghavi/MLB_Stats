@@ -11,6 +11,8 @@ const LIMB_THICKEN = 2.8;     // bone cylinder radius vs BONE_RADIUS_FT
 const TRAIL_THICKEN = 2.5;    // ball-path line width vs TRAIL_WIDTH_PX
 const BALL_THICKEN = 1.5;     // ball sphere radius vs BALL_RADIUS_FT
 const SHOW_BALL_TRAIL = true; // false hides the yellow ball-history line
+const SAVE_VIDEO_FPS = 30;
+const SAVE_VIDEO_BITRATE = 16_000_000; // 16 Mbps — sharp 1080p-class 3D, still real-time
 const BONE_RADIUS_FT = 0.06;
 const TRAIL_WIDTH_PX = 2;
 const BALL_RADIUS_FT = 0.4;
@@ -893,7 +895,7 @@ function saveVideo() {
   }
   const mime = pickRecorderMime();
   const canvas = renderer.domElement;
-  const fps = Math.max(20, Number(play.fps) || 20);
+  const fps = SAVE_VIDEO_FPS;
   let stream;
   try {
     stream = canvas.captureStream(fps);
@@ -904,7 +906,7 @@ function saveVideo() {
     return;
   }
   const rec = mime
-    ? new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 8_000_000 })
+    ? new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: SAVE_VIDEO_BITRATE })
     : new MediaRecorder(stream);
   const chunks = [];
   rec.ondataavailable = (e) => {

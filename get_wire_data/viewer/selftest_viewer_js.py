@@ -32,6 +32,8 @@ def test_trail_flag_and_save_video():
     assert "SHOW_BALL_TRAIL && trail.length >= 6" in JS
     assert "const EASY_BLEND_S" in JS
     assert "function saveVideo" in JS
+    assert "SAVE_VIDEO_FPS = 30" in JS
+    assert "SAVE_VIDEO_BITRATE = 16_000_000" in JS
     assert 'id="btn-save"' in HTML
     assert "Save video" in HTML
     print("ok trail flag + save video")
