@@ -9,8 +9,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from reconstruct3d import _slerp_quat, _sample_pose, _sample_bat
 from views import (
-    HEAD_POSE, HEAD_POSES, look_from_eye, look_target, look_pose, smart_forward,
-    smooth_head_series,
+    EASY_BLEND_S, HEAD_POSE, HEAD_POSES, easy_event_weight, look_from_eye,
+    look_target, look_pose, smart_forward, smooth_head_series,
 )
 
 
@@ -111,6 +111,48 @@ def test_easy_vision_flips_at_contact():
     print("ok easy_vision contact flip")
 
 
+def test_easy_vision_blends_only_at_events():
+    assert easy_event_weight(1.0, 2.0) == 0.0
+    assert easy_event_weight(2.0 + EASY_BLEND_S, 2.0) == 1.0
+    mid = easy_event_weight(2.0 + 0.5 * EASY_BLEND_S, 2.0)
+    assert 0.4 < mid < 0.6, mid
+    eye = np.array([0.0, 6.0, -60.0])
+    neck = np.array([0.0, 0.0, 1.0])
+    fly = (40.0, 8.0, -20.0)  # off toward 1B so ball ≠ neck
+    to_fly = np.array(fly) - eye
+    to_fly = to_fly / np.linalg.norm(to_fly)
+    far_before = look_pose(
+        "EASY_VISION", eye, neck, (0, 1, 0), "P", fly,
+        t=1.70, t_release=2.0, t_contact=2.4,
+    )
+    assert abs(np.dot(far_before[1], to_fly)) > 0.99, far_before[1]
+    far_after = look_pose(
+        "EASY_VISION", eye, neck, (0, 1, 0), "P", fly,
+        t=2.4 + EASY_BLEND_S + 0.05, t_release=2.0, t_contact=2.4,
+    )
+    assert far_after[1][2] > 0.95, far_after[1]
+    at_contact = look_pose(
+        "EASY_VISION", eye, neck, (0, 1, 0), "P", fly,
+        t=2.4 + 0.5 * EASY_BLEND_S, t_release=2.0, t_contact=2.4,
+    )
+    assert 0.15 < float(np.dot(at_contact[1], to_fly)) < 0.95, at_contact[1]
+    assert 0.15 < at_contact[1][2] < 0.95, at_contact[1]
+    held = (0.0, 5.0, -59.0)
+    pitch = (0.0, 6.0, 0.0)
+    at_release = look_pose(
+        "EASY_VISION", eye, neck, (0, 1, 0), "P", pitch,
+        t=2.0 + 0.5 * EASY_BLEND_S, t_release=2.0, t_contact=2.4,
+        ball_xyz_prerelease=held,
+    )
+    to_held = np.array(held) - eye
+    to_held = to_held / np.linalg.norm(to_held)
+    to_pitch = np.array(pitch) - eye
+    to_pitch = to_pitch / np.linalg.norm(to_pitch)
+    assert 0.15 < float(np.dot(at_release[1], to_pitch)) < 0.99, at_release[1]
+    assert float(np.dot(at_release[1], to_held)) > 0.15, at_release[1]
+    print("ok easy_vision event blends")
+
+
 def test_sample_bat_lerps():
     track = [
         (0.0, (0.0, 1.0, 0.0), (0.0, 3.0, 0.0)),
@@ -154,6 +196,7 @@ if __name__ == "__main__":
     test_smooth_kills_spike()
     test_head_pose_modes()
     test_easy_vision_flips_at_contact()
+    test_easy_vision_blends_only_at_events()
     test_sample_bat_lerps()
     test_wire_has_no_head()
     print("ok")

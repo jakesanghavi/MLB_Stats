@@ -27,6 +27,18 @@ def test_thicken_knobs():
     print("ok thicken knobs")
 
 
+def test_trail_flag_and_save_video():
+    assert "const SHOW_BALL_TRAIL = true" in JS
+    assert "SHOW_BALL_TRAIL && trail.length >= 6" in JS
+    assert "const EASY_BLEND_S" in JS
+    assert "function saveVideo" in JS
+    assert "SAVE_VIDEO_FPS = 30" in JS
+    assert "SAVE_VIDEO_BITRATE = 16_000_000" in JS
+    assert 'id="btn-save"' in HTML
+    assert "Save video" in HTML
+    print("ok trail flag + save video")
+
+
 def test_smooth_playhead():
     assert "lerpXyz(play.ball, t, true)" in JS
     assert "catmull3" in JS
@@ -45,6 +57,7 @@ if __name__ == "__main__":
     test_code_only_head_pose()
     test_no_head_spheres()
     test_thicken_knobs()
+    test_trail_flag_and_save_video()
     test_smooth_playhead()
     test_bat_mesh()
     print("ok")

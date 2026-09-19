@@ -189,6 +189,8 @@ html, body {
   z-index: 2;
 }
 #s-time { flex: 1; }
+#btn-save { white-space: nowrap; }
+#btn-save:disabled { opacity: 0.6; cursor: wait; }
 #help {
   position: fixed;
   right: 12px;

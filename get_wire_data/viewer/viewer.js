@@ -10,10 +10,15 @@ import { LineMaterial } from "three/addons/lines/LineMaterial.js";
 const LIMB_THICKEN = 2.8;     // bone cylinder radius vs BONE_RADIUS_FT
 const TRAIL_THICKEN = 2.5;    // ball-path line width vs TRAIL_WIDTH_PX
 const BALL_THICKEN = 1.5;     // ball sphere radius vs BALL_RADIUS_FT
+const SHOW_BALL_TRAIL = true; // false hides the yellow ball-history line
+const SAVE_VIDEO_FPS = 30;
+const SAVE_VIDEO_BITRATE = 16_000_000; // 16 Mbps — sharp 1080p-class 3D, still real-time
 const BONE_RADIUS_FT = 0.06;
 const TRAIL_WIDTH_PX = 2;
 const BALL_RADIUS_FT = 0.4;
 const BAT_MODEL_LEN_FT = 2.843; // bat.glb knob -> barrel
+// Only used at pitch release and bat contact. Other times are untouched.
+const EASY_BLEND_S = 0.18;
 
 const canvasHost = document.getElementById("viewport");
 const hudEl = document.getElementById("hud-values");
@@ -366,13 +371,78 @@ function lerpSegs(a, b, f) {
   return out;
 }
 
+function eventWeight(tSec, eventT, tau = EASY_BLEND_S) {
+  if (eventT == null || tSec == null) return null;
+  if (tSec <= eventT) return 0;
+  if (tSec >= eventT + tau) return 1;
+  const u = (tSec - eventT) / tau;
+  return u * u * (3 - 2 * u);
+}
+
+function playheadAtTime(sec) {
+  if (!play || !play.times.length) return 0;
+  const fps = play.fps || 20;
+  return Math.max(0, Math.min(play.times.length - 1, sec * fps));
+}
+
+function slerpFwd(a, b, w) {
+  const A = a.clone().normalize();
+  const B = b.clone().normalize();
+  const q = new THREE.Quaternion().setFromUnitVectors(A, B);
+  const q2 = new THREE.Quaternion().slerpQuaternions(new THREE.Quaternion(), q, w);
+  return A.applyQuaternion(q2).normalize();
+}
+
+function blendBasis(a, b, w) {
+  if (!a) return b;
+  if (!b) return a;
+  const fwd = slerpFwd(a.fwd, b.fwd, w);
+  let up = a.up.clone().lerp(b.up, w);
+  up.addScaledVector(fwd, -up.dot(fwd));
+  if (up.lengthSq() < 1e-8) up = b.up.clone();
+  up.normalize();
+  return { pos: a.pos.clone().lerp(b.pos, w), fwd, up };
+}
+
+function lookFollowNeck(neckSample) {
+  return basisFromFwd(neckSample.pos, neckSample.fwd, neckSample.up);
+}
+
+function lookAlwaysBall(neckSample, uid, t) {
+  const xyz = lerpXyz(play.ball, t, true);
+  const ball = xyz ? new THREE.Vector3(...xyz) : null;
+  const slot = slotFor(uid);
+  const tgt = ball || roleFallback(slot);
+  return basisFromFwd(neckSample.pos, tgt.clone().sub(neckSample.pos), null);
+}
+
 function resolveLook(neckSample, uid, t) {
   const eye = neckSample.pos;
   const neck = neckSample.fwd;
   const neckUp = neckSample.up;
-  const contacted = play.tContact != null && timeAt(t) >= play.tContact;
+  const tSec = timeAt(t);
   let mode = headPose;
-  if (mode === "EASY_VISION") mode = contacted ? "FOLLOW_NECK" : "ALWAYS_BALL";
+  if (mode === "EASY_VISION") {
+    const wC = eventWeight(tSec, play.tContact);
+    const ballLook = lookAlwaysBall(neckSample, uid, t);
+    const neckLook = lookFollowNeck(neckSample);
+    if (wC == null) {
+      return tSec >= (play.tContact ?? Infinity) ? neckLook : ballLook;
+    }
+    if (wC >= 1) return neckLook;
+    if (wC > 0) {
+      const preT = playheadAtTime(play.tContact - 1e-3);
+      const preLook = lookAlwaysBall(neckSample, uid, preT);
+      return blendBasis(preLook, neckLook, wC);
+    }
+    const wR = eventWeight(tSec, play.tRelease);
+    if (wR != null && wR > 0 && wR < 1) {
+      const preT = playheadAtTime(play.tRelease - 1e-3);
+      const preLook = lookAlwaysBall(neckSample, uid, preT);
+      return blendBasis(preLook, ballLook, wR);
+    }
+    return ballLook;
+  }
   if (mode === "FOLLOW_NECK") {
     return basisFromFwd(eye, neck, neckUp);
   }
@@ -693,7 +763,7 @@ function showFrame(i, syncHead = true) {
   if (ball && (trail.length < 3 || frame < t)) {
     trail.push(ball[0], ball[1], ball[2]);
   }
-  if (trail.length >= 6) {
+  if (SHOW_BALL_TRAIL && trail.length >= 6) {
     const old = trailLine.geometry;
     trailLine.geometry = new LineGeometry();
     trailLine.geometry.setPositions(trail);
@@ -758,6 +828,7 @@ function bindUi() {
   });
   $("btn-copy").addEventListener("click", copyHud);
   $("btn-play").addEventListener("click", togglePlay);
+  $("btn-save").addEventListener("click", saveVideo);
   $("s-time").addEventListener("input", () => {
     const u = Number($("s-time").value);
     showFrame(u * (play.times.length - 1));
@@ -795,9 +866,107 @@ function bindUi() {
   });
 }
 
+let recording = false;
+
 function togglePlay() {
+  if (recording) return;
   playing = !playing;
   $("btn-play").textContent = playing ? "Pause" : "Play";
+}
+
+function pickRecorderMime() {
+  const types = [
+    "video/webm;codecs=vp9",
+    "video/webm;codecs=vp8",
+    "video/webm",
+  ];
+  for (const t of types) {
+    if (window.MediaRecorder && MediaRecorder.isTypeSupported(t)) return t;
+  }
+  return "";
+}
+
+function saveVideo() {
+  if (!play || recording) return;
+  if (!window.MediaRecorder) {
+    $("btn-save").textContent = "No recorder";
+    setTimeout(() => { $("btn-save").textContent = "Save video"; }, 1600);
+    return;
+  }
+  const mime = pickRecorderMime();
+  const canvas = renderer.domElement;
+  const fps = SAVE_VIDEO_FPS;
+  let stream;
+  try {
+    stream = canvas.captureStream(fps);
+  } catch (err) {
+    console.warn("captureStream failed", err);
+    $("btn-save").textContent = "Capture failed";
+    setTimeout(() => { $("btn-save").textContent = "Save video"; }, 1600);
+    return;
+  }
+  const rec = mime
+    ? new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: SAVE_VIDEO_BITRATE })
+    : new MediaRecorder(stream);
+  const chunks = [];
+  rec.ondataavailable = (e) => {
+    if (e.data && e.data.size) chunks.push(e.data);
+  };
+  rec.onerror = (e) => {
+    console.warn("MediaRecorder error", e);
+    recording = false;
+    playing = false;
+    $("btn-save").disabled = false;
+    $("btn-save").textContent = "Save failed";
+    setTimeout(() => { $("btn-save").textContent = "Save video"; }, 1800);
+  };
+  rec.onstop = () => {
+    stream.getTracks().forEach((tr) => tr.stop());
+    const blob = new Blob(chunks, { type: rec.mimeType || "video/webm" });
+    if (blob.size < 64) {
+      $("btn-save").disabled = false;
+      $("btn-save").textContent = "Empty video";
+      recording = false;
+      setTimeout(() => { $("btn-save").textContent = "Save video"; }, 1800);
+      return;
+    }
+    const a = document.createElement("a");
+    const id = (play.playId || "play").toString().slice(0, 8);
+    a.href = URL.createObjectURL(blob);
+    a.download = `gameday3d_${play.gamePk || "game"}_${id}.webm`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+    recording = false;
+    $("btn-save").disabled = false;
+    $("btn-save").textContent = "Save video";
+    $("btn-play").textContent = "Play";
+  };
+  recording = true;
+  $("btn-save").disabled = true;
+  $("btn-save").textContent = "Recording…";
+  showFrame(0);
+  playing = true;
+  $("btn-play").textContent = "Pause";
+  rec.start(250);
+  const tEnd = play.times[play.times.length - 1];
+  const started = performance.now();
+  const finish = () => {
+    if (rec.state !== "inactive") rec.stop();
+  };
+  const watch = () => {
+    if (!recording) return;
+    const tNow = timeAt(playhead);
+    const overtime = performance.now() - started > (tEnd * 3 + 5) * 1000;
+    if (!playing || tNow >= tEnd - 1e-3 || overtime) {
+      playing = false;
+      showFrame(play.times.length - 1, false);
+      renderer.render(scene, camera);
+      finish();
+      return;
+    }
+    requestAnimationFrame(watch);
+  };
+  requestAnimationFrame(watch);
 }
 
 let lastTick = performance.now();

@@ -151,6 +151,8 @@ HEAD_POSES = ("FOLLOW_NECK", "ALWAYS_BALL", "SMART_VISION", "EASY_VISION")
 HEAD_POSE = "EASY_VISION"
 SMART_CONE_DEG = 80.0
 EYE_PUSH = 0.35
+# Ease EASY_VISION only across pitch release and bat contact. 0 elsewhere.
+EASY_BLEND_S = 0.18
 
 
 def _unit(v):
@@ -251,12 +253,61 @@ def smart_forward(eye, neck_fwd, slot, ball_xyz=None, cone_deg=SMART_CONE_DEG):
     return _turn_toward(neck, ranked[0][2], cone_deg)
 
 
+def easy_event_weight(t, event_t, tau=EASY_BLEND_S):
+    """0 before ``event_t``, 1 after ``event_t + tau``, smoothstep in between."""
+    if event_t is None or t is None:
+        return None
+    if t <= event_t:
+        return 0.0
+    if t >= event_t + tau:
+        return 1.0
+    u = (t - event_t) / tau
+    return u * u * (3.0 - 2.0 * u)
+
+
+def _blend_basis(a, b, w):
+    if a is None:
+        return b
+    if b is None:
+        return a
+    w = float(np.clip(w, 0.0, 1.0))
+    pos = (1.0 - w) * np.asarray(a[0], float) + w * np.asarray(b[0], float)
+    fwd = _slerp_dir(a[1], b[1], w)
+    up = (1.0 - w) * np.asarray(a[2], float) + w * np.asarray(b[2], float)
+    up = up - fwd * float(np.dot(up, fwd))
+    up = _unit(up)
+    if up is None:
+        up = np.asarray(b[2], float)
+    return pos, fwd, up
+
+
 def look_pose(mode, eye, neck_fwd, neck_up=None, slot=None, ball_xyz=None,
-              contacted=False):
-    """(pos, fwd, up) for a HEAD_POSE mode. ``eye`` is the unpushed eye midpoint."""
+              contacted=False, t=None, t_release=None, t_contact=None,
+              ball_xyz_prerelease=None, ball_xyz_precontact=None):
+    """(pos, fwd, up) for a HEAD_POSE mode. ``eye`` is the unpushed eye midpoint.
+
+    EASY_VISION eases only at ``t_release`` and ``t_contact``. Far from those
+    instants the look matches a hard switch (ball before contact, neck after).
+    """
     mode = mode if mode in HEAD_POSES else HEAD_POSE
     if mode == "EASY_VISION":
-        mode = "FOLLOW_NECK" if contacted else "ALWAYS_BALL"
+        w_c = easy_event_weight(t, t_contact)
+        if w_c is None:
+            w_c = 1.0 if contacted else 0.0
+        ball_look = look_from_eye(eye, look_target(slot, ball_xyz))
+        neck_look = _basis_from_fwd(eye, neck_fwd, neck_up)
+        if w_c >= 1.0:
+            return neck_look
+        if w_c > 0.0:
+            # Freeze the pre-contact ball look so the batted ball does not yank the ease.
+            pre_ball = ball_xyz_precontact if ball_xyz_precontact is not None else ball_xyz
+            pre = look_from_eye(eye, look_target(slot, pre_ball))
+            return _blend_basis(pre, neck_look, w_c)
+        w_r = easy_event_weight(t, t_release)
+        if w_r is not None and 0.0 < w_r < 1.0:
+            pre = look_from_eye(eye, look_target(slot, ball_xyz_prerelease))
+            return _blend_basis(pre, ball_look, w_r)
+        return ball_look
     if mode == "FOLLOW_NECK":
         return _basis_from_fwd(eye, neck_fwd, neck_up)
     if mode == "ALWAYS_BALL":
