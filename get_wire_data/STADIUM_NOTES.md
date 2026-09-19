@@ -15,8 +15,14 @@ assetBase = https://fv-assets.mlb.com/v/<hash>
             (current: 58242e42c28513752c1cb5776bdf0da7f0679d5e)
 
 Player rig   : {assetBase}/models/generic/generic-lod.gltf   (+ generic-lod.bin)
+               (skinned human — head/jersey/hat/gloves/shoes. See PLAYER_MESH_NOTES.md)
+Outfits      : {assetBase}/skins/outfits/{role}.json
+Team textures: {assetBase}/skins/materials/variants.json
+               + {assetBase}/skins/textures/{year}/{ABBR}/...
 Bat          : {assetBase}/models/bat.glb                     (plain glTF)
-Ball         : {assetBase}/models/rbi-ball.glb                (plain glTF)
+Ball         : {assetBase}/models/rbi-ball.glb                (plain glTF;
+               viewer loads this; `BALL_SIZE_FACTOR` in viewer.js, default 1
+               = the previous yellow-sphere size)
 Stadium      : {assetBase}/models/ballparks/{venueId}_{ABBR}.glb
 Screens      : {assetBase}/models/ballparks/screens/{name}.glb
 Crowd        : {assetBase}/crowd/{name}.glb

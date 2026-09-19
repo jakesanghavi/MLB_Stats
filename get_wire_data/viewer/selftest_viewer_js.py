@@ -22,8 +22,9 @@ def test_no_head_spheres():
 
 
 def test_thicken_knobs():
-    for name in ("LIMB_THICKEN", "TRAIL_THICKEN", "BALL_THICKEN"):
+    for name in ("LIMB_THICKEN", "TRAIL_THICKEN", "BALL_THICKEN", "BALL_SIZE_FACTOR"):
         assert f"const {name}" in JS, name
+    assert "BALL_SIZE_FACTOR = 1" in JS
     print("ok thicken knobs")
 
 
@@ -53,6 +54,27 @@ def test_bat_mesh():
     print("ok bat.glb")
 
 
+def test_ball_mesh():
+    assert "data/rbi-ball.glb" in JS
+    assert "BALL_SIZE_FACTOR" in JS
+    assert "function loadBall" in JS
+    assert "function ballDisplayRadius" in JS
+    assert "rbi-ball.glb failed, using sphere" in JS
+    print("ok rbi-ball.glb")
+
+
+def test_player_mesh_flag():
+    assert "const SHOW_PLAYER_MESH = true" in JS
+    assert 'import * as SkeletonUtils from "three/addons/utils/SkeletonUtils.js"' in JS
+    assert "loadPlayerMesh" in JS
+    assert "poseSkin" in JS
+    assert "player mesh failed, using stick figures" in JS
+    assert "slerpQuaternions" in JS
+    assert "multiplyScalar(-1)" not in JS
+    assert "false = stick figures, no jersey/head/hat/glove assets" in JS
+    print("ok player mesh flag")
+
+
 if __name__ == "__main__":
     test_code_only_head_pose()
     test_no_head_spheres()
@@ -60,4 +82,6 @@ if __name__ == "__main__":
     test_trail_flag_and_save_video()
     test_smooth_playhead()
     test_bat_mesh()
+    test_ball_mesh()
+    test_player_mesh_flag()
     print("ok")
