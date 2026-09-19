@@ -235,17 +235,31 @@ def _sample_bat(track, t, max_gap=0.35):
 
 
 def _contact_time(reader):
-    """First bat-meeting-ball time: BatImpact event, else BallHit polynomial."""
+    """Bat-meeting-ball time for this play: BatImpact, else BallHit polynomial.
+
+    Prefers events at or after the requested pitch so a prior pitch's foul
+    or a later play's contact (bleed) is not used.
+    """
+    t_pitch = reader.pitch_release_time()
+    play_id = reader.info.get("playId")
+
     for t, dt, _data in reader.events():
-        if dt == 12:
+        if dt == 12 and (t_pitch is None or t >= t_pitch):
             return t
     best = None
     for f in reader.frames:
         for bp in f.get("ballPolynomials") or []:
-            if bp.get("dataType") in (2, 3, 4):
-                tt = f.get("time")
-                if tt is not None and (best is None or tt < best):
-                    best = tt
+            if bp.get("dataType") not in (2, 3, 4):
+                continue
+            if play_id and bp.get("id") and bp.get("id") != play_id:
+                continue
+            tt = f.get("time")
+            if tt is None:
+                continue
+            if t_pitch is not None and tt < t_pitch:
+                continue
+            if best is None or tt < best:
+                best = tt
     return best
 
 
@@ -256,11 +270,8 @@ def _mesh_plot_tris(verts, faces):
 
 
 def _pitch_release_time(reader):
-    """playEvent action 0 (pitch released), absolute seconds."""
-    for t, dt, data in reader.events():
-        if dt == 7 and (data or {}).get("action") == 0:
-            return t
-    return None
+    """playEvent action 0 (pitch released) for the requested playId."""
+    return reader.pitch_release_time()
 
 
 def _pitcher_xz(reader, t_ref):

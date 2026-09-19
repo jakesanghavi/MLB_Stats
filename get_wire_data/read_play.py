@@ -182,29 +182,52 @@ class PlayReader:
             intervals.append((start, self.frames[-1]["time"]))
         return [iv for iv in intervals if iv[1] - iv[0] >= min_seconds]
 
+    def pitch_releases(self):
+        """[(time, playId)] for every in-clip ``playEvent{action:0}`` (pitch released)."""
+        out = []
+        for t, dt, data in self.events():
+            if dt == 7 and (data or {}).get("action") == 0:
+                out.append((t, (data or {}).get("playId")))
+        return out
+
+    def pitch_release_time(self, play_id=None):
+        """Absolute seconds of the pitch-released event for this play.
+
+        Mannequin clips often bleed a neighboring pitch. Prefer the
+        ``playEvent{action:0}`` whose ``playId`` matches the requested GUID
+        (``play.json`` / ``self.info``). Fall back to the first release in
+        the clip when the GUID is missing or unmatched.
+        """
+        if play_id is None:
+            play_id = self.info.get("playId")
+        releases = self.pitch_releases()
+        if play_id:
+            for t, pid in releases:
+                if pid == play_id:
+                    return t
+        return releases[0][0] if releases else None
+
     def play_window(self, max_seconds=25.0, lead=2.0, trail=2.0, gap_merge=8.0):
         """Estimate the *actual* action window (absolute start, end seconds).
 
         Gameday 3D clips are over-inclusive (long lead-in/out, sometimes bleed
         from adjacent plays). We anchor on the in-stream ``playEvent{action:0}``
-        (the pitch), take the contiguous ball-active window after it, and trim the
-        end to the sustained ``liveAction`` (ball-live) interval that contains the
-        pitch so trailing dead-ball tracking is excluded. Capped at ``max_seconds``.
-        Falls back to the first tracked-ball time, then to the whole clip.
+        whose ``playId`` matches the requested GUID (not merely the first
+        release in the file), take the contiguous ball-active window after it,
+        and trim the end to the sustained ``liveAction`` (ball-live) interval
+        that contains the pitch so trailing dead-ball tracking is excluded.
+        The start is not rewound through an earlier pitch when ``liveAction``
+        stays on across pitches (typical with a runner on). Capped at
+        ``max_seconds``. Falls back to the first tracked-ball time, then to
+        the whole clip.
         """
         if not self.frames:
             return None
         t0 = self.frames[0]["time"]
         tN = self.frames[-1]["time"]
 
-        t_pitch = None
-        for f in self.frames:
-            for e in f.get("gameEvents", []):
-                if e.get("dataType") == 7 and (e.get("data") or {}).get("action") == 0:
-                    t_pitch = e.get("time", f["time"])
-                    break
-            if t_pitch is not None:
-                break
+        releases = self.pitch_releases()
+        t_pitch = self.pitch_release_time()
 
         ball_t = [t for t, _, _, _ in self.ball_track()]
         if t_pitch is None:
@@ -236,7 +259,12 @@ class PlayReader:
         if candidates:
             containing = [iv for iv in candidates if iv[0] <= t_pitch <= iv[1]]
             live = max(containing or candidates, key=lambda iv: iv[1] - iv[0])
-            start_anchor = min(t_pitch, live[0])
+            proposed = min(t_pitch, live[0])
+            earlier = [t for t, _pid in releases if t < t_pitch - 0.05]
+            # liveAction often stays true across a whole PA when a runner is
+            # on; do not rewind the window into the previous pitch.
+            if not earlier or proposed > max(earlier):
+                start_anchor = proposed
             t_end = min(seg_end, live[1])  # trim trailing dead-ball tracking
 
         t_end = min(t_end, t_pitch + max_seconds)
